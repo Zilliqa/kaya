@@ -3,7 +3,9 @@ const bodyParser = require('body-parser');
 const port = 4200;
 const app = express();
 const logic = require('./logic');
-
+const fs = require('fs');
+let argv = require('yargs').argv;
+var rimraf = require('rimraf');
 
 const Transaction = require('./models/Transaction')
 
@@ -52,18 +54,15 @@ process.on('SIGINT', shutDown);
 
 const server = app.listen(port, (err) => {
     console.log(`Zilliqa TestRPC Server`);
-    // Prepare tmp files directory
-    const exec = require('child_process').execSync;
-    const child = exec('mkdir tmp',
-        (error, stdout, stderr) => {
-            if (error !== null) {
-                console.warn(`exec error: ${error}`);
-            }
-        });
+    console.log(process.argv[2]);
 
-    if (err) {
-        throw err;
+    if(!fs.existsSync('./tmp')) {
+        fs.mkdirSync('./tmp');
     }
+    if(!fs.existsSync('./data')) {
+        fs.mkdirSync('./data');
+    }
+
     console.log(`Server listening on port ${port}`)
 })
 
@@ -77,14 +76,12 @@ server.on('connection', connection => {
 // Graceful shutdown function. Clear the files
 function shutDown() {
     console.info('Kill signal received  shutting down gracefully');
-    // run scilla runner
-    const exec = require('child_process').execSync;
-    const child = exec('rm -rf ./tmp/',
-        (error, stdout, stderr) => {
-            if (error !== null) {
-                console.warn(`exec error: ${error}`);
-            }
-        });
+
+    if(argv.save) { 
+        console.info(`Save mode enabled; data will be stored in /data`.yellow);
+        logic.dumpDataFiles();
+    }
+    rimraf('tmp', function() { console.log(`/tmp directory removed`)});
 
     server.close(() => {
         console.log('Closed out remaining connections');

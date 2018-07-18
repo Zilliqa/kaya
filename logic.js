@@ -11,13 +11,47 @@ var debug_txn = require('debug')('txn');
 
 // non-persistent states. Initializes whenever server starts
 const repo = {};
-const transactions = {}
-const map_Caddr_owner = {}
+const transactions = {};
+const map_Caddr_owner = {};
+
+function pad(number, length) {
+    var str = '' + number;
+    while (str.length < length) {
+        str = '0' + str;
+    }
+    return str;
+}
+
+Date.prototype.YYYYMMDDHHMMSS = function () {
+    var yyyy = this.getFullYear().toString();
+    var MM = pad(this.getMonth() + 1, 2);
+    var dd = pad(this.getDate(), 2);
+    var hh = pad(this.getHours(), 2);
+    var mm = pad(this.getMinutes(), 2)
+    var ss = pad(this.getSeconds(), 2)
+
+    return yyyy + MM + dd + hh + mm + ss;
+};
 
 // stores a map of wallet address to contract addresses
 const addr_to_contracts = [];
 
 module.exports = {
+
+    dumpDataFiles: (data) => {
+        // save the state of transactions
+        var data = {};
+        data.transactions = transactions;
+        data.map_Caddr_owner = map_Caddr_owner;
+        data.repo = repo;
+
+        var d = new Date();
+
+
+        save_filename = `data/${d.YYYYMMDDHHMMSS()}_blockchain_states.json`;
+        console.log(`Save Mode Enabled: Files will be saved in ${save_filename}`);
+        fs.writeFileSync(save_filename, JSON.stringify(data,'UTF-8'));
+    },
 
     processCreateTransaction: (data) => {
         debug_txn('Processing transaction...');
@@ -52,7 +86,7 @@ module.exports = {
 
             let initParams = JSON.stringify(payload.data);
             cleaned_params = utilities.paramsCleanup(initParams);
-            
+
             fs.writeFileSync(`data/${newContract_addr}_init.json`, cleaned_params);
 
             // Run Scilla Interpreter
@@ -116,20 +150,19 @@ module.exports = {
                 });
             debug_txn('Scilla run completed. Performing state changes now');
 
-             // Extract state from tmp/out.json
-             var retMsg = JSON.parse(fs.readFileSync(`tmp/${contractAddr}_out.json`, 'utf-8'));
-             fs.writeFileSync(`data/${contractAddr}_state.json`, JSON.stringify(retMsg.states));
-             debug_txn(`State logged down in ${contractAddr}_state.json`);
-             console.log('New State'.cyan);
-             console.log(retMsg.states);
+            // Extract state from tmp/out.json
+            var retMsg = JSON.parse(fs.readFileSync(`tmp/${contractAddr}_out.json`, 'utf-8'));
+            fs.writeFileSync(`data/${contractAddr}_state.json`, JSON.stringify(retMsg.states));
+            debug_txn(`State logged down in ${contractAddr}_state.json`);
+            console.log('New State'.cyan);
+            console.log(retMsg.states);
 
-             return newTransactionID;
+            return newTransactionID;
         }
     },
 
-    processGetTransaction: (data) => { 
+    processGetTransaction: (data) => {
         debug_txn(`TxnID: ${data[0]}`);
-
         var data = transactions[data[0]];
         return data;;
     }
