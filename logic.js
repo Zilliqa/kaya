@@ -10,9 +10,9 @@ var debug_txn = require('debug')('txn');
 
 
 // non-persistent states. Initializes whenever server starts
-const repo = {};
-const transactions = {};
-const map_Caddr_owner = {};
+var repo = {};
+var transactions = {};
+var map_Caddr_owner = {};
 
 function pad(number, length) {
     var str = '' + number;
@@ -38,23 +38,35 @@ const addr_to_contracts = [];
 
 module.exports = {
 
+    bootstrapFile: (filepath) => { 
+        //bootstraps state of transactions and caddr owner
+        var data = JSON.parse(fs.readFileSync(filepath, 'utf-8'));
+        console.log('state of blockchain:');
+        transactions =data.transactions;
+        repo = data.repo;
+        map_Caddr_owner = data.map_Caddr_owner;
+        console.log(transactions);
+    },
+
     dumpDataFiles: (data) => {
         // save the state of transactions
         var data = {};
         data.transactions = transactions;
         data.map_Caddr_owner = map_Caddr_owner;
         data.repo = repo;
-
         var d = new Date();
-
-
-        save_filename = `data/${d.YYYYMMDDHHMMSS()}_blockchain_states.json`;
+        save_filename = `data/save/${d.YYYYMMDDHHMMSS()}_blockchain_states.json`;
         console.log(`Save Mode Enabled: Files will be saved in ${save_filename}`);
         fs.writeFileSync(save_filename, JSON.stringify(data,'UTF-8'));
     },
 
-    processCreateTransaction: (data) => {
+    processCreateTransaction: (data, saveMode) => {
         debug_txn('Processing transaction...');
+        dir = 'tmp/'
+        if(saveMode) { 
+            console.log('Save mode enabled.');
+            dir = 'data/'
+        }
 
         let payload = data[0];
         if (payload.code && payload.to == '0000000000000000000000000000000000000000') {
@@ -81,17 +93,17 @@ module.exports = {
             rawCode = JSON.stringify(payload.code);
             cleanedCode = utilities.codeCleanup(rawCode);
 
-            let newCode_path = `data/${newContract_addr}_code.scilla`;
+            let newCode_path = `${dir}${newContract_addr}_code.scilla`;
             fs.writeFileSync(newCode_path, cleanedCode);
 
             let initParams = JSON.stringify(payload.data);
             cleaned_params = utilities.paramsCleanup(initParams);
 
-            fs.writeFileSync(`data/${newContract_addr}_init.json`, cleaned_params);
+            fs.writeFileSync(`${dir}${newContract_addr}_init.json`, cleaned_params);
 
             // Run Scilla Interpreter
             const exec = require('child_process').execSync;
-            let scilla_cmd = `./scilla/scilla-runner -init data/${newContract_addr}_init.json -i ${newCode_path} -iblockchain template/blockchain.json -o tmp/${newContract_addr}_out.json -imessage test/message.json -istate template/state.json`;
+            let scilla_cmd = `./scilla/scilla-runner -init ${dir}${newContract_addr}_init.json -i ${newCode_path} -iblockchain template/blockchain.json -o tmp/${newContract_addr}_out.json -imessage test/message.json -istate template/state.json`;
             const child = exec(scilla_cmd,
                 (error, stdout, stderr) => {
                     if (error !== null) {
@@ -102,7 +114,7 @@ module.exports = {
 
             // Extract state from tmp/out.json
             var retMsg = JSON.parse(fs.readFileSync(`tmp/${newContract_addr}_out.json`, 'utf-8'));
-            fs.writeFileSync(`data/${newContract_addr}_state.json`, JSON.stringify(retMsg.states));
+            fs.writeFileSync(`${dir}${newContract_addr}_state.json`, JSON.stringify(retMsg.states));
             debug_txn(`State logged down in ${newContract_addr}_state.json`)
 
             console.log(`Contract Address Deployed: ${newContract_addr}`);
@@ -136,11 +148,11 @@ module.exports = {
             debug_txn('Payload Received %O', payload.data);
             let incomingMessage = JSON.stringify(payload.data);
             cleaned_msg = utilities.paramsCleanup(incomingMessage);
-            fs.writeFileSync(`tmp/${payload.to}_message.json`, cleaned_msg);
+            fs.writeFileSync(`${dir}${payload.to}_message.json`, cleaned_msg);
 
             // Run Scilla Interpreter
             const exec = require('child_process').execSync;
-            let scilla_cmd = `./scilla/scilla-runner -init data/${contractAddr}_init.json -i data/${contractAddr}_code.scilla -iblockchain template/blockchain.json -o tmp/${contractAddr}_out.json -imessage tmp/${payload.to}_message.json -istate data/${contractAddr}_state.json`;
+            let scilla_cmd = `./scilla/scilla-runner -init ${dir}${contractAddr}_init.json -i ${dir}${contractAddr}_code.scilla -iblockchain template/blockchain.json -o tmp/${contractAddr}_out.json -imessage tmp/${payload.to}_message.json -istate ${dir}${contractAddr}_state.json`;
             debug_txn(scilla_cmd);
             const child = exec(scilla_cmd,
                 (error, stdout, stderr) => {
@@ -152,7 +164,7 @@ module.exports = {
 
             // Extract state from tmp/out.json
             var retMsg = JSON.parse(fs.readFileSync(`tmp/${contractAddr}_out.json`, 'utf-8'));
-            fs.writeFileSync(`data/${contractAddr}_state.json`, JSON.stringify(retMsg.states));
+            fs.writeFileSync(`${dir}${contractAddr}_state.json`, JSON.stringify(retMsg.states));
             debug_txn(`State logged down in ${contractAddr}_state.json`);
             console.log('New State'.cyan);
             console.log(retMsg.states);

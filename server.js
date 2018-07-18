@@ -4,8 +4,10 @@ const port = 4200;
 const app = express();
 const logic = require('./logic');
 const fs = require('fs');
+const fsp = require('node-fs');
 let argv = require('yargs').argv;
 var rimraf = require('rimraf');
+const utilities = require('./utilities');
 
 const Transaction = require('./models/Transaction')
 
@@ -30,7 +32,7 @@ app.post('/', (req, res) => {
             res.status(200).send(data);
             break;
         case 'CreateTransaction':
-            let txn_id = logic.processCreateTransaction(body.params);
+            let txn_id = logic.processCreateTransaction(body.params, argv.save);
             var data = {result: txn_id};
             res.status(200).send(data);
             break;
@@ -54,13 +56,25 @@ process.on('SIGINT', shutDown);
 
 const server = app.listen(port, (err) => {
     console.log(`Zilliqa TestRPC Server`);
-    console.log(process.argv[2]);
+
+    if(argv.load) { 
+        // loading option specified
+        console.log('Loading option specified.');
+        logic.bootstrapFile(argv.load);
+    }
 
     if(!fs.existsSync('./tmp')) {
         fs.mkdirSync('./tmp');
     }
     if(!fs.existsSync('./data')) {
         fs.mkdirSync('./data');
+        fsp.mkdir('./data/save', 0777, true, function (err) {
+            if (err) {
+              console.log(err);
+            } else {
+              console.log('Directory created');
+            }
+          });
     }
 
     console.log(`Server listening on port ${port}`)

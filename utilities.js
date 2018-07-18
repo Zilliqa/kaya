@@ -1,5 +1,5 @@
+var fs = require('fs');
 module.exports = {
-
     removeComments: (str) => {
         var originalStr = str
         var commentStart
@@ -36,4 +36,5 @@ module.exports = {
       .replace(/\\"/g, '"');
       return cleaned_params
     }
+    
 }
