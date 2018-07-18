@@ -6,9 +6,7 @@ const zilliqa_util = require('./lib/util')
 const utilities = require('./utilities');
 
 // debug usage: DEBUG=scilla-txn node server.js
-var debug_txn = require('debug')('scilla-txn');
-var debug_gettxn = require('debug')('scilla-gettxn');
-
+var debug_txn = require('debug')('txn');
 
 
 // non-persistent states. Initializes whenever server starts
@@ -130,8 +128,9 @@ module.exports = {
     },
 
     processGetTransaction: (data) => { 
-        console.log(transactions);
-        console.log(Object.keys(transactions));
-        return transactions[data[0]];
+        debug_txn(`TxnID: ${data[0]}`);
+
+        var data = transactions[data[0]];
+        return data;;
     }
 }

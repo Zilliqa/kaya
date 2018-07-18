@@ -155,14 +155,7 @@ function getTransaction() {
         throw new Error('TransactionID (--tid) must be provided')
     }
 
-
-    zilliqa.node.getTransaction({ txHash: txnId }, function(err, data) {
-        if (err || data.result.error || !data.result['ID']) {
-            console.log(err)
-        } else {
-            console.log(data.result)
-        }
-    })
+    zilliqa.node.getTransaction({ txHash: txnId }, callback);
 
 }
 

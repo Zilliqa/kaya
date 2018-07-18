@@ -35,6 +35,7 @@ app.post('/', (req, res) => {
         case 'GetTransaction':
             var obj = logic.processGetTransaction(body.params);
             var data = {result: obj};
+            console.log(data);
             res.status(200).send(data);
             break;
         default:
