@@ -71,5 +71,8 @@ typings/
 
 # Serverless directories
 .serverless
-data/
+
+# Custom files
 tmp/
+data/
+*config.js
