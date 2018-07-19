@@ -8,9 +8,6 @@ const fsp = require('node-fs');
 let argv = require('yargs').argv;
 var rimraf = require('rimraf');
 const utilities = require('./utilities');
-
-const Transaction = require('./models/Transaction')
-
 app.use(bodyParser.json({extended: false}));
 
 app.post('/', (req, res) => {
@@ -32,7 +29,7 @@ app.post('/', (req, res) => {
             res.status(200).send(data);
             break;
         case 'CreateTransaction':
-            let txn_id = logic.processCreateTransaction(body.params, argv.save);
+            let txn_id = logic.processCreateTxn(body.params, argv.save);
             var data = {result: txn_id};
             res.status(200).send(data);
             break;
@@ -56,6 +53,10 @@ process.on('SIGINT', shutDown);
 
 const server = app.listen(port, (err) => {
     console.log(`Zilliqa TestRPC Server`);
+
+    if(argv.save) { 
+        console.log('Save mode enabled');
+    }
 
     if(argv.load) { 
         // loading option specified
@@ -95,7 +96,7 @@ function shutDown() {
         console.info(`Save mode enabled; data will be stored in /data`.yellow);
         logic.dumpDataFiles();
     }
-    rimraf('tmp', function() { console.log(`/tmp directory removed`)});
+    rimraf('./tmp', function() { console.log(`/tmp directory removed`)});
 
     server.close(() => {
         console.log('Closed out remaining connections');
