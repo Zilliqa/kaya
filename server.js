@@ -8,16 +8,27 @@ const fsp = require('node-fs');
 let argv = require('yargs').argv;
 var rimraf = require('rimraf');
 const utilities = require('./utilities');
-app.use(bodyParser.json({extended: false}));
+app.use(bodyParser.json({ extended: false }));
+
+
+var isPersistence = false; // tmp is the default behavior
+
+function makeResponse(id, jsonrpc, data) {
+    var data = {};
+    data['id'] = id;
+    data['jsonrpc'] = jsonrpc;
+    data['result'] = data;
+    return data;
+}
 
 app.post('/', (req, res) => {
     let body = req.body;
     console.log(`Method specified: ${body.method}`);
-    switch(body.method) {
+    switch (body.method) {
         case 'GetBalance':
             console.log(`Getting balance for ${body.params}`);
             // todo: After wallet module is completed.
-            var data = {result: { balance: 0, nonce: 0 }};
+            var data = { result: { balance: 0, nonce: 0 } };
             res.status(200).send(data);
             break;
         case 'GetNetworkId':
@@ -28,23 +39,28 @@ app.post('/', (req, res) => {
             data['result'] = 'Testnet';
             res.status(200).send(data);
             break;
+        case 'GetSmartContractState':
+            var result = logic.processGetSmartContractState(body.params, isPersistence);
+            
+            res.status(200).send(result);
+            break;
         case 'CreateTransaction':
             let txn_id = logic.processCreateTxn(body.params, argv.save);
-            var data = {result: txn_id};
+            var data = { result: txn_id };
             res.status(200).send(data);
             break;
         case 'GetTransaction':
             var obj = logic.processGetTransaction(body.params);
-            var data = {result: obj};
+            var data = { result: obj };
             console.log(data);
             res.status(200).send(data);
             break;
         default:
-            data = {"error": "Unsupported Method"};
+            data = { "error": "Unsupported Method" };
             res.status(404).send(data);
-    } 
+    }
     console.log('Sending status');
-    
+
 })
 
 // Signal handling
@@ -54,28 +70,30 @@ process.on('SIGINT', shutDown);
 const server = app.listen(port, (err) => {
     console.log(`Zilliqa TestRPC Server`);
 
-    if(argv.save) { 
+    if (argv.save) {
         console.log('Save mode enabled');
+        isPersistence = true;
     }
 
-    if(argv.load) { 
+    if (argv.load) {
         // loading option specified
         console.log('Loading option specified.');
         logic.bootstrapFile(argv.load);
+        isPersistence = true;
     }
 
-    if(!fs.existsSync('./tmp')) {
+    if (!fs.existsSync('./tmp')) {
         fs.mkdirSync('./tmp');
     }
-    if(!fs.existsSync('./data')) {
+    if (!fs.existsSync('./data')) {
         fs.mkdirSync('./data');
         fsp.mkdir('./data/save', 0777, true, function (err) {
             if (err) {
-              console.log(err);
+                console.log(err);
             } else {
-              console.log('Directory created');
+                console.log('Directory created');
             }
-          });
+        });
     }
 
     console.log(`Server listening on port ${port}`)
@@ -92,11 +110,10 @@ server.on('connection', connection => {
 function shutDown() {
     console.info('Kill signal received  shutting down gracefully');
 
-    if(argv.save) { 
-        console.info(`Save mode enabled; data will be stored in /data`.yellow);
+    if (argv.save) {
         logic.dumpDataFiles();
     }
-    rimraf('./tmp', function() { console.log(`/tmp directory removed`)});
+    rimraf('./tmp', function () { console.log(`/tmp directory removed`) });
 
     server.close(() => {
         console.log('Closed out remaining connections');

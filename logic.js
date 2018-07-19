@@ -13,6 +13,7 @@ var debug_txn = require('debug')('testrpc:logic');
 // non-persistent states. Initializes whenever server starts
 var repo = {};
 var transactions = {};
+var addr_to_contracts = {};
 var map_Caddr_owner = {};
 
 function pad(number, length) {
@@ -33,9 +34,6 @@ Date.prototype.YYYYMMDDHHMMSS = function () {
 
     return yyyy + MM + dd + hh + mm + ss;
 };
-
-// stores a map of wallet address to contract addresses
-const addr_to_contracts = [];
 
 module.exports = {
 
@@ -69,6 +67,16 @@ module.exports = {
         };
         transactions[newTransactionID] = txnDetails;
 
+        // Update address_to_contracts DS
+        if(_sender in addr_to_contracts) { 
+            debug_txn('User has contracts. Appending to list');
+            addr_to_contracts[_sender].push(newContract_addr);
+        }   else {
+            debug_txn('Creating new entry.');
+            addr_to_contracts[_sender] = [newContract_addr];
+        }
+        debug_txn('Addr-to-Contracts: %O', addr_to_contracts);
+
         // return txnID to user
         return newTransactionID;
 
@@ -88,6 +96,7 @@ module.exports = {
         // save the state of transactions
         var data = {};
         data.transactions = transactions;
+        data.addr_to_contracts = addr_to_contracts;
         data.map_Caddr_owner = map_Caddr_owner;
         data.repo = repo;
         var d = new Date();
@@ -100,5 +109,35 @@ module.exports = {
         debug_txn(`TxnID: ${data[0]}`);
         var data = transactions[data[0]];
         return data;;
+    },
+
+
+    processGetSmartContractState: (data, saveMode) => {
+        debug_txn(`Getting SmartContract State`);
+        contract_addr = data[0];
+        if(contract_addr == null || !zilliqa_util.isAddress(contract_addr)) { 
+            console.log('Invalid request');
+        }
+        dir = (saveMode) ? 'data/' : 'tmp/';
+        var state_json = `${dir}${contract_addr.toLowerCase()}_state.json`;
+        if(!fs.existsSync(state_json)) {
+            console.log(`No state file found (Contract: ${contract_addr}`);
+            return {};
+        }
+        var retMsg = JSON.parse(fs.readFileSync(state_json, 'utf-8'));
+        console.log(retMsg);
+        return retMsg;
+
+    },
+
+    /*
+        getSmartContracts: Returns the list of smart contracts created by 
+        an account
+    */
+    processGetSmartContracts: (address) => {
+        // todo: check for well-formness of the payload data
+        let payload = data[0];
+        let _sender = zilliqa_util.getAddressFromPublicKey(payload.pubKey.toString('hex'));
+        debug_txn(`Sender: ${_sender}`);
     }
 }

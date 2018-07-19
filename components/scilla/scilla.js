@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const zilliqa_util = require('../../lib/util')
 const utilities = require('../../utilities');
+let colors = require('colors');
 
 // debug usage: DEBUG=scilla-txn node server.js
 var debug_txn = require('debug')('testrpc:scilla');
@@ -94,11 +95,7 @@ module.exports = {
         fs.writeFileSync(`${dir}${contractAddr}_state.json`, JSON.stringify(retMsg.states));
         debug_txn(`State logged down in ${contractAddr}_state.json`)
 
-        console.log(`Contract Address Deployed: ${contractAddr}`);
-
-    },
-
-    sendMessage: (payload, contractAddr, dir) => {
+        console.log(`Contract Address Deployed: `+  `${contractAddr}`.green);
 
     }
 }

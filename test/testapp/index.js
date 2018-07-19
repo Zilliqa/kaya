@@ -12,10 +12,15 @@ let zilliqa = new Zilliqa({
 console.log('Zilliqa Testing Script'.bold.cyan);
 // Parse Command-Line options
 
+if(argv.howtouse) { 
+    console.log(`Supported methods: deploy, createtxn, networkid,getcontracts, getstate`)
+    return;
+}
+
 let privateKey, address;
 
 // User supplies the private key through `--key`
-if(argv.key) {
+if (argv.key) {
     privateKey = argv.key;
     console.log(`Your Private Key: ${privateKey} \n`);
 } else {
@@ -26,7 +31,7 @@ if(argv.key) {
 
 address = zilliqa.util.getAddressFromPrivateKey(privateKey);
 
-if(argv.config) { 
+if (argv.config) {
     // Read all options from config file
     console.log('Reading wallet information from Config file.')
     privateKey = config.test_private_key;
@@ -46,9 +51,9 @@ function callback(err, data) {
 }
 
 /* Method handling: */
-if(argv.method) {
+if (argv.method) {
     console.log(`Method specified: ${argv.method}`);
-    switch(argv.method) { 
+    switch (argv.method) {
         case 'deploy':
             deployContract();
             break;
@@ -58,20 +63,48 @@ if(argv.method) {
         case 'networkid':
             getNetworkId();
             break;
+        case 'getsmartcontracts':
+            getSmartContracts();
+            break;
+        case 'getstate':
+            getState();
+            break;
         case 'gettxn':
             getTransaction();
             break;
         default:
             console.log('No matching methods found'.red);
     }
-}   else {
+} else {
     console.log('Error: No Method Specified'.red + 'You have to specify a method.');
     console.log('Supported Methods: `deploy`, `txn`, `networkid`? ');
 }
 
+function getState() { 
+    node.getSmartContractState({ address: '9bf47876ab5842de53f0de53bea82fa8d69fe107' }, function(err, data) {
+        if (err || (data.result && data.result.Error)) {
+            console.log(err)
+        } else {
+            console.log(data)
+        }
+    })
+}
+
+
+function getSmartContracts() {
+
+    node.getSmartContracts({ address: 'E8A67C0B1F19DF61A28E8E8FB5D830377045BCC7' }, function (err, data) {
+        if (err || data.error) {
+            console.log(err)
+        } else {
+            console.log(data.result)
+        }
+    })
+}
+
 // Simulates deployment behaviour
 function deployContract() {
-    
+
     var code = fs.readFileSync('code.scilla', 'utf-8');
     // the immutable initialisation variables
     let initParams = [
@@ -106,7 +139,7 @@ function deployContract() {
     node.createTransaction(txn, callback);
 }
 
-function sendTransaction() { 
+function sendTransaction() {
     // test function. Only works for single inputs
     contractAddr = argv.c_addr;
     method_specified = argv.c_method;
@@ -118,19 +151,17 @@ function sendTransaction() {
     msg = {
         "_tag": `${method_specified}`,
         "_amount": "0",
-        "_sender" : `0x${address}`,
+        "_sender": `0x${address}`,
         "params": [
-          {
-            "vname": "msg",
-            "type": "String",
-            "value": `${value}`
-          } 
-       ]
+            {
+                "vname": "msg",
+                "type": "String",
+                "value": `${value}`
+            }
+        ]
     };
-
-
-     // transaction details
-     let txnDetails = {
+    // transaction details
+    let txnDetails = {
         version: 0,
         nonce: 6,
         to: contractAddr,
@@ -147,11 +178,11 @@ function sendTransaction() {
     node.createTransaction(txn, callback);
 }
 
-function getTransaction() { 
-    var txnId; 
-    if(argv.tid) { 
+function getTransaction() {
+    var txnId;
+    if (argv.tid) {
         txnId = argv.tid;
-    } else { 
+    } else {
         throw new Error('TransactionID (--tid) must be provided')
     }
 
