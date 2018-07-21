@@ -40,8 +40,15 @@ app.post('/', (req, res) => {
             res.status(200).send(data);
             break;
         case 'GetSmartContractState':
-            var result = logic.processGetSmartContractState(body.params, isPersistence);
-            
+            var result;
+            try {
+                result = logic.processGetSmartContractState(body.params, isPersistence);
+            } catch (err) {
+                // todo: more granular error reporting.
+                var error = {};
+                error.Error = err.message;
+                res.status(200).send(error);
+            }
             res.status(200).send(result);
             break;
         case 'CreateTransaction':

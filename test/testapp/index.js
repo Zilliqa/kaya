@@ -81,7 +81,7 @@ if (argv.method) {
 }
 
 function getState() { 
-    node.getSmartContractState({ address: '9bf47876ab5842de53f0de53bea82fa8d69fe107' }, function(err, data) {
+    node.getSmartContractState({ address: 'dac620855671af9dd39fc62c4631d97280ccbf29' }, function(err, data) {
         if (err || (data.result && data.result.Error)) {
             console.log(err)
         } else {
@@ -93,7 +93,7 @@ function getState() {
 
 function getSmartContracts() {
 
-    node.getSmartContracts({ address: 'E8A67C0B1F19DF61A28E8E8FB5D830377045BCC7' }, function (err, data) {
+    node.getSmartContracts({ address: 'dac620855671af9dd39fc62c4631d97280ccbf29' }, function (err, data) {
         if (err || data.error) {
             console.log(err)
         } else {

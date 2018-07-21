@@ -117,12 +117,14 @@ module.exports = {
         contract_addr = data[0];
         if(contract_addr == null || !zilliqa_util.isAddress(contract_addr)) { 
             console.log('Invalid request');
+            throw new Error('Address size inappropriate');
         }
+
         dir = (saveMode) ? 'data/' : 'tmp/';
         var state_json = `${dir}${contract_addr.toLowerCase()}_state.json`;
         if(!fs.existsSync(state_json)) {
             console.log(`No state file found (Contract: ${contract_addr}`);
-            return {};
+            throw new Error('Address does not exist');
         }
         var retMsg = JSON.parse(fs.readFileSync(state_json, 'utf-8'));
         console.log(retMsg);
