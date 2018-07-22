@@ -12,7 +12,7 @@ var debug_txn = require('debug')('testrpc:logic');
 
 // non-persistent states. Initializes whenever server starts
 var repo = {};
-var transactions = {};
+var transactions = [];
 var addr_to_contracts = {};
 var map_Caddr_owner = {};
 
@@ -58,6 +58,7 @@ module.exports = {
         newTransactionID = crypto.randomBytes(32).toString('hex');
         debug_txn(`Transaction will be logged as ${newTransactionID}`);
         let txnDetails = {
+            ID: newTransactionID,
             version: payload.version,
             nonce: payload.nonce,
             to: payload.to,
@@ -65,7 +66,9 @@ module.exports = {
             amount: payload.amount,
             pubkey: payload.pubKey,
         };
-        transactions[newTransactionID] = txnDetails;
+
+        transactions.push(txnDetails);
+        //transactions[newTransactionID] = txnDetails;
 
         // Update address_to_contracts DS
         if(_sender in addr_to_contracts) { 

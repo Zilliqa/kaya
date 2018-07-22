@@ -12,13 +12,14 @@ app.use(bodyParser.json({ extended: false }));
 
 
 var isPersistence = false; // tmp is the default behavior
+var error = {};
 
 function makeResponse(id, jsonrpc, data) {
-    var data = {};
-    data['id'] = id;
-    data['jsonrpc'] = jsonrpc;
-    data['result'] = data;
-    return data;
+    var responseObj = {};
+    responseObj['id'] = id;
+    responseObj['jsonrpc'] = jsonrpc;
+    responseObj['result'] = data;
+    return responseObj;
 }
 
 app.post('/', (req, res) => {
@@ -28,15 +29,13 @@ app.post('/', (req, res) => {
         case 'GetBalance':
             console.log(`Getting balance for ${body.params}`);
             // todo: After wallet module is completed.
-            var data = { result: { balance: 0, nonce: 0 } };
+            data = { result: { balance: 0, nonce: 0 } };
             res.status(200).send(data);
             break;
         case 'GetNetworkId':
             //let networkid = logic.processGetNetworkID(body.params);
-            var data = {};
-            data['id'] = body.id;
-            data['jsonrpc'] = body.jsonrpc;
-            data['result'] = 'Testnet';
+            let data = {};
+            data = makeResponse(body.id, body.jsonrpc, 'Testnet');
             res.status(200).send(data);
             break;
         case 'GetSmartContractState':
@@ -44,8 +43,6 @@ app.post('/', (req, res) => {
             try {
                 result = logic.processGetSmartContractState(body.params, isPersistence);
             } catch (err) {
-                // todo: more granular error reporting.
-                var error = {};
                 error.Error = err.message;
                 res.status(200).send(error);
             }
@@ -53,12 +50,12 @@ app.post('/', (req, res) => {
             break;
         case 'CreateTransaction':
             let txn_id = logic.processCreateTxn(body.params, argv.save);
-            var data = { result: txn_id };
+            data = { result: txn_id };
             res.status(200).send(data);
             break;
         case 'GetTransaction':
             var obj = logic.processGetTransaction(body.params);
-            var data = { result: obj };
+            data = { result: obj };
             console.log(data);
             res.status(200).send(data);
             break;
