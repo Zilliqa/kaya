@@ -1,5 +1,6 @@
 // logic.js : Logic Script
 const crypto = require('crypto');
+const sha256 = require('bcrypto').sha256
 const fs = require('fs');
 const path = require('path');
 const zilliqa_util = require('./lib/util')
@@ -16,6 +17,8 @@ var transactions = {};
 var addr_to_contracts = {};
 var map_Caddr_owner = {};
 
+/* Utility functions */
+
 function pad(number, length) {
     var str = '' + number;
     while (str.length < length) {
@@ -23,6 +26,7 @@ function pad(number, length) {
     }
     return str;
 }
+
 
 Date.prototype.YYYYMMDDHHMMSS = function () {
     var yyyy = this.getFullYear().toString();
@@ -49,11 +53,17 @@ module.exports = {
         let _sender = zilliqa_util.getAddressFromPublicKey(payload.pubKey.toString('hex'));
         debug_txn(`Sender: ${_sender}`);
 
-        // todo: change to a proper address generation design
-        let newContract_addr = crypto.randomBytes(20).toString('hex');
-        debug_txn(`Contract will be deployed at: ${newContract_addr}`);
-        scillaCtrl.executeScillaRun(payload, newContract_addr, dir);
+        /* contract generation */
+        // take the sha256 has of address+nonce, then extract the rightmost 20 bytes
+        let nonceStr = zilliqa_util.intToByteArray(payload.nonce - 1, 64).join('');
+        let combinedStr = _sender + nonceStr;
+        let contractPubKey = sha256.digest(new Buffer(combinedStr, 'hex'));
+        const contractAddr = contractPubKey.toString('hex', 12)
+        console.log(contractAddr);
 
+        debug_txn(`Contract will be deployed at: ${contractAddr}`);
+
+        scillaCtrl.executeScillaRun(payload, contractAddr, dir);
         // After transaction is completed, assign transanctionID
         newTransactionID = crypto.randomBytes(32).toString('hex');
         debug_txn(`Transaction will be logged as ${newTransactionID}`);
@@ -73,10 +83,10 @@ module.exports = {
         // Update address_to_contracts DS
         if(_sender in addr_to_contracts) { 
             debug_txn('User has contracts. Appending to list');
-            addr_to_contracts[_sender].push(newContract_addr);
+            addr_to_contracts[_sender].push(contractAddr);
         }   else {
             debug_txn('Creating new entry.');
-            addr_to_contracts[_sender] = [newContract_addr];
+            addr_to_contracts[_sender] = [contractAddr];
         }
         debug_txn('Addr-to-Contracts: %O', addr_to_contracts);
 

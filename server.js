@@ -71,7 +71,7 @@ app.post('/', (req, res) => {
             }   catch (err) { 
                 data.Error = err.message;
             }
-            res.status(200).send(data);
+            res.status(200).send(makeResponse(body.id, body.jsonrpc, data));
             break;
         default:
             data = { "error": "Unsupported Method" };
