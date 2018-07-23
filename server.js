@@ -12,7 +12,7 @@ app.use(bodyParser.json({ extended: false }));
 
 
 var isPersistence = false; // tmp is the default behavior
-var error = {};
+
 
 function makeResponse(id, jsonrpc, data) {
     var responseObj = {};
@@ -24,6 +24,7 @@ function makeResponse(id, jsonrpc, data) {
 
 app.post('/', (req, res) => {
     let body = req.body;
+    let data = {};
     console.log(`Method specified: ${body.method}`);
     switch (body.method) {
         case 'GetBalance':
@@ -34,7 +35,7 @@ app.post('/', (req, res) => {
             break;
         case 'GetNetworkId':
             //let networkid = logic.processGetNetworkID(body.params);
-            let data = {};
+
             data = makeResponse(body.id, body.jsonrpc, 'Testnet');
             res.status(200).send(data);
             break;
@@ -42,11 +43,11 @@ app.post('/', (req, res) => {
             var result;
             try {
                 result = logic.processGetSmartContractState(body.params, isPersistence);
+                data.result = result;
             } catch (err) {
-                error.Error = err.message;
-                res.status(200).send(error);
+                data.Error = err.message;
             }
-            res.status(200).send(result);
+            res.status(200).send(data);
             break;
         case 'CreateTransaction':
             let txn_id = logic.processCreateTxn(body.params, argv.save);
@@ -54,9 +55,22 @@ app.post('/', (req, res) => {
             res.status(200).send(data);
             break;
         case 'GetTransaction':
-            var obj = logic.processGetTransaction(body.params);
-            data = { result: obj };
-            console.log(data);
+            try {
+                var obj = logic.processGetTransaction(body.params);
+                data.result = obj
+            }   catch (err) { 
+                data.Error = err.message;
+            }
+            res.status(200).send(data);
+            break;
+        case 'GetRecentTransactions':
+            var obj = {};
+            try {
+                obj = logic.processGetRecentTransactions(body.params);
+                data.result = obj;
+            }   catch (err) { 
+                data.Error = err.message;
+            }
             res.status(200).send(data);
             break;
         default:

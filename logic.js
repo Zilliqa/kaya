@@ -12,7 +12,7 @@ var debug_txn = require('debug')('testrpc:logic');
 
 // non-persistent states. Initializes whenever server starts
 var repo = {};
-var transactions = [];
+var transactions = {};
 var addr_to_contracts = {};
 var map_Caddr_owner = {};
 
@@ -67,8 +67,8 @@ module.exports = {
             pubkey: payload.pubKey,
         };
 
-        transactions.push(txnDetails);
-        //transactions[newTransactionID] = txnDetails;
+        //transactions.push(txnDetails);
+        transactions[newTransactionID] = txnDetails;
 
         // Update address_to_contracts DS
         if(_sender in addr_to_contracts) { 
@@ -111,7 +111,19 @@ module.exports = {
     processGetTransaction: (data) => {
         debug_txn(`TxnID: ${data[0]}`);
         var data = transactions[data[0]];
-        return data;;
+        if(data) {
+            return data;
+        }
+        throw new Error('Txn Hash not Present.');
+    },
+
+    processGetRecentTransactions: (data) => { 
+        console.log(`Getting Recent Transactions`);
+        var txnhashes = Object.keys(transactions);
+        var responseObj = {};
+        responseObj.TxnHashes = txnhashes.reverse();
+        responseObj.number = txnhashes.length;
+        return responseObj;
     },
 
 
