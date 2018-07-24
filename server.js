@@ -14,11 +14,16 @@ app.use(bodyParser.json({ extended: false }));
 var isPersistence = false; // tmp is the default behavior
 
 
-function makeResponse(id, jsonrpc, data) {
+function makeResponse(id, jsonrpc, data, isErr) {
     var responseObj = {};
     responseObj['id'] = id;
     responseObj['jsonrpc'] = jsonrpc;
-    responseObj['result'] = data;
+    if(isErr) {
+        responseObj['Error'] = data;
+    } else {
+        responseObj['result'] = data;
+    }
+    
     return responseObj;
 }
 
@@ -36,18 +41,31 @@ app.post('/', (req, res) => {
         case 'GetNetworkId':
             //let networkid = logic.processGetNetworkID(body.params);
 
-            data = makeResponse(body.id, body.jsonrpc, 'Testnet');
+            data = makeResponse(body.id, body.jsonrpc, 'Testnet', false);
             res.status(200).send(data);
             break;
         case 'GetSmartContractState':
             var result;
             try {
                 result = logic.processGetSmartContractState(body.params, isPersistence);
-                data.result = result;
+                data = result;
             } catch (err) {
-                data.Error = err.message;
+                data = err.message;
+                res.status(200).send(makeResponse(body.id, body.jsonrpc, data,true));
+                break;
             }
-            res.status(200).send(data);
+            res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
+            break;
+        case 'GetSmartContracts':
+            try {
+                result = logic.processGetSmartContracts(body.params, argv.save);
+                data = result;
+            } catch(err) {       
+                data = err.message;
+                res.status(200).send(makeResponse(body.id, body.jsonrpc, data,true));
+                break;
+            }
+            res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
             break;
         case 'CreateTransaction':
             let txn_id = logic.processCreateTxn(body.params, argv.save);
@@ -57,21 +75,25 @@ app.post('/', (req, res) => {
         case 'GetTransaction':
             try {
                 var obj = logic.processGetTransaction(body.params);
-                data.result = obj
+                data = obj
             }   catch (err) { 
-                data.Error = err.message;
+                data = err.message;
+                res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+                break;
             }
-            res.status(200).send(data);
+            res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
             break;
         case 'GetRecentTransactions':
             var obj = {};
             try {
                 obj = logic.processGetRecentTransactions(body.params);
-                data.result = obj;
+                data = obj;
             }   catch (err) { 
-                data.Error = err.message;
+                data = err.message;
+                res.status(200).send(makeResponse(body.id, body.jsonrpc, data,true));
+                break;
             }
-            res.status(200).send(makeResponse(body.id, body.jsonrpc, data));
+            res.status(200).send(makeResponse(body.id, body.jsonrpc, data,false));
             break;
         default:
             data = { "error": "Unsupported Method" };

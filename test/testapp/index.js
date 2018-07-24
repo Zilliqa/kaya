@@ -123,7 +123,7 @@ function deployContract() {
     // transaction details
     let txnDetails = {
         version: 0,
-        nonce: 6,
+        nonce: 0,
         to: '0000000000000000000000000000000000000000',
         amount: 0,
         gasPrice: 1,
@@ -163,7 +163,7 @@ function sendTransaction() {
     // transaction details
     let txnDetails = {
         version: 0,
-        nonce: 6,
+        nonce: 1,
         to: contractAddr,
         amount: 0,
         gasPrice: 1,

@@ -81,10 +81,10 @@ module.exports = {
         transactions[newTransactionID] = txnDetails;
 
         // Update address_to_contracts DS
-        if(_sender in addr_to_contracts) { 
+        if (_sender in addr_to_contracts) {
             debug_txn('User has contracts. Appending to list');
             addr_to_contracts[_sender].push(contractAddr);
-        }   else {
+        } else {
             debug_txn('Creating new entry.');
             addr_to_contracts[_sender] = [contractAddr];
         }
@@ -121,13 +121,13 @@ module.exports = {
     processGetTransaction: (data) => {
         debug_txn(`TxnID: ${data[0]}`);
         var data = transactions[data[0]];
-        if(data) {
+        if (data) {
             return data;
         }
         throw new Error('Txn Hash not Present.');
     },
 
-    processGetRecentTransactions: (data) => { 
+    processGetRecentTransactions: (data) => {
         console.log(`Getting Recent Transactions`);
         var txnhashes = Object.keys(transactions);
         var responseObj = {};
@@ -140,14 +140,14 @@ module.exports = {
     processGetSmartContractState: (data, saveMode) => {
         debug_txn(`Getting SmartContract State`);
         contract_addr = data[0];
-        if(contract_addr == null || !zilliqa_util.isAddress(contract_addr)) { 
+        if (contract_addr == null || !zilliqa_util.isAddress(contract_addr)) {
             console.log('Invalid request');
             throw new Error('Address size inappropriate');
         }
 
         dir = (saveMode) ? 'data/' : 'tmp/';
         var state_json = `${dir}${contract_addr.toLowerCase()}_state.json`;
-        if(!fs.existsSync(state_json)) {
+        if (!fs.existsSync(state_json)) {
             console.log(`No state file found (Contract: ${contract_addr}`);
             throw new Error('Address does not exist');
         }
@@ -161,10 +161,39 @@ module.exports = {
         getSmartContracts: Returns the list of smart contracts created by 
         an account
     */
-    processGetSmartContracts: (address) => {
+    processGetSmartContracts: (data, saveMode) => {
         // todo: check for well-formness of the payload data
-        let payload = data[0];
-        let _sender = zilliqa_util.getAddressFromPublicKey(payload.pubKey.toString('hex'));
-        debug_txn(`Sender: ${_sender}`);
+
+
+        let addr = data[0];
+        console.log(`Getting smart contracts created by ${addr}`);
+        if (addr == null || !zilliqa_util.isAddress(addr)) {
+            console.log('Invalid request');
+            throw new Error('Address size inappropriate');
+        }
+
+        var stateLists = [];
+        if (!addr_to_contracts[addr]) {
+            throw new Error('Address not found');
+        }
+        // Addr found - proceed to append state to return list
+        dir = (saveMode) ? 'data/' : 'tmp/';
+        contracts = addr_to_contracts[addr];
+        for (var i in contracts) {
+            contractID = contracts[i];
+
+            var state_json = `${dir}${contractID.toLowerCase()}_state.json`;
+            if (!fs.existsSync(state_json)) {
+                console.log(`No state file found (Contract: ${contractID}`);
+                throw new Error('Address does not exist');
+            }
+            var retMsg = JSON.parse(fs.readFileSync(state_json, 'utf-8'));
+            var data = {};
+            data.address = contractID;
+            data.state = retMsg;
+            stateLists.push(data);
+        }
+
+        return stateLists;
     }
 }
