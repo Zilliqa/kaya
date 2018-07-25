@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const port = 4200;
 const app = express();
 const logic = require('./logic');
+const wallet = require('./components/wallet/wallet');
 const fs = require('fs');
 const fsp = require('node-fs');
 let argv = require('yargs').argv;
@@ -135,6 +136,9 @@ const server = app.listen(port, (err) => {
             }
         });
     }
+
+    /* Create new wallets */
+    wallet.bootstrap();
 
     console.log(`Server listening on port ${port}`)
 })
