@@ -8,6 +8,7 @@
 // warranties are given as to title or non-infringement, merchantability or fitness for purpose 
 // and, to the extent permitted by law, all liability for your use of the code is disclaimed. 
 
+var crypto = require('crypto');
 var secp256k1 = require('bcrypto').secp256k1
 var sha256 = require('bcrypto').sha256
 var isWebUri = require('valid-url').isWebUri
@@ -18,7 +19,8 @@ module.exports = {
 // generate a new private key using the secp256k1 curve
 // returns a Buffer object, 
 generatePrivateKey: function () {
-	return secp256k1.generatePrivateKey()
+	//return secp256k1.generatePrivateKey()
+	return crypto.randomBytes(32);
 },
 
 // verify if the private key is valid for the secp256k1 curve

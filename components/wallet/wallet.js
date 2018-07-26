@@ -17,6 +17,14 @@ const table = new Table({
 // Wallet will store three things - address, private key and balance
 wallets = [];
 
+function printWallet() {
+    if(wallets.length == 0) { 
+        console.log('No wallets generated.');
+    } else {
+        console.log(table.toString());
+    }
+}
+
 function createNewWallet() {
     let pk = zilliqa_util.generatePrivateKey();
     let address = zilliqa_util.getAddressFromPrivateKey(pk);
@@ -31,6 +39,8 @@ function createNewWallet() {
     return newWallet;
 }
 
+
+
 module.exports = {
 
     bootstrap: () => { 
@@ -39,7 +49,7 @@ module.exports = {
             wallets.push(newWallet);
             table.push([newWallet.address, newWallet.amount, newWallet.privateKey]);
         }
-        console.log(table.toString());
+        printWallet();
     }
 
 }
