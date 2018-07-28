@@ -1,12 +1,12 @@
-let { Zilliqa } = require('zilliqa.js');
-let config = require('./config')
-let url = config.test_scilla_explorer ? config.url_remotehost : config.url_localhost;
+let { Zilliqa } = require('zilliqa-js');
+//let config = require('./config')
+//let url = config.test_scilla_explorer ? config.url_remotehost : config.url_localhost;
 let fs = require('fs');
 let argv = require('yargs').argv;
 let colors = require('colors');
-
+let url = 'http://localhost:4200'
 let zilliqa = new Zilliqa({
-    nodeUrl: url
+    nodeUrl: 'http://localhost:4200'
 })
 
 let privateKey, address;
@@ -23,13 +23,14 @@ if (argv.key) {
 
 address = zilliqa.util.getAddressFromPrivateKey(privateKey);
 
+/*
 if (argv.config) {
     // Read all options from config file
     console.log('Reading wallet information from Config file.')
     privateKey = config.test_private_key;
     address = config.test_address;
 }
-
+*/
 
 let node = zilliqa.getNode();
 console.log(`Address: ${address}`);

@@ -6,6 +6,7 @@ const path = require('path');
 const zilliqa_util = require('./lib/util')
 const utilities = require('./utilities');
 const scillaCtrl = require('./components/scilla/scilla');
+const walletCtrl = require('./components/wallet/wallet')
 
 // debug usage: DEBUG=scilla-txn node server.js
 var debug_txn = require('debug')('testrpc:logic');
@@ -79,6 +80,10 @@ module.exports = {
 
         //transactions.push(txnDetails);
         transactions[newTransactionID] = txnDetails;
+
+        //deduct funds
+        walletCtrl.deductFunds(_sender, 10);
+        
 
         // Update address_to_contracts DS
         if (_sender in addr_to_contracts) {

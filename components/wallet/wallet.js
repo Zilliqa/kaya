@@ -50,6 +50,13 @@ module.exports = {
             table.push([newWallet.address, newWallet.amount, newWallet.privateKey]);
         }
         printWallet();
+    },
+
+    deductFunds: (address, amount) => {
+        debug_wallet(`Deducting ${amount} from ${address}`);
+        debug_wallet(wallets);
+
+
     }
 
 }
