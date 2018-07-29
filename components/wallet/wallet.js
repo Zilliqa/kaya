@@ -1,7 +1,6 @@
-
-
 /* Wallet Component */
 const crypto = require('crypto');
+const assert = require('assert');
 const zilliqa_util = require('../../lib/util')
 let colors = require('colors');
 var debug_wallet = require('debug')('testrpc:wallet');
@@ -49,7 +48,6 @@ function createNewWallet() {
 
 
 module.exports = {
-
     bootstrap: () => { 
         for(var i=0; i < 10; i++){
             createNewWallet();
@@ -57,9 +55,36 @@ module.exports = {
         printWallet();
     },
 
+    sufficientFunds: (address, amount) => {
+        // checking if an address has sufficient funds for deduction
+        userBalance = module.exports.getBalance(address);
+        debug_wallet(`Checking if ${address} has ${amount}`)
+        if(userBalance.balance < amount) {
+            debug_wallet(`Insufficient funds.`);
+            return false;
+        } else {
+            debug_wallet(`Sufficient Funds.`)
+            return true;
+        }
+    },
+
     deductFunds: (address, amount) => {
         debug_wallet(`Deducting ${amount} from ${address}`);
-        debug_wallet(wallets);
+        console.log(module.exports.getBalance(address));
+        
+        assert(module.exports.sufficientFunds(address, amount));
+
+        // deduct funds
+        let currentBalance = wallets[address].amount;
+        debug_wallet(`Current Balance: ${currentBalance}`);
+        currentBalance = currentBalance - amount;
+        if(currentBalance < 0) { 
+            throw new Error('Unexpected error, funds went below 0');
+        }
+        wallets[address].amount = currentBalance;
+        debug_wallet(`Deduct funds complete. New Balance: ${wallets[address].amount}`)
+
+
     },
 
     getBalance: (address) => { 
@@ -73,4 +98,6 @@ module.exports = {
                 nonce: wallets[address].nonce}
         }
     }
+
+
 }

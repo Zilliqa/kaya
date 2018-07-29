@@ -1,5 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const debug_server = require('debug')('testrpc:server');
+
 const port = 4200;
 const app = express();
 const logic = require('./logic');
@@ -68,15 +70,21 @@ app.post('/', (req, res) => {
                 data = result;
             } catch(err) {       
                 data = err.message;
-                res.status(200).send(makeResponse(body.id, body.jsonrpc, data,true));
+                res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
                 break;
             }
             res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
             break;
         case 'CreateTransaction':
-            let txn_id = logic.processCreateTxn(body.params, argv.save);
-            data = { result: txn_id };
-            res.status(200).send(data);
+            try {
+                let txn_id = logic.processCreateTxn(body.params, argv.save);
+                data = { result: txn_id };
+            }   catch (err) {
+                data = err.message;
+                res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+                break;
+            }
+            res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
             break;
         case 'GetTransaction':
             try {
@@ -137,7 +145,7 @@ const server = app.listen(port, (err) => {
             if (err) {
                 console.log(err);
             } else {
-                console.log('Directory created');
+                debug_server('Directory created');
             }
         });
     }
@@ -162,10 +170,10 @@ function shutDown() {
     if (argv.save) {
         logic.dumpDataFiles();
     }
-    rimraf('./tmp', function () { console.log(`/tmp directory removed`) });
+    rimraf('./tmp', function () { debug_server(`/tmp directory removed`) });
 
     server.close(() => {
-        console.log('Closed out remaining connections');
+        debug_server('Closed out remaining connections');
         process.exit(0);
     });
 
@@ -175,6 +183,6 @@ function shutDown() {
     }, 10000);
 
     connections.forEach(curr => curr.end());
-    // Handles Chrome's stubborness to shutdown. Sends destroy commands instead
+    // For Chrome: Sends destroy commands instead
     setTimeout(() => connections.forEach(curr => curr.destroy()), 5000);
 }
