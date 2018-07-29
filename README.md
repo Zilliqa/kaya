@@ -3,17 +3,30 @@
 zil-testrpc is a personal blockchain which makes developing application easier, faster and safer.
 It simulates the Zilliqa's blockchain behavior, and follows the expected server behavior as seen in the [Zil-JSAPI](https://github.com/Zilliqa/Zilliqa-JavaScript-Library)
 
-The goal of the project is to support all endpoints in Zilliqa Javascript API. Currently, TestRPC supports the following functions:
+The goal of the project is to support all endpoints in Zilliqa Javascript API. 
+
+Currently, TestRPC supports the following functions:
 * `CreateTransaction`
 * `GetTransaction`
 * `GetRecentTransactions`
 * `GetNetworkID`
 * `GetSmartContractState`
 * `GetSmartContracts`
+* `GetBalance`
 
+Functions that are NOT supported:
+* `getDsBlock`
+* `getTxBlock`
+* `getLatestDsBlock`
+* `getLatestTxBlock`
+* `getSmartContractInit`
+* `getSmartContractCode`
+
+In addition, multi-contract calls are not supported yet.
 
 ## Installation
-Run `npm install`, then `npm start`.
+Run `npm install`, then `node server.js`.
+Debug mode: `DEBUG=testrpc* node server.js`.
 
 ## Server Usage
 
