@@ -65,22 +65,23 @@ module.exports = {
       !walletCtrl.sufficientFunds(_sender, payload.amount + payload.gasLimit)
     ) {
       debug_txn(
-        `User does not have sufficient funds. Returning error to client.`
+        `Insufficient funds. Returning error to client.`
       );
       throw new Error("Insufficient funds");
     }
 
     debug_txn(`Contract will be deployed at: ${contractAddr}`);
 
-    scillaCtrl.executeScillaRun(payload, contractAddr, dir);
+    nextAddr = scillaCtrl.executeScillaRun(payload, contractAddr, dir);
     //deduct funds
     walletCtrl.deductFunds(_sender, 10);
     walletCtrl.increaseNonce(_sender);
 
-
-    // @dev: check for multi-contract behavior
-
-
+    if(nextAddr.substring(2) != _sender) { 
+        console.log(`Contract is calling another address. This is not supported yet.`);
+        //throw new Error(`Multi-contract calls are not supported yet.`)
+    }
+    
     // After transaction is completed, assign transanctionID
     newTransactionID = crypto.randomBytes(32).toString("hex");
     debug_txn(`Transaction will be logged as ${newTransactionID}`);

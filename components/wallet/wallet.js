@@ -44,7 +44,6 @@ module.exports = {
                 console.log(`(${i}) ${addr} (Amt: ${wallets[addr].amount}) (Nonce: ${wallets[addr].nonce})`);
                 keys.push(wallets[addr].privateKey);
             }
-    
             console.log('\n Private Keys ');
             console.log('=============================');
             for(let i = 0; i < 10; i++) { 
@@ -67,11 +66,8 @@ module.exports = {
     },
 
     deductFunds: (address, amount) => {
-        debug_wallet(`Deducting ${amount} from ${address}`);
-        console.log(module.exports.getBalance(address));
-        
+        debug_wallet(`Deducting ${amount} from ${address}`);        
         assert(module.exports.sufficientFunds(address, amount));
-
         // deduct funds
         let currentBalance = wallets[address].amount;
         debug_wallet(`Current Balance: ${currentBalance}`);

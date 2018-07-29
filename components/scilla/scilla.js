@@ -96,6 +96,8 @@ module.exports = {
         debug_txn(`State logged down in ${contractAddr}_state.json`)
 
         console.log(`Contract Address Deployed: `+  `${contractAddr}`.green);
-
+        debug_txn(`Next address: ${(retMsg.message._recipient)}`);
+        return retMsg.message._recipient;
+        
     }
 }
