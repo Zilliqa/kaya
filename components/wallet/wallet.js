@@ -11,27 +11,6 @@ var debug_wallet = require('debug')('testrpc:wallet');
 // Wallet will store three things - address, private key and balance
 wallets = {};
 
-function printWallet() {
-    if(wallets.length == 0) { 
-        console.log('No wallets generated.');
-    } else {
-        console.log('Available Accounts');
-        console.log('=============================');
-        keys = [];
-        for(let i = 0; i<10; i++) {
-            var addr = Object.keys(wallets)[i];
-            console.log(`(${i}) ${addr} (Amt: ${wallets[addr].amount}) (Nonce: ${wallets[addr].nonce})`);
-            keys.push(wallets[addr].privateKey);
-        }
-
-        console.log('\n Private Keys ');
-        console.log('=============================');
-        for(let i = 0; i < 10; i++) { 
-            console.log(`(${i}) ${keys[i]}`);
-        }
-    }
-}
-
 function createNewWallet() {
     let pk = zilliqa_util.generatePrivateKey();
     let address = zilliqa_util.getAddressFromPrivateKey(pk);
@@ -48,11 +27,32 @@ function createNewWallet() {
 
 
 module.exports = {
-    bootstrap: () => { 
-        for(var i=0; i < 10; i++){
+    createWallets: (n) => { 
+        assert(n > 0);
+        for(var i=0; i < n; i++){
             createNewWallet();
         }
-        printWallet();
+    },
+
+    printWallet: () => {
+        if(wallets.length == 0) { 
+            console.log('No wallets generated.');
+        } else {
+            console.log('Available Accounts');
+            console.log('=============================');
+            keys = [];
+            for(let i = 0; i<10; i++) {
+                var addr = Object.keys(wallets)[i];
+                console.log(`(${i}) ${addr} (Amt: ${wallets[addr].amount}) (Nonce: ${wallets[addr].nonce})`);
+                keys.push(wallets[addr].privateKey);
+            }
+    
+            console.log('\n Private Keys ');
+            console.log('=============================');
+            for(let i = 0; i < 10; i++) { 
+                console.log(`(${i}) ${keys[i]}`);
+            }
+        }
     },
 
     sufficientFunds: (address, amount) => {

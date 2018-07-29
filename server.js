@@ -15,8 +15,6 @@ app.use(bodyParser.json({ extended: false }));
 
 
 var isPersistence = false; // tmp is the default behavior
-
-
 function makeResponse(id, jsonrpc, data, isErr) {
     var responseObj = {};
     responseObj['id'] = id;
@@ -26,7 +24,6 @@ function makeResponse(id, jsonrpc, data, isErr) {
     } else {
         responseObj['result'] = data;
     }
-    
     return responseObj;
 }
 
@@ -47,8 +44,6 @@ app.post('/', (req, res) => {
             res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
             break;
         case 'GetNetworkId':
-            //let networkid = logic.processGetNetworkID(body.params);
-
             data = makeResponse(body.id, body.jsonrpc, 'Testnet', false);
             res.status(200).send(data);
             break;
@@ -150,8 +145,9 @@ const server = app.listen(port, (err) => {
         });
     }
 
-    /* Create new wallets */
-    wallet.bootstrap();
+    /* Create Dummy Accounts */
+    wallet.createWallets(10); // create 10 wallets by default
+    wallet.printWallet();
 
     console.log(`\nServer listening on 127.0.0.1:${port}`.yellow)
 })
