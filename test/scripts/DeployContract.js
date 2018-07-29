@@ -1,6 +1,4 @@
 let { Zilliqa } = require('zilliqa-js');
-//let config = require('./config')
-//let url = config.test_scilla_explorer ? config.url_remotehost : config.url_localhost;
 let fs = require('fs');
 let argv = require('yargs').argv;
 let colors = require('colors');
@@ -70,7 +68,7 @@ let initParams = [
 // transaction details
 let txnDetails = {
     version: 0,
-    nonce: 7,
+    nonce: 8,
     to: '0000000000000000000000000000000000000000',
     amount: 0,
     gasPrice: 1,

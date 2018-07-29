@@ -52,36 +52,55 @@ module.exports = {
       payload.pubKey.toString("hex")
     );
     debug_txn(`Sender: ${_sender}`);
+    userNonce = walletCtrl.getBalance(_sender).nonce;
 
-    /* contract generation */
-    // take the sha256 has of address+nonce, then extract the rightmost 20 bytes
-    let nonceStr = zilliqa_util.intToByteArray(payload.nonce - 1, 64).join("");
-    let combinedStr = _sender + nonceStr;
-    let contractPubKey = sha256.digest(new Buffer(combinedStr, "hex"));
-    const contractAddr = contractPubKey.toString("hex", 12);
+    // check if the payload.nonce is valid
+    if (payload.nonce == userNonce + 1) {
+        /* contract generation */
+        // take the sha256 has of address+nonce, then extract the rightmost 20 bytes
+        let nonceStr = zilliqa_util
+            .intToByteArray(payload.nonce - 1, 64)
+            .join("");
+        let combinedStr = _sender + nonceStr;
+        let contractPubKey = sha256.digest(new Buffer(combinedStr, "hex"));
+        const contractAddr = contractPubKey.toString("hex", 12);
 
-    // @dev: currently, the gas cost is the gaslimit. This WILL change in the future
-    if (
-      !walletCtrl.sufficientFunds(_sender, payload.amount + payload.gasLimit)
-    ) {
-      debug_txn(
-        `Insufficient funds. Returning error to client.`
-      );
-      throw new Error("Insufficient funds");
+        // @dev: currently, the gas cost is the gaslimit. This WILL change in the future
+        if (
+            !walletCtrl.sufficientFunds(_sender, payload.amount + payload.gasLimit)
+        ) {
+            debug_txn(`Insufficient funds. Returning error to client.`);
+            throw new Error("Insufficient funds");
+        }
+        debug_txn(`Contract will be deployed at: ${contractAddr}`);
+
+        nextAddr = scillaCtrl.executeScillaRun(payload, contractAddr, dir);
+        //deduct funds
+        walletCtrl.deductFunds(_sender, payload.amount + payload.gasLimit);
+        walletCtrl.increaseNonce(_sender); // only increase if a contract is successful
+
+        if (nextAddr.substring(2) != _sender) {
+            console.log(
+            `Contract is calling another address. This is not supported yet.`
+            );
+            //throw new Error(`Multi-contract calls are not supported yet.`)
+        }
+
+        // Update address_to_contracts DS
+        if (_sender in addr_to_contracts) {
+            debug_txn("User has contracts. Appending to list");
+            addr_to_contracts[_sender].push(contractAddr);
+        } else {
+            debug_txn("User do not have existing contracts. Creating new entry.");
+            addr_to_contracts[_sender] = [contractAddr];
+        }
+        debug_txn("Addr-to-Contracts: %O", addr_to_contracts);
+    } else {
+        // payload.nonce is not valid. Deduct gas anyway
+        walletCtrl.deductFunds(_sender, payload.amount + payload.gasLimit);
+        debug_txn("Invalid Nonce");
     }
 
-    debug_txn(`Contract will be deployed at: ${contractAddr}`);
-
-    nextAddr = scillaCtrl.executeScillaRun(payload, contractAddr, dir);
-    //deduct funds
-    walletCtrl.deductFunds(_sender, 10);
-    walletCtrl.increaseNonce(_sender);
-
-    if(nextAddr.substring(2) != _sender) { 
-        console.log(`Contract is calling another address. This is not supported yet.`);
-        //throw new Error(`Multi-contract calls are not supported yet.`)
-    }
-    
     // After transaction is completed, assign transanctionID
     newTransactionID = crypto.randomBytes(32).toString("hex");
     debug_txn(`Transaction will be logged as ${newTransactionID}`);
@@ -95,17 +114,6 @@ module.exports = {
       pubkey: payload.pubKey
     };
     transactions[newTransactionID] = txnDetails;
-
-    
-    // Update address_to_contracts DS
-    if (_sender in addr_to_contracts) {
-      debug_txn("User has contracts. Appending to list");
-      addr_to_contracts[_sender].push(contractAddr);
-    } else {
-      debug_txn("Creating new entry.");
-      addr_to_contracts[_sender] = [contractAddr];
-    }
-    debug_txn("Addr-to-Contracts: %O", addr_to_contracts);
 
     // return txnID to user
     return newTransactionID;
@@ -172,9 +180,9 @@ module.exports = {
   },
 
   /*
-        getSmartContracts: Returns the list of smart contracts created by 
-        an account
-    */
+getSmartContracts: Returns the list of smart contracts created by 
+an account
+*/
   processGetSmartContracts: (data, saveMode) => {
     // todo: check for well-formness of the payload data
 
