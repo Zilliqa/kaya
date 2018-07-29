@@ -109,7 +109,8 @@ process.on('SIGTERM', shutDown);
 process.on('SIGINT', shutDown);
 
 const server = app.listen(port, (err) => {
-    console.log(`Zilliqa TestRPC Server`);
+    console.log(`Zilliqa TestRPC Server`.cyan);
+    console.log('\n');
 
     if (argv.save) {
         console.log('Save mode enabled');

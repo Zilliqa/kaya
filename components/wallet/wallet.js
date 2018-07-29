@@ -5,23 +5,31 @@ const crypto = require('crypto');
 const zilliqa_util = require('../../lib/util')
 let colors = require('colors');
 var debug_wallet = require('debug')('testrpc:wallet');
-const Table = require('cli-table');
-const table = new Table({
-    head: ['Address', 'Amount', 'PrivateKey']
-  , colWidths: [70, 20, 80]
-});
 
 
 //@dev: As this is a testrpc, private keys will be stored
 
 // Wallet will store three things - address, private key and balance
-wallets = [];
+wallets = {};
 
 function printWallet() {
     if(wallets.length == 0) { 
         console.log('No wallets generated.');
     } else {
-        console.log(table.toString());
+        console.log('Available Accounts');
+        console.log('=============================');
+        keys = [];
+        for(let i = 0; i<10; i++) {
+            var addr = Object.keys(wallets)[i];
+            console.log(`(${i}) ${addr} (Amt: ${wallets[addr].amount})`);
+            keys.push(wallets[addr].privateKey);
+        }
+
+        console.log('\n Private Keys ');
+        console.log('=============================');
+        for(let i = 0; i < 10; i++) { 
+            console.log(`(${i}) ${keys[i]}`);
+        }
     }
 }
 
@@ -31,12 +39,10 @@ function createNewWallet() {
     let privKey_string = pk.toString('hex');
     let amt = 100000;
     newWallet = {
-        address: address,
         privateKey: privKey_string,
         amount: amt
     };
-    
-    return newWallet;
+    wallets[address] = newWallet;
 }
 
 
@@ -45,9 +51,7 @@ module.exports = {
 
     bootstrap: () => { 
         for(var i=0; i < 10; i++){
-            var newWallet = createNewWallet();
-            wallets.push(newWallet);
-            table.push([newWallet.address, newWallet.amount, newWallet.privateKey]);
+            createNewWallet();
         }
         printWallet();
     },
@@ -55,8 +59,5 @@ module.exports = {
     deductFunds: (address, amount) => {
         debug_wallet(`Deducting ${amount} from ${address}`);
         debug_wallet(wallets);
-
-
     }
-
 }
