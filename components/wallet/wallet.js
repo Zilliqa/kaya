@@ -24,8 +24,6 @@ function createNewWallet() {
     wallets[address] = newWallet;
 }
 
-
-
 module.exports = {
     createWallets: (n) => { 
         assert(n > 0);
@@ -83,8 +81,21 @@ module.exports = {
         }
         wallets[address].amount = currentBalance;
         debug_wallet(`Deduct funds complete. New Balance: ${wallets[address].amount}`)
+    },
 
-
+    increaseNonce: (address) => { 
+        debug_wallet(`Increasing nonce for ${address}`)
+        if(!zilliqa_util.isAddress(address)) { 
+            throw new Error('Address size not appropriate')
+        }
+        if(!wallets[address]) { 
+            // on zilliqa, default balance and nonce is 0
+            // however, since im only storing wallets that have been created, i will throw error instead of increasing dummy nonce.
+            throw new Error('Address not found');
+        } else {
+            wallets[address].nonce = wallets[address].nonce + 1;
+            debug_wallet(`New nonce for ${address} : ${wallets[address].nonce}`)
+        }
     },
 
     getBalance: (address) => { 

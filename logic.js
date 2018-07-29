@@ -75,6 +75,9 @@ module.exports = {
     scillaCtrl.executeScillaRun(payload, contractAddr, dir);
     //deduct funds
     walletCtrl.deductFunds(_sender, 10);
+    walletCtrl.increaseNonce(_sender);
+
+
     // @dev: check for multi-contract behavior
 
 
