@@ -35,9 +35,14 @@ app.post('/', (req, res) => {
     switch (body.method) {
         case 'GetBalance':
             console.log(`Getting balance for ${body.params}`);
-            // todo: After wallet module is completed.
-            data = { result: { balance: 0, nonce: 0 } };
-            res.status(200).send(data);
+            try {
+                data = wallet.getBalance(body.params);
+            } catch (err) {
+                data = err.message;
+                res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+                break;
+            }
+            res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
             break;
         case 'GetNetworkId':
             //let networkid = logic.processGetNetworkID(body.params);
@@ -109,8 +114,7 @@ process.on('SIGTERM', shutDown);
 process.on('SIGINT', shutDown);
 
 const server = app.listen(port, (err) => {
-    console.log(`Zilliqa TestRPC Server`.cyan);
-    console.log('\n');
+    console.log(`Zilliqa TestRPC Server (ver: 0.0.1)\n`.cyan);
 
     if (argv.save) {
         console.log('Save mode enabled');
@@ -141,7 +145,7 @@ const server = app.listen(port, (err) => {
     /* Create new wallets */
     wallet.bootstrap();
 
-    console.log(`Server listening on port ${port}`)
+    console.log(`\nServer listening on 127.0.0.1:${port}`.yellow)
 })
 
 // Listener for connections opening on the server

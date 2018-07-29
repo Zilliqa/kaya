@@ -21,7 +21,7 @@ function printWallet() {
         keys = [];
         for(let i = 0; i<10; i++) {
             var addr = Object.keys(wallets)[i];
-            console.log(`(${i}) ${addr} (Amt: ${wallets[addr].amount})`);
+            console.log(`(${i}) ${addr} (Amt: ${wallets[addr].amount}) (Nonce: ${wallets[addr].nonce})`);
             keys.push(wallets[addr].privateKey);
         }
 
@@ -40,7 +40,8 @@ function createNewWallet() {
     let amt = 100000;
     newWallet = {
         privateKey: privKey_string,
-        amount: amt
+        amount: amt,
+        nonce: 0
     };
     wallets[address] = newWallet;
 }
@@ -59,5 +60,17 @@ module.exports = {
     deductFunds: (address, amount) => {
         debug_wallet(`Deducting ${amount} from ${address}`);
         debug_wallet(wallets);
+    },
+
+    getBalance: (address) => { 
+        if(!zilliqa_util.isAddress(address)) { 
+            throw new Error('Address size not appropriate')
+        }
+        if(!wallets[address]) { 
+            return {balance: 0, nonce: 0};
+        } else {
+            return {balance: wallets[address].amount,
+                nonce: wallets[address].nonce}
+        }
     }
 }
