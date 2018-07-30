@@ -1,7 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const debug_server = require('debug')('testrpc:server');
-
 const port = 4200;
 const app = express();
 const logic = require('./logic');

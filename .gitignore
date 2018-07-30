@@ -75,4 +75,3 @@ typings/
 # Custom files
 tmp/
 data/
-*config.js

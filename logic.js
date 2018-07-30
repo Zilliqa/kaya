@@ -7,7 +7,7 @@ const zilliqa_util = require("./lib/util");
 const utilities = require("./utilities");
 const scillaCtrl = require("./components/scilla/scilla");
 const walletCtrl = require("./components/wallet/wallet");
-const blockchain = require('./components/blockchain')
+const blockchain = require('./components/blockchain');
 
 // debug usage: DEBUG=scilla-txn node server.js
 var debug_txn = require("debug")("testrpc:logic");

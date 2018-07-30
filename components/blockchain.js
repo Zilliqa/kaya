@@ -1,12 +1,13 @@
+const config = require('../config');
 
 
-let bnum = 0;
+let bnum = config.blockchain.blockStart;
 function addBnum() { 
     bnum = bnum + 1;
 }
 
 // set to 10 seconds
-var timer = setInterval(addBnum, 10000);
+var timer = setInterval(addBnum, config.blockchain.blockInterval);
 
 module.exports = { 
 
