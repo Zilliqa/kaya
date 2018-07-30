@@ -1,6 +1,5 @@
-let { Zilliqa } = require('zilliqa.js');
-let config = require('./config')
-let url = config.test_scilla_explorer ? config.url_remotehost : config.url_localhost;
+let { Zilliqa } = require('zilliqa-js');
+let url = 'http://localhost:4200'
 let fs = require('fs');
 let argv = require('yargs').argv;
 let colors = require('colors');
@@ -21,22 +20,19 @@ if (argv.key) {
     console.info(`Your Private Key: ${privateKey.toString('hex')}`);
 }
 
+if (!argv.to) { 
+    console.log('To address required');
+    process.exit(0);
+} 
+
 address = zilliqa.util.getAddressFromPrivateKey(privateKey);
-
-if (argv.config) {
-    // Read all options from config file
-    console.log('Reading wallet information from Config file.')
-    privateKey = config.test_private_key;
-    address = config.test_address;
-}
-
 
 let node = zilliqa.getNode();
 console.log(`Address: ${address}`);
 
 function callback(err, data) {
     if (err || data.error) {
-        console.log('Error');
+        console.log(err);
     } else {
         console.log(data);
     }
@@ -54,33 +50,36 @@ console.log(`Connected to ${url}`);
 
 /* Contract specific Parameters */
 
-var code = fs.readFileSync('NFT.scilla', 'utf-8');
 // the immutable initialisation variables
 let msg = {
-    "_tag": "totalSupply",
+    "_tag": "setHello",
     "_amount": "0",
     "_sender" : "0x1234567890123456789012345678901234567890",
     "params": [
-   ]
+    {
+        "vname" : "msg",
+        "type" : "String",
+        "value" : "Morning"
+    }
+    ]
 };
 
 // transaction details
 let txnDetails = {
     version: 0,
-    nonce: 6,
-    to: 'cc0a63c8a50df57780059a6d2ea36ebfda64f434',
+    nonce: 2,
+    to: argv.to ,
     amount: 0,
     gasPrice: 1,
-    gasLimit: 50,
-    code: code,
+    gasLimit: 10,
     data: JSON.stringify(msg).replace(/\\"/g, '"')
 };
 
-console.log(msg);
 // sign the transaction using util methods
 let txn = zilliqa.util.createTransactionJson(privateKey, txnDetails);
+console.log(txn);
 
-// // send the transaction to the node
+// send the transaction to the node
 node.createTransaction(txn, callback);
 
 

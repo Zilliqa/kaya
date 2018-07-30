@@ -41,18 +41,18 @@ module.exports = {
 
     executeScillaRun: (payload, contractAddr, dir) => {
 
-        let code_path = `${dir}${contractAddr}_code.scilla`;
-        var msg_path, state_path;
-        var init_path = `${dir}${contractAddr}_init.json`;
+        var msg_path, state_path, code_path, init_path; 
         // Cleaning code before parsing to scilla-runner
         if (payload.code && payload.to == '0000000000000000000000000000000000000000') {
-
+            // initialized with standard message template
+            init_path = `${dir}${contractAddr}_init.json`;
+            code_path = `${dir}${contractAddr}_code.scilla`;
             debug_txn('Code Deployment');
             rawCode = JSON.stringify(payload.code);
             cleanedCode = utilities.codeCleanup(rawCode);
             fs.writeFileSync(code_path, cleanedCode);
 
-            // initialized with standard message template
+            
             msg_path = 'template/message.json';
             state_path = 'template/state.json';
 
@@ -64,6 +64,15 @@ module.exports = {
         } else {
             debug_txn('Processing Contract Transition');
             // todo: check for contract
+            contractAddr = payload.to;
+
+            init_path = `${dir}${contractAddr}_init.json`;
+            code_path = `${dir}${contractAddr}_code.scilla`;
+            state_path = `${dir}${contractAddr}_state.json`;
+            
+
+            debug_txn(`Code Path: ${code_path}`);
+            debug_txn(`Init Path: ${init_path}`);
             if (!fs.existsSync(code_path) || !fs.existsSync(init_path)) {
                 // tocheck what is the expected behavior on jsonrpc
                 debug_txn('Error, contract has not been created.')

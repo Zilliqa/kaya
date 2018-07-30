@@ -68,7 +68,7 @@ let initParams = [
 // transaction details
 let txnDetails = {
     version: 0,
-    nonce: 8,
+    nonce: 1,
     to: '0000000000000000000000000000000000000000',
     amount: 0,
     gasPrice: 1,

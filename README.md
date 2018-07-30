@@ -48,6 +48,14 @@ node server.js --load data/save/YYYYMMDDhhmmss_blockchain_states.json
 ## Testing
 
 
-For now, run the `DeployContract.js` and `CreateTransaction.js` from the `test/scripts`. Use `--key` to specify a private key. Otherwise, a random privatekey will be generated.
+For now, run the `DEBUG=testrpc* DeployContract.js` and `CreateTransaction.js` from the `test/scripts`. Use `--key` to specify a private key. Otherwise, a random privatekey will be generated.
+
+Procedure: 
+1. Start the server using `node server.js`
+2. Deploy a contract using `node DeployContract.js --key [private_key].
+3. Check where the contract is deployed. It should be on the logs if you have enabled `debug` mode, otherwise you can check it through the `GetSmartContracts` method.
+4. Send a transaction using `node CreateTransaction.js --key [priate_key] --to [Contract_address]`
+
+
 
 Mocha tests to be added soon (help appreciated)
