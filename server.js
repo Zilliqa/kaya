@@ -13,7 +13,6 @@ var rimraf = require('rimraf');
 const utilities = require('./utilities');
 app.use(bodyParser.json({ extended: false }));
 
-
 var isPersistence = false; // tmp is the default behavior
 function makeResponse(id, jsonrpc, data, isErr) {
     var responseObj = {};
@@ -26,6 +25,7 @@ function makeResponse(id, jsonrpc, data, isErr) {
     }
     return responseObj;
 }
+
 
 app.post('/', (req, res) => {
     let body = req.body;

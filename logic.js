@@ -7,6 +7,7 @@ const zilliqa_util = require("./lib/util");
 const utilities = require("./utilities");
 const scillaCtrl = require("./components/scilla/scilla");
 const walletCtrl = require("./components/wallet/wallet");
+const blockchain = require('./components/blockchain')
 
 // debug usage: DEBUG=scilla-txn node server.js
 var debug_txn = require("debug")("testrpc:logic");
@@ -38,9 +39,11 @@ Date.prototype.YYYYMMDDHHMMSS = function () {
   return yyyy + MM + dd + hh + mm + ss;
 };
 
+
 module.exports = {
   processCreateTxn: (data, saveMode) => {
     debug_txn("Processing transaction...");
+    let currentBNum = blockchain.getBlockNum();
     dir = "tmp/";
     if (saveMode) {
       console.log("Save mode enabled.");
@@ -76,7 +79,7 @@ module.exports = {
       }
       debug_txn(`Contract will be deployed at: ${contractAddr}`);
 
-      nextAddr = scillaCtrl.executeScillaRun(payload, contractAddr, dir);
+      nextAddr = scillaCtrl.executeScillaRun(payload, contractAddr, dir, currentBNum);
       //deduct funds
       walletCtrl.deductFunds(_sender, payload.amount + payload.gasLimit);
       walletCtrl.increaseNonce(_sender); // only increase if a contract is successful
