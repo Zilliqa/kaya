@@ -17,7 +17,7 @@ function makeResponse(id, jsonrpc, data, isErr) {
     var responseObj = {};
     responseObj['id'] = id;
     responseObj['jsonrpc'] = jsonrpc;
-    if(isErr) {
+    if (isErr) {
         responseObj['Error'] = data;
     } else {
         responseObj['result'] = data;
@@ -53,7 +53,7 @@ app.post('/', (req, res) => {
                 data = result;
             } catch (err) {
                 data = err.message;
-                res.status(200).send(makeResponse(body.id, body.jsonrpc, data,true));
+                res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
                 break;
             }
             res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
@@ -62,7 +62,7 @@ app.post('/', (req, res) => {
             try {
                 result = logic.processGetSmartContracts(body.params, argv.save);
                 data = result;
-            } catch(err) {       
+            } catch (err) {
                 data = err.message;
                 res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
                 break;
@@ -73,7 +73,7 @@ app.post('/', (req, res) => {
             try {
                 let txn_id = logic.processCreateTxn(body.params, argv.save);
                 data = { result: txn_id };
-            }   catch (err) {
+            } catch (err) {
                 data = err.message;
                 res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
                 break;
@@ -84,7 +84,7 @@ app.post('/', (req, res) => {
             try {
                 var obj = logic.processGetTransaction(body.params);
                 data = obj
-            }   catch (err) { 
+            } catch (err) {
                 data = err.message;
                 res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
                 break;
@@ -96,12 +96,12 @@ app.post('/', (req, res) => {
             try {
                 obj = logic.processGetRecentTransactions(body.params);
                 data = obj;
-            }   catch (err) { 
+            } catch (err) {
                 data = err.message;
-                res.status(200).send(makeResponse(body.id, body.jsonrpc, data,true));
+                res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
                 break;
             }
-            res.status(200).send(makeResponse(body.id, body.jsonrpc, data,false));
+            res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
             break;
         default:
             data = { "error": "Unsupported Method" };
@@ -130,8 +130,17 @@ const server = app.listen(port, (err) => {
         isPersistence = true;
     }
 
+    // cleanup old folders
+    if (fs.existsSync('./tmp')) {
+        debug_server(`Tmp folder found. Removing ${__dirname}/tmp`);
+        rimraf.sync(__dirname + '/tmp');
+        debug_server(`${__dirname}/tmp removed`);
+    }
+
+
     if (!fs.existsSync('./tmp')) {
         fs.mkdirSync('./tmp');
+        debug_server(`tmp folder created in ${__dirname}/tmp`);
     }
     if (!fs.existsSync('./data')) {
         fs.mkdirSync('./data');
@@ -165,7 +174,6 @@ function shutDown() {
     if (argv.save) {
         logic.dumpDataFiles();
     }
-    rimraf('./tmp', function () { debug_server(`/tmp directory removed`) });
 
     server.close(() => {
         debug_server('Closed out remaining connections');
