@@ -46,6 +46,18 @@ app.post('/', (req, res) => {
             data = makeResponse(body.id, body.jsonrpc, 'Testnet', false);
             res.status(200).send(data);
             break;
+        case 'GetSmartContractCode':
+            var result;
+            try {
+                result = logic.processGetSmartContractCode(body.params, isPersistence);
+                data = result;
+            } catch (err) {
+                data = err.message;
+                res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+                break;
+            }
+            res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
+            break;
         case 'GetSmartContractState':
             var result;
             try {
@@ -59,10 +71,10 @@ app.post('/', (req, res) => {
             res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
             break;
         case 'GetSmartContractInit':
-            try { 
+            try {
                 result = logic.processGetSmartContractInit(body.params, isPersistence);
                 data = result;
-            }  catch (err) {
+            } catch (err) {
                 data = err.message;
                 res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
                 break;

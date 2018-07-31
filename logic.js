@@ -183,11 +183,31 @@ module.exports = {
     dir = saveMode ? "data/" : "tmp/";
     var init_json = `${dir}${contract_addr.toLowerCase()}_init.json`;
     if (!fs.existsSync(init_json)) {
-      console.log(`No state file found (Contract: ${contract_addr}`);
+      console.log(`No init file found (Contract: ${contract_addr}`);
       throw new Error("Address does not exist");
     }
     var retMsg = JSON.parse(fs.readFileSync(init_json, "utf-8"));
     return retMsg;
+  },
+
+  processGetSmartContractCode: (data, saveMode) => {
+    debug_txn(`Getting SmartContract code`);
+    contract_addr = data[0];
+    if (contract_addr == null || !zilliqa_util.isAddress(contract_addr)) {
+      console.log("Invalid request");
+      throw new Error("Address size inappropriate");
+    }
+
+    dir = saveMode ? "data/" : "tmp/";
+    var code_path = `${dir}${contract_addr.toLowerCase()}_code.scilla`;
+    if (!fs.existsSync(code_path)) {
+      console.log(`No code file found (Contract: ${contract_addr}`);
+      throw new Error("Address does not exist");
+    }
+    debug_txn('Returning smart contract code to caller.');
+    data = {}
+    data['code'] = fs.readFileSync(code_path, "utf-8");
+    return data;
   },
 
   processGetSmartContractState: (data, saveMode) => {
