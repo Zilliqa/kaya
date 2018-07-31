@@ -58,6 +58,17 @@ app.post('/', (req, res) => {
             }
             res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
             break;
+        case 'GetSmartContractInit':
+            try { 
+                result = logic.processGetSmartContractInit(body.params, isPersistence);
+                data = result;
+            }  catch (err) {
+                data = err.message;
+                res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+                break;
+            }
+            res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
+            break;;
         case 'GetSmartContracts':
             try {
                 result = logic.processGetSmartContracts(body.params, argv.save);
