@@ -1,5 +1,4 @@
 // logic.js : Logic Script
-const crypto = require("crypto");
 const sha256 = require("bcrypto").sha256;
 const fs = require("fs");
 const path = require("path");
@@ -43,6 +42,7 @@ Date.prototype.YYYYMMDDHHMMSS = function () {
 module.exports = {
   processCreateTxn: (data, saveMode) => {
     debug_txn("Processing transaction...");
+
     let currentBNum = blockchain.getBlockNum();
     dir = "tmp/";
     if (saveMode) {
@@ -62,7 +62,7 @@ module.exports = {
     // check if the payload.nonce is valid
     if (payload.nonce == userNonce + 1) {
       /* contract generation */
-      // take the sha256 has of address+nonce, then extract the rightmost 20 bytes
+      // take the sha256 hash of address+nonce, then extract the rightmost 20 bytes
       let nonceStr = zilliqa_util
         .intToByteArray(payload.nonce - 1, 64)
         .join("");
@@ -110,18 +110,20 @@ module.exports = {
       walletCtrl.deductFunds(_sender, payload.amount + payload.gasLimit);
       debug_txn("Invalid Nonce");
     }
+    
+    // transtionID is a sha256 digest of txndetails
+    testID = Buffer.from(JSON.stringify(payload));
+    newTransactionID = sha256.digest(testID).toString("hex");
 
-    // After transaction is completed, assign transanctionID
-    newTransactionID = crypto.randomBytes(32).toString("hex");
     debug_txn(`Transaction will be logged as ${newTransactionID}`);
     let txnDetails = {
-      ID: newTransactionID,
       version: payload.version,
       nonce: payload.nonce,
       to: payload.to,
+      pubkey: payload.pubKey,
+      ID: newTransactionID,
       from: _sender,
-      amount: payload.amount,
-      pubkey: payload.pubKey
+      amount: payload.amount
     };
     transactions[newTransactionID] = txnDetails;
 
