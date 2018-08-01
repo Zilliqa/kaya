@@ -8,12 +8,6 @@ let colors = require('colors');
 
 // debug usage: DEBUG=scilla-txn node server.js
 const debug_txn = require('debug')('testrpc:scilla');
-
-
-// non-persistent states. Initializes whenever server starts
-var repo = {};
-var transactions = {};
-var map_Caddr_owner = {};
 let blockchain_path = 'tmp/blockchain.json'
 
 
@@ -47,9 +41,6 @@ function makeBlockchainJson(val) {
     fs.writeFileSync(blockchain_path, JSON.stringify(bc_data));
     debug_txn(`blockchain.json file prepared for blocknumber: ${val}`);
 }
-
-// stores a map of wallet address to contract addresses
-const addr_to_contracts = [];
 
 module.exports = {
 
@@ -118,6 +109,7 @@ module.exports = {
             (error, stdout, stderr) => {
                 if (error !== null) {
                     console.warn(`exec error: ${error}`);
+                    throw new Error(`Unable to run scilla. Error: ${error}`);
                 }
             });
         debug_txn('Scilla run completed. Performing state changes now');

@@ -155,6 +155,12 @@ module.exports = {
   },
 
   processGetTransaction: data => {
+    if(!data) { 
+      debug_txn('Invalid params')
+      err = new Error('INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised');
+      throw err;
+    }
+
     debug_txn(`TxnID: ${data[0]}`);
     var data = transactions[data[0]];
     if (data) {
@@ -163,8 +169,9 @@ module.exports = {
     throw new Error("Txn Hash not Present.");
   },
 
-  processGetRecentTransactions: data => {
+  processGetRecentTransactions: (data) => {
     console.log(`Getting Recent Transactions`);
+
     var txnhashes = Object.keys(transactions);
     var responseObj = {};
     responseObj.TxnHashes = txnhashes.reverse();
@@ -174,6 +181,13 @@ module.exports = {
 
   processGetSmartContractInit: (data, saveMode) => {
     debug_txn(`Getting SmartContract Init`);
+    if(!data) { 
+      debug_txn('Invalid params')
+      err = new Error('INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised');
+      throw err;
+    }
+
+
     contract_addr = data[0];
     if (contract_addr == null || !zilliqa_util.isAddress(contract_addr)) {
       console.log("Invalid request");
@@ -192,6 +206,12 @@ module.exports = {
 
   processGetSmartContractCode: (data, saveMode) => {
     debug_txn(`Getting SmartContract code`);
+    if(!data) { 
+      debug_txn('Invalid params')
+      err = new Error('INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised');
+      throw err;
+    }
+
     contract_addr = data[0];
     if (contract_addr == null || !zilliqa_util.isAddress(contract_addr)) {
       console.log("Invalid request");
@@ -212,6 +232,12 @@ module.exports = {
 
   processGetSmartContractState: (data, saveMode) => {
     debug_txn(`Getting SmartContract State`);
+    if(!data) { 
+      debug_txn('Invalid params')
+      err = new Error('INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised');
+      throw err;
+    }
+
     contract_addr = data[0];
     if (contract_addr == null || !zilliqa_util.isAddress(contract_addr)) {
       console.log("Invalid request");
@@ -234,7 +260,12 @@ getSmartContracts: Returns the list of smart contracts created by
 an account
 */
   processGetSmartContracts: (data, saveMode) => {
-    // todo: check for well-formness of the payload data
+
+    if(!data) { 
+      debug_txn('Invalid params')
+      err = new Error('INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised');
+      throw err;
+    }
 
     let addr = data[0];
     console.log(`Getting smart contracts created by ${addr}`);
