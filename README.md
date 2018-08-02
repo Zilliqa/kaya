@@ -1,9 +1,9 @@
 # ZilTestRPC
 
-zil-testrpc is a personal blockchain which makes developing application easier, faster and safer.
+TestRPC is a personal blockchain which makes developing application easier, faster and safer.
 It simulates the Zilliqa's blockchain behavior, and follows the expected server behavior as seen in the [`zilliqa-js`](https://github.com/Zilliqa/Zilliqa-JavaScript-Library).
 
-The goal of the project is to support all endpoints in Zilliqa Javascript API. 
+The goal of the project is to support all endpoints in Zilliqa Javascript API, making it easy for app developers to build Dapps on our platform. 
 
 Currently, TestRPC supports the following functions:
 * `CreateTransaction`
@@ -28,9 +28,11 @@ In addition, multi-contract calls are not supported yet.
 Run `npm install`, then `node server.js`.
 Debug mode: `DEBUG=testrpc* node server.js`.
 
+
+
 ## Server Usage
 
-To run the server, type `npm start`.
+To run the server, type `npm start`. The server listens on port 4200 by default.
 
 By default, the data states are non-persistent. Once you shut down the node server, everything will be deleted.
 To enable persistence data, use:
@@ -43,7 +45,6 @@ You can load the files using:
 ```
 node server.js --load data/save/YYYYMMDDhhmmss_blockchain_states.json
 ```
-
 
 ## Testing
 
@@ -63,3 +64,7 @@ Sample Test Procedure:
 4. Send a transaction using `node CreateTransaction.js --key [priate_key] --to [Contract_address]`
 
 Mocha tests to be added soon (help appreciated)
+
+## License
+
+You can view our [license here](https://github.com/Zilliqa/testrpc/blob/master/LICENSE)
