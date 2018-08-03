@@ -1,4 +1,5 @@
 # ZilTestRPC
+[![Gitter chat](http://img.shields.io/badge/chat-on%20gitter-077a8f.svg)](https://gitter.im/Zilliqa/CommunityDev)
 
 TestRPC is a personal blockchain which makes developing application easier, faster and safer.
 It simulates the Zilliqa's blockchain behavior, and follows the expected server behavior as seen in the [`zilliqa-js`](https://github.com/Zilliqa/Zilliqa-JavaScript-Library).
@@ -28,7 +29,15 @@ In addition, multi-contract calls are not supported yet.
 Run `npm install`, then `node server.js`.
 Debug mode: `DEBUG=testrpc* node server.js`.
 
+### Compiling Scilla
 
+You will have to compile the binary yourself to run this testrpc. 
+At the backend, `testrpc` uses the scilla-runner to interpret `.scilla` files
+
+To compile the binary:
+1. Ensure that you have installed the related dependencies: [INSTALL.md](https://github.com/Zilliqa/scilla/blob/master/INSTALL.md)
+2. Then, run `make clean; make`
+3. Copy the `scilla-runner` from `[SCILLA_DIR]/bin` to `[TESTRPC_DIR]/components/scilla/`
 
 ## Server Usage
 

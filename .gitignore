@@ -75,3 +75,4 @@ typings/
 # Custom files
 tmp/
 data/
+*scilla-runner
