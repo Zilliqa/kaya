@@ -15,7 +15,7 @@
 **/
 
 
-let { Zilliqa } = require('./lib/zilliqa');
+let { Zilliqa } = require('zilliqa-js');
 let fs = require('fs');
 let argv = require('yargs').argv;
 let colors = require('colors');
