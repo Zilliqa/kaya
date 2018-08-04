@@ -76,4 +76,4 @@ Mocha tests to be added soon (help appreciated)
 
 ## License
 
-You can view our [license here](https://github.com/Zilliqa/testrpc/blob/master/LICENSE)
+TestRPC is released under GPLv3. See [license here](https://github.com/Zilliqa/testrpc/blob/master/LICENSE)
