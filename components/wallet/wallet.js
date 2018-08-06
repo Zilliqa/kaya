@@ -1,18 +1,18 @@
 /**
- This file is part of testrpc.
+ This file is part of kaya.
   Copyright (c) 2018 - present Zilliqa Research Pvt. Ltd.
   
-  testrpc is free software: you can redistribute it and/or modify it under the
+  kaya is free software: you can redistribute it and/or modify it under the
   terms of the GNU General Public License as published by the Free Software
   Foundation, either version 3 of the License, or (at your option) any later
   version.
  
-  testrpc is distributed in the hope that it will be useful, but WITHOUT ANY
+  kaya is distributed in the hope that it will be useful, but WITHOUT ANY
   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
   A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  
   You should have received a copy of the GNU General Public License along with
-  testrpc.  If not, see <http://www.gnu.org/licenses/>.
+  kaya.  If not, see <http://www.gnu.org/licenses/>.
 **/
 
 
@@ -21,10 +21,10 @@ const crypto = require('crypto');
 const assert = require('assert');
 const zilliqa_util = require('../../lib/util')
 let colors = require('colors');
-var debug_wallet = require('debug')('testrpc:wallet');
+var debug_wallet = require('debug')('kaya:wallet');
 
 
-//@dev: As this is a testrpc, private keys will be stored
+//@dev: As this is a kaya, private keys will be stored
 // note: Real systems do not store private key
 
 // Wallet will store three things - address, private key and balance
