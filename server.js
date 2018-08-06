@@ -1,25 +1,25 @@
 /**
- This file is part of testrpc.
+ This file is part of kaya.
   Copyright (c) 2018 - present Zilliqa Research Pvt. Ltd.
   
-  testrpc is free software: you can redistribute it and/or modify it under the
+  kaya is free software: you can redistribute it and/or modify it under the
   terms of the GNU General Public License as published by the Free Software
   Foundation, either version 3 of the License, or (at your option) any later
   version.
  
-  testrpc is distributed in the hope that it will be useful, but WITHOUT ANY
+  kaya is distributed in the hope that it will be useful, but WITHOUT ANY
   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
   A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  
   You should have received a copy of the GNU General Public License along with
-  testrpc.  If not, see <http://www.gnu.org/licenses/>.
+  kaya.  If not, see <http://www.gnu.org/licenses/>.
 **/
 
 
 
 const express = require('express');
 const bodyParser = require('body-parser');
-const debug_server = require('debug')('testrpc:server');
+const debug_server = require('debug')('kaya:server');
 const port = 4200;
 const app = express();
 const logic = require('./logic');
@@ -158,7 +158,7 @@ process.on('SIGTERM', shutDown);
 process.on('SIGINT', shutDown);
 
 const server = app.listen(port, (err) => {
-    console.log(`Zilliqa TestRPC Server (ver: 0.0.1)\n`.cyan);
+    console.log(`Zilliqa kaya Server (ver: 0.0.1)\n`.cyan);
 
     if (argv.save) {
         console.log('Save mode enabled');

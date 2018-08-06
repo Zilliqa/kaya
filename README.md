@@ -1,12 +1,12 @@
-# ZilTestRPC
+# Kaya - Zilliqa's RPC client for testing and develoment
 [![Gitter chat](http://img.shields.io/badge/chat-on%20gitter-077a8f.svg)](https://gitter.im/Zilliqa/CommunityDev)
 
-TestRPC is a personal blockchain which makes developing application easier, faster and safer.
-It simulates the Zilliqa's blockchain behavior, and follows the expected server behavior as seen in the [`zilliqa-js`](https://github.com/Zilliqa/Zilliqa-JavaScript-Library).
+Kaya is Zilliqa's RPC server for testing and development. It is personal blockchain which makes developing application easier, faster and safer.
+Kaya simulates the Zilliqa's blockchain behavior, and follows the expected server behavior as seen in the [`zilliqa-js`](https://github.com/Zilliqa/Zilliqa-JavaScript-Library).
 
 The goal of the project is to support all endpoints in Zilliqa Javascript API, making it easy for app developers to build Dapps on our platform. 
 
-Currently, TestRPC supports the following functions:
+Currently, Kaya supports the following functions:
 * `CreateTransaction`
 * `GetTransaction`
 * `GetRecentTransactions`
@@ -27,17 +27,17 @@ In addition, multi-contract calls are not supported yet.
 
 ## Installation
 Run `npm install`, then `node server.js`.
-Debug mode: `DEBUG=testrpc* node server.js`.
+Debug mode: `DEBUG=kaya* node server.js`.
 
 ### Compiling Scilla
 
-You will have to compile the binary yourself to run this testrpc. 
-At the backend, `testrpc` uses the scilla-runner to interpret `.scilla` files
+You will have to compile the binary yourself to run this kaya. 
+At the backend, `Kaya` uses the scilla-runner to interpret `.scilla` files
 
 To compile the binary:
 1. Ensure that you have installed the related dependencies: [INSTALL.md](https://github.com/Zilliqa/scilla/blob/master/INSTALL.md)
 2. Then, run `make clean; make`
-3. Copy the `scilla-runner` from `[SCILLA_DIR]/bin` to `[TESTRPC_DIR]/components/scilla/`
+3. Copy the `scilla-runner` from `[SCILLA_DIR]/bin` to `[Kaya_DIR]/components/scilla/`
 
 ## Server Usage
 
@@ -72,8 +72,8 @@ Sample Test Procedure:
 3. Check where the contract is deployed. It should be on the logs if you have enabled `debug` mode, otherwise you can check it through the `GetSmartContracts` method.
 4. Send a transaction using `node CreateTransaction.js --key [priate_key] --to [Contract_address]`
 
-Mocha tests to be added soon (help appreciated)
+Automated tests to be added soon (help appreciated)
 
 ## License
 
-TestRPC is released under GPLv3. See [license here](https://github.com/Zilliqa/testrpc/blob/master/LICENSE)
+kaya is released under GPLv3. See [license here](https://github.com/Zilliqa/kaya/blob/master/LICENSE)
