@@ -32,13 +32,12 @@ Debug mode: `DEBUG=kaya* node server.js`.
 
 ### Compiling Scilla
 
-You will have to compile the binary yourself to run this kaya. 
-At the backend, `Kaya` uses the scilla-runner to interpret `.scilla` files
+`Kaya` uses the scilla interpreter (scilla-runner) to interpret `.scilla` files. As such, you will have to compile the binary yourself from the [scilla repository](https://github.com/Zilliqa/scilla).
 
-To compile the binary:
+To compile the interpreter:
 1. Ensure that you have installed the related dependencies: [INSTALL.md](https://github.com/Zilliqa/scilla/blob/master/INSTALL.md)
 2. Then, run `make clean; make`
-3. Copy the `scilla-runner` from `[SCILLA_DIR]/bin` to `[Kaya_DIR]/components/scilla/`
+3. Copy the `scilla-runner` from `[SCILLA_DIR]/bin` into `[Kaya_DIR]/components/scilla/`
 
 ## Server Usage
 
@@ -58,7 +57,7 @@ node server.js --load data/save/YYYYMMDDhhmmss_blockchain_states.json
 
 ## Testing
 
-Automated tests is a work-in-progress. For now, you have to run tests manually. 
+Automated tests are a work-in-progress. For now, you have to run tests manually. 
 
 From `test/scripts/`, you can use run `node DeployContract.js` to test contract deployment. 
 Then, use `node CreateTransaction --key [private-key] --to [contract_addr]` to make transition calls. 
@@ -68,9 +67,9 @@ Use `--key` to specify a private key. Otherwise, a random privatekey will be gen
 
 Sample Test Procedure: 
 1. Start the server using `node server.js`
-2. Deploy a contract using `node DeployContract.js --key [private_key].
+2. Deploy a contract using `node DeployContract.js --key [private_key]`.
 3. Check where the contract is deployed. It should be on the logs if you have enabled `debug` mode, otherwise you can check it through the `GetSmartContracts` method.
-4. Send a transaction using `node CreateTransaction.js --key [priate_key] --to [Contract_address]`
+4. Send a transaction using `node CreateTransaction.js --key [private_key] --to [Contract_address]`
 
 ## License
 
