@@ -12,6 +12,7 @@
 ## Kaya 0.1.0 (by mid-sep)
 * [ ] Signature verification
 * [ ] Built-in support for interpreter API (so users do not need to compile scilla locally)
+    * [ ] Many calls have to be refractored from sync to async
 * [ ] Load wallets into kaya for deterministic testing
 * [ ] CI tools integration
 * [ ] Automated Testing
@@ -22,5 +23,6 @@
 * [ ] GetBlockchainInfo
 
 ## Future implementations
+* In-memory DB (e.g. [leveljs](https://github.com/Level/level-js))
 * GUI
 * Contract test suites (most probably a different project entirely)
