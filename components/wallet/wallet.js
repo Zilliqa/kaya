@@ -89,13 +89,24 @@ module.exports = {
         assert(module.exports.sufficientFunds(address, amount));
         // deduct funds
         let currentBalance = wallets[address].amount;
-        debug_wallet(`Current Balance: ${currentBalance}`);
+        debug_wallet(`Sender's previous Balance: ${currentBalance}`);
         currentBalance = currentBalance - amount;
         if(currentBalance < 0) { 
             throw new Error('Unexpected error, funds went below 0');
         }
         wallets[address].amount = currentBalance;
-        debug_wallet(`Deduct funds complete. New Balance: ${wallets[address].amount}`)
+        debug_wallet(`Deduct funds complete. Sender's new balance: ${wallets[address].amount}`)
+    },
+
+    addFunds: (address, amount) => { 
+        debug_wallet(`Adding ${amount} to ${address}`);        
+        let currentBalance = wallets[address].amount;
+        debug_wallet(`Recipient's previous Balance: ${currentBalance}`);
+
+        // add amount
+        currentBalance = currentBalance + amount;
+        wallets[address].amount = currentBalance;
+        debug_wallet(`Adding funds complete. Recipient's new Balance: ${wallets[address].amount}`)
     },
 
     increaseNonce: (address) => { 
