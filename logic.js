@@ -120,6 +120,7 @@ module.exports = {
             `Contract is calling another address. This is not supported yet.`
           );
           throw new Error(`Multi-contract calls are not supported yet.`)
+
         }
 
         // Only update if it is a deployment call
