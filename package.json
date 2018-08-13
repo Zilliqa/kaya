@@ -1,22 +1,25 @@
 {
-  "name": "rpc",
+  "name": "Kaya",
   "version": "0.0.1",
-  "description": "Test RPC Server",
+  "description": "Zilliqa's RPC Server",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest --silent",
     "start": "node server.js"
   },
   "author": "Edison Lim",
-  "license": "ISC",
+  "license": "GPLv3",
   "repository": {
     "type": "git",
-    "url": "git@github.com:edisonljh/msapp-sandbox.git"
+    "url": "https://github.com/Zilliqa/kaya"
   },
   "devDependencies": {
-    "chai": "^4.1.2",
-    "chai-http": "^4.0.0",
-    "mocha": "^5.2.0"
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.7.0",
+    "jest": "^23.5.0",
+    "mocha": "^5.2.0",
+    "superagent": "^3.8.3",
+    "supertest": "^3.1.0"
   },
   "dependencies": {
     "bcrypto": "^1.0.0",

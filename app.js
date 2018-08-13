@@ -81,9 +81,8 @@ wallet.createWallets(10); // create 10 wallets by default
 wallet.printWallet();
 
 app.get('/', (req, res) => {
-    res.status(200).send('Hello World!')
-})
-
+    res.status(200).send('Kaya RPC Server')
+}), 
 
 app.post('/', (req, res) => {
     let body = req.body;
