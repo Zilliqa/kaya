@@ -8,3 +8,20 @@ describe('Test the Server Connection', () => {
         });
     });
 });
+
+
+query = {
+    "id": "1",
+    "jsonrpc": "2.0",
+    "method": "GetNetworkId",
+    "params": [""]
+}
+
+describe('Test the Server Connection', () => {
+    test('It should respond to network id', (done) => {
+        request(app).post('/').send(query).then((response) => {
+            expect(response.statusCode).toBe(200);
+            done();
+        });
+    });
+});
