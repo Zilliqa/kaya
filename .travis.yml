@@ -1,0 +1,11 @@
+language: node_js
+sudo: true
+node_js: 
+  - "stable"
+install:
+  - npm install
+script:
+  - npm run test
+cache:
+  directories:
+    - $HOME/.npm
