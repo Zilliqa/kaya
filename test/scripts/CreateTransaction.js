@@ -84,7 +84,7 @@ let msg = {
 // transaction details
 let txnDetails = {
     version: 0,
-    nonce: 3,
+    nonce: 2,
     to: argv.to ,
     amount: 0,
     gasPrice: 1,

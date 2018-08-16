@@ -78,7 +78,7 @@ module.exports = {
     // check if the payload.nonce is valid
     if (payload.nonce == userNonce + 1) {
       // p2p token transfer
-      if (!payload.code && !payload.msg) {
+      if (!payload.code && !payload.data) {
           debug_txn(`p2p token tranfer`);
           walletCtrl.deductFunds(_sender, payload.amount + payload.gasLimit);
           walletCtrl.addFunds(payload.to, payload.amount);
@@ -115,7 +115,7 @@ module.exports = {
         walletCtrl.deductFunds(_sender, payload.amount + payload.gasLimit);
         walletCtrl.increaseNonce(_sender); // only increase if a contract is successful
 
-        if (nextAddr.substring(2) != _sender) {
+        if (nextAddr != '0'.repeat(40) && nextAddr.substring(2) != _sender) {
           console.log(
             `Contract is calling another address. This is not supported yet.`
           );
