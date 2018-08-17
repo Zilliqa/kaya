@@ -24,6 +24,7 @@ const logic = require('./logic');
 const wallet = require('./components/wallet/wallet');
 const fs = require('fs');
 const fsp = require('node-fs');
+const cors = require('cors')
 let argv = require('yargs').argv;
 var rimraf = require('rimraf');
 const utilities = require('./utilities');
@@ -80,8 +81,13 @@ if (!fs.existsSync('./data')) {
 wallet.createWallets(10); // create 10 wallets by default
 wallet.printWallet();
 
+// cross region settings with Env
+if (process.env.NODE_ENV === 'dev') {
+    app.use(cors());
+}
+
 app.get('/', (req, res) => {
-    res.status(200).send('Kaya RPC Server')
+    res.status(200).send('Kaya RPC Server');
 }), 
 
 app.post('/', (req, res) => {
