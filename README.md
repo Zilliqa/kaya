@@ -1,5 +1,7 @@
 # Kaya - Zilliqa's RPC client for testing and development
 [![Gitter chat](http://img.shields.io/badge/chat-on%20gitter-077a8f.svg)](https://gitter.im/Zilliqa/CommunityDev)
+[![Build Status](https://travis-ci.com/Zilliqa/kaya.svg?branch=master)](https://travis-ci.com/Zilliqa/kaya)
+
 
 Kaya is Zilliqa's RPC server for testing and development. It is personal blockchain which makes developing application easier and faster. Kaya emulates the Zilliqa's blockchain behavior, and follows the expected server behavior as seen in the [`zilliqa-js`](https://github.com/Zilliqa/Zilliqa-JavaScript-Library).
 
@@ -15,14 +17,14 @@ Currently, Kaya supports the following functions:
 * `GetSmartContractState`
 * `GetSmartContracts`
 * `GetBalance`
-* `getSmartContractInit`
-* `getSmartContractCode`
+* `GetSmartContractInit`
+* `GetSmartContractCode`
 
-Functions that are NOT supported:
-* `getDsBlock`
-* `getTxBlock`
-* `getLatestDsBlock`
-* `getLatestTxBlock`
+Methods that are NOT supported:
+* `GetDsBlock`
+* `GetTxBlock`
+* `GetLatestDsBlock`
+* `GetLatestTxBlock`
 
 In addition, multi-contract calls are not supported yet.
 

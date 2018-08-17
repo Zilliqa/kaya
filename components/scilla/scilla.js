@@ -25,6 +25,14 @@ let colors = require('colors');
 const debug_txn = require('debug')('kaya:scilla');
 let blockchain_path = 'tmp/blockchain.json'
 
+const template_state = [
+    {
+      "vname": "_balance",
+      "type" : "Uint128",
+      "value": "0"
+    }
+  ];
+
 
 function pad(number, length) {
     var str = '' + number;
@@ -64,18 +72,23 @@ module.exports = {
          makeBlockchainJson(currentBnum);
 
         var msg_path, state_path, code_path, init_path;
+
+        // build code_cmd to be run as an execSync
+        var code_cmd = `./components/scilla/scilla-runner -iblockchain ${blockchain_path} -o tmp/${contractAddr}_out.json`;
         // Cleaning code before parsing to scilla-runner
+        isCodeDeployment = false;
         if (payload.code && payload.to == '0000000000000000000000000000000000000000') {
             // initialized with standard message template
+            isCodeDeployment = true;
             init_path = `${dir}${contractAddr}_init.json`;
             code_path = `${dir}${contractAddr}_code.scilla`;
+
             debug_txn('Code Deployment');
             rawCode = JSON.stringify(payload.code);
             cleanedCode = utilities.codeCleanup(rawCode);
             fs.writeFileSync(code_path, cleanedCode);
 
-            msg_path = 'template/message.json';
-            state_path = 'template/state.json';
+            code_cmd = `${code_cmd} -init ${init_path} -i ${code_path}`;
 
             // get init data from payload
             let initParams = JSON.stringify(payload.data);
@@ -90,6 +103,8 @@ module.exports = {
             init_path = `${dir}${contractAddr}_init.json`;
             code_path = `${dir}${contractAddr}_code.scilla`;
             state_path = `${dir}${contractAddr}_state.json`;
+
+            code_cmd = `${code_cmd} -init ${init_path} -i ${code_path} -istate ${state_path}`;
 
 
             debug_txn(`Code Path: ${code_path}`);
@@ -107,8 +122,9 @@ module.exports = {
             fs.writeFileSync(`${dir}${payload.to}_message.json`, cleaned_msg);
             msg_path = `${dir}${payload.to}_message.json`;
 
-        }
+            code_cmd = `${code_cmd} -imessage ${msg_path}`
 
+        }
        
         if (!fs.existsSync(code_path) || !fs.existsSync(init_path)) {
             // tocheck what is the expected behavior on jsonrpc
@@ -116,11 +132,9 @@ module.exports = {
             throw 'Contract has not been deployed.';
         }
 
-
         // Run Scilla Interpreter
         const exec = require('child_process').execSync;
-        let scilla_cmd = `./components/scilla/scilla-runner -init ${init_path} -i ${code_path} -iblockchain ${blockchain_path} -o tmp/${contractAddr}_out.json -imessage ${msg_path} -istate ${state_path}`;
-        const child = exec(scilla_cmd,
+        const child = exec(code_cmd,
             (error, stdout, stderr) => {
                 if (error !== null) {
                     console.warn(`exec error: ${error}`);
@@ -131,12 +145,19 @@ module.exports = {
 
         // Extract state from tmp/out.json
         var retMsg = JSON.parse(fs.readFileSync(`tmp/${contractAddr}_out.json`, 'utf-8'));
-        fs.writeFileSync(`${dir}${contractAddr}_state.json`, JSON.stringify(retMsg.states));
+        if(!isCodeDeployment) {
+            fs.writeFileSync(`${dir}${contractAddr}_state.json`, JSON.stringify(retMsg.states));
+        } else {
+            fs.writeFileSync(`${dir}${contractAddr}_state.json`, JSON.stringify(template_state));
+        }
         debug_txn(`State logged down in ${contractAddr}_state.json`)
 
         console.log(`Contract Address Deployed: ` + `${contractAddr}`.green);
-        debug_txn(`Next address: ${(retMsg.message._recipient)}`);
-        return retMsg.message._recipient;
-
+        if(retMsg.message != null) { 
+            debug_txn(`Next address: ${(retMsg.message._recipient)}`);
+            return retMsg.message._recipient;
+        }
+        // hackish solution to be changed
+        return '0'.repeat(40);
     }
 }

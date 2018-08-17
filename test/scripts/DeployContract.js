@@ -15,14 +15,15 @@
   kaya.  If not, see <http://www.gnu.org/licenses/>.
 **/
 
-
+require('isomorphic-fetch');
 let { Zilliqa } = require('zilliqa-js');
 let fs = require('fs');
 let argv = require('yargs').argv;
 let colors = require('colors');
-let url = 'http://localhost:4200'
+let url = 'http://localhost:4200';
+const BN = require('bn.js');
 let zilliqa = new Zilliqa({
-    nodeUrl: 'http://localhost:4200'
+    nodeUrl: url
 })
 
 let privateKey, address;
@@ -38,16 +39,6 @@ if (argv.key) {
 }
 
 address = zilliqa.util.getAddressFromPrivateKey(privateKey);
-
-/*
-if (argv.config) {
-    // Read all options from config file
-    console.log('Reading wallet information from Config file.')
-    privateKey = config.test_private_key;
-    address = config.test_address;
-}
-*/
-
 let node = zilliqa.getNode();
 console.log(`Address: ${address}`);
 
@@ -58,7 +49,6 @@ function callback(err, data) {
         console.log(data);
     }
 }
-
 
 /*
         MAIN LOGIC
@@ -88,7 +78,7 @@ let txnDetails = {
     version: 0,
     nonce: 1,
     to: '0000000000000000000000000000000000000000',
-    amount: 0,
+    amount: new BN(0),
     gasPrice: 1,
     gasLimit: 50,
     code: code,

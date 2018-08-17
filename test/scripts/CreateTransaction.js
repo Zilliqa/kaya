@@ -14,7 +14,8 @@
   You should have received a copy of the GNU General Public License along with
   kaya.  If not, see <http://www.gnu.org/licenses/>.
 **/
-
+require('isomorphic-fetch');
+const BN = require('bn.js');
 let { Zilliqa } = require('zilliqa-js');
 let url = 'http://localhost:4200'
 let fs = require('fs');
@@ -60,8 +61,6 @@ function callback(err, data) {
         MAIN LOGIC
 */
 
-
-
 console.log('Zilliqa Testing Script'.bold.cyan);
 console.log(`Connected to ${url}`);
 
@@ -84,9 +83,9 @@ let msg = {
 // transaction details
 let txnDetails = {
     version: 0,
-    nonce: 3,
+    nonce: 2,
     to: argv.to ,
-    amount: 0,
+    amount: new BN(0),
     gasPrice: 1,
     gasLimit: 10,
     data: JSON.stringify(msg).replace(/\\"/g, '"')

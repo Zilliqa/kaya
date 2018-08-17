@@ -14,7 +14,8 @@
   You should have received a copy of the GNU General Public License along with
   kaya.  If not, see <http://www.gnu.org/licenses/>.
 **/
-
+require('isomorphic-fetch');
+const BN = require('bn.js');
 let { Zilliqa } = require('zilliqa-js');
 let url = 'http://localhost:4200'
 let fs = require('fs');
@@ -24,7 +25,6 @@ let colors = require('colors');
 let zilliqa = new Zilliqa({
     nodeUrl: url
 })
-
 
 /*
     usage: node TransferToken.js --from [private_key] --to [wallet_address]
@@ -66,9 +66,9 @@ console.log(`Connected to ${url}`);
 // transaction details - update the nonce yourself.
 let txnDetails = {
     version: 0,
-    nonce: 1,
+    nonce: 3,
     to: argv.to ,
-    amount: 990,
+    amount: new BN(990),
     gasPrice: 1,
     gasLimit: 10
 };
