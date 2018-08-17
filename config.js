@@ -27,3 +27,9 @@ config.blockchain = {
     blockInterval: 10000,    // 10000 = 10 seconds for one block
     blockStart: 0
 }
+
+config.wallet = {
+    numAccounts: 10,    // number of default accounts
+    defaultAmt: 100000,  // default amount of zils assigned to each wallet
+    defaultNonce: 0
+}

@@ -17,10 +17,10 @@
 
 
 /* Wallet Component */
-const crypto = require('crypto');
 const assert = require('assert');
-const zilliqa_util = require('../../lib/util')
-let colors = require('colors');
+const zilliqa_util = require('../../lib/util');
+const config = require('../../config');
+
 var debug_wallet = require('debug')('kaya:wallet');
 
 
@@ -34,11 +34,10 @@ function createNewWallet() {
     let pk = zilliqa_util.generatePrivateKey();
     let address = zilliqa_util.getAddressFromPrivateKey(pk);
     let privKey_string = pk.toString('hex');
-    let amt = 100000;
     newWallet = {
         privateKey: privKey_string,
-        amount: amt,
-        nonce: 0
+        amount: config.wallet.defaultAmt,
+        nonce: config.wallet.defaultNonce
     };
     wallets[address] = newWallet;
 }
@@ -58,14 +57,14 @@ module.exports = {
             console.log('Available Accounts');
             console.log('=============================');
             keys = [];
-            for(let i = 0; i<10; i++) {
+            for(let i = 0; i< config.wallet.numAccounts; i++) {
                 var addr = Object.keys(wallets)[i];
                 console.log(`(${i}) ${addr} (Amt: ${wallets[addr].amount}) (Nonce: ${wallets[addr].nonce})`);
                 keys.push(wallets[addr].privateKey);
             }
             console.log('\n Private Keys ');
             console.log('=============================');
-            for(let i = 0; i < 10; i++) { 
+            for(let i = 0; i < config.wallet.numAccounts; i++) { 
                 console.log(`(${i}) ${keys[i]}`);
             }
         }

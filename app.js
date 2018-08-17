@@ -18,6 +18,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const debug_server = require('debug')('kaya:server');
+const config = require('./config');
 const port = 4200;
 const app = express();
 const logic = require('./logic');
@@ -78,7 +79,7 @@ if (!fs.existsSync('./data')) {
 }
 
 /* Create Dummy Accounts */
-wallet.createWallets(10); // create 10 wallets by default
+wallet.createWallets(config.wallet.numAccounts); // create 10 wallets by default
 wallet.printWallet();
 
 // cross region settings with Env
