@@ -91,6 +91,7 @@ app.get('/', (req, res) => {
     res.status(200).send('Kaya RPC Server');
 }), 
 
+// Method handling logic for incoming POST request
 app.post('/', (req, res) => {
     let body = req.body;
     let data = {};

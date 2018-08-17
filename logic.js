@@ -19,7 +19,7 @@
 const sha256 = require("bcrypto").sha256;
 const fs = require("fs");
 const path = require("path");
-const zilliqa_util = require("./lib/util");
+const {Zilliqa} = require("zilliqa-js");
 const utilities = require("./utilities");
 const scillaCtrl = require("./components/scilla/scilla");
 const walletCtrl = require("./components/wallet/wallet");
@@ -33,6 +33,12 @@ var repo = {};
 var transactions = {};
 var addr_to_contracts = {};
 var map_Caddr_owner = {};
+
+/*  Dummy constructor for zilliqajs */
+// @dev: Will be replaced once zilliqa-js exposes utils without constructors
+let zilliqa = new Zilliqa({
+  nodeUrl: 'http://localhost:8888'
+});
 
 /* Utility functions */
 
@@ -58,6 +64,8 @@ Date.prototype.YYYYMMDDHHMMSS = function() {
 module.exports = {
   processCreateTxn: (data, saveMode) => {
     debug_txn("Processing transaction...");
+    let privateKey = zilliqa.util.generatePrivateKey();
+    console.log(zilliqa.util);
 
     let currentBNum = blockchain.getBlockNum();
     dir = "tmp/";
@@ -66,8 +74,9 @@ module.exports = {
       dir = "data/";
     }
     // todo: check for well-formness of the payload data
+    debug_txn('Checking payload');
     let payload = data[0];
-    let _sender = zilliqa_util.getAddressFromPublicKey(
+    let _sender = zilliqa.util.getAddressFromPublicKey(
       payload.pubKey.toString("hex")
     );
     debug_txn(`Sender: ${_sender}`);
@@ -86,7 +95,7 @@ module.exports = {
         /* contract generation */
         debug_txn(`User is trying to create a contract or call transition in contract`); 
         // take the sha256 hash of address+nonce, then extract the rightmost 20 bytes
-        let nonceStr = zilliqa_util
+        let nonceStr = zilliqa.util
           .intToByteArray(payload.nonce - 1, 64)
           .join("");
         let combinedStr = _sender + nonceStr;
@@ -228,7 +237,7 @@ module.exports = {
     }
 
     contract_addr = data[0];
-    if (contract_addr == null || !zilliqa_util.isAddress(contract_addr)) {
+    if (contract_addr == null || !zilliqa.util.isAddress(contract_addr)) {
       console.log("Invalid request");
       throw new Error("Address size inappropriate");
     }
@@ -254,7 +263,7 @@ module.exports = {
     }
 
     contract_addr = data[0];
-    if (contract_addr == null || !zilliqa_util.isAddress(contract_addr)) {
+    if (contract_addr == null || !zilliqa.util.isAddress(contract_addr)) {
       console.log("Invalid request");
       throw new Error("Address size inappropriate");
     }
@@ -282,7 +291,7 @@ module.exports = {
     }
 
     contract_addr = data[0];
-    if (contract_addr == null || !zilliqa_util.isAddress(contract_addr)) {
+    if (contract_addr == null || !zilliqa.util.isAddress(contract_addr)) {
       console.log("Invalid request");
       throw new Error("Address size inappropriate");
     }
@@ -313,7 +322,7 @@ an account
 
     let addr = data[0];
     console.log(`Getting smart contracts created by ${addr}`);
-    if (addr == null || !zilliqa_util.isAddress(addr)) {
+    if (addr == null || !zilliqa.util.isAddress(addr)) {
       console.log("Invalid request");
       throw new Error("Address size inappropriate");
     }

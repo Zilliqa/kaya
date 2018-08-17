@@ -17,7 +17,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const zilliqa_util = require('../../lib/util')
 const utilities = require('../../utilities');
 let colors = require('colors');
 

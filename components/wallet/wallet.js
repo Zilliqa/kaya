@@ -15,14 +15,11 @@
   kaya.  If not, see <http://www.gnu.org/licenses/>.
 **/
 
-
 /* Wallet Component */
 const assert = require('assert');
-const zilliqa_util = require('../../lib/util');
 const config = require('../../config');
-
-var debug_wallet = require('debug')('kaya:wallet');
-
+const {Zilliqa} = require('zilliqa-js');
+const debug_wallet = require('debug')('kaya:wallet');
 
 //@dev: As this is a kaya, private keys will be stored
 // note: Real systems do not store private key
@@ -30,9 +27,17 @@ var debug_wallet = require('debug')('kaya:wallet');
 // Wallet will store three things - address, private key and balance
 wallets = {};
 
+/*  Dummy constructor for zilliqajs */
+// @dev: Will be replaced once zilliqa-js exposes utils without constructors
+let zilliqa = new Zilliqa({
+    nodeUrl: 'http://localhost:8888'
+});
+
+
 function createNewWallet() {
-    let pk = zilliqa_util.generatePrivateKey();
-    let address = zilliqa_util.getAddressFromPrivateKey(pk);
+    // let pk = zilliqa.util.generatePrivateKey();
+    let pk = zilliqa.util.generatePrivateKey();
+    let address = zilliqa.util.getAddressFromPrivateKey(pk);
     let privKey_string = pk.toString('hex');
     newWallet = {
         privateKey: privKey_string,
@@ -110,7 +115,7 @@ module.exports = {
 
     increaseNonce: (address) => { 
         debug_wallet(`Increasing nonce for ${address}`)
-        if(!zilliqa_util.isAddress(address)) { 
+        if(!zilliqa.util.isAddress(address)) { 
             throw new Error('Address size not appropriate')
         }
         if(!wallets[address]) { 
@@ -124,7 +129,7 @@ module.exports = {
     },
 
     getBalance: (address) => { 
-        if(!zilliqa_util.isAddress(address)) { 
+        if(!zilliqa.util.isAddress(address)) { 
             throw new Error('Address size not appropriate')
         }
         if(!wallets[address]) { 
