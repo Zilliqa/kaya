@@ -21,7 +21,7 @@ const utilities = require('../../utilities');
 let colors = require('colors');
 
 // debug usage: DEBUG=scilla-txn node server.js
-const debug_txn = require('debug')('kaya:scilla');
+const LOG_SCILLA = require('debug')('kaya:scilla');
 let blockchain_path = 'tmp/blockchain.json'
 
 const template_state = [
@@ -61,7 +61,7 @@ function makeBlockchainJson(val) {
         }
     ];
     fs.writeFileSync(blockchain_path, JSON.stringify(bc_data));
-    debug_txn(`blockchain.json file prepared for blocknumber: ${val}`);
+    LOG_SCILLA(`blockchain.json file prepared for blocknumber: ${val}`);
 }
 
 module.exports = {
@@ -82,7 +82,7 @@ module.exports = {
             init_path = `${dir}${contractAddr}_init.json`;
             code_path = `${dir}${contractAddr}_code.scilla`;
 
-            debug_txn('Code Deployment');
+            LOG_SCILLA('Code Deployment');
             rawCode = JSON.stringify(payload.code);
             cleanedCode = utilities.codeCleanup(rawCode);
             fs.writeFileSync(code_path, cleanedCode);
@@ -95,7 +95,7 @@ module.exports = {
             fs.writeFileSync(`${dir}${contractAddr}_init.json`, cleaned_params);
 
         } else {
-            debug_txn('Processing Contract Transition');
+            LOG_SCILLA('Processing Contract Transition');
             // todo: check for contract
             contractAddr = payload.to;
 
@@ -106,16 +106,16 @@ module.exports = {
             code_cmd = `${code_cmd} -init ${init_path} -i ${code_path} -istate ${state_path}`;
 
 
-            debug_txn(`Code Path: ${code_path}`);
-            debug_txn(`Init Path: ${init_path}`);
+            LOG_SCILLA(`Code Path: ${code_path}`);
+            LOG_SCILLA(`Init Path: ${init_path}`);
             if (!fs.existsSync(code_path) || !fs.existsSync(init_path)) {
                 // tocheck what is the expected behavior on jsonrpc
-                debug_txn('Error, contract has not been created.')
+                LOG_SCILLA('Error, contract has not been created.')
                 throw 'Contract has not been deployed.';
             }
 
             // get message from payload information
-            debug_txn('Payload Received %O', payload.data);
+            LOG_SCILLA('Payload Received %O', payload.data);
             let incomingMessage = JSON.stringify(payload.data);
             cleaned_msg = utilities.paramsCleanup(incomingMessage);
             fs.writeFileSync(`${dir}${payload.to}_message.json`, cleaned_msg);
@@ -127,7 +127,7 @@ module.exports = {
        
         if (!fs.existsSync(code_path) || !fs.existsSync(init_path)) {
             // tocheck what is the expected behavior on jsonrpc
-            debug_txn('Error, contract has not been created.')
+            LOG_SCILLA('Error, contract has not been created.')
             throw 'Contract has not been deployed.';
         }
 
@@ -140,7 +140,7 @@ module.exports = {
                     throw new Error(`Unable to run scilla. Error: ${error}`);
                 }
             });
-        debug_txn('Scilla run completed. Performing state changes now');
+        LOG_SCILLA('Scilla run completed. Performing state changes now');
 
         // Extract state from tmp/out.json
         var retMsg = JSON.parse(fs.readFileSync(`tmp/${contractAddr}_out.json`, 'utf-8'));
@@ -149,11 +149,11 @@ module.exports = {
         } else {
             fs.writeFileSync(`${dir}${contractAddr}_state.json`, JSON.stringify(template_state));
         }
-        debug_txn(`State logged down in ${contractAddr}_state.json`)
+        LOG_SCILLA(`State logged down in ${contractAddr}_state.json`)
 
         console.log(`Contract Address Deployed: ` + `${contractAddr}`.green);
         if(retMsg.message != null) { 
-            debug_txn(`Next address: ${(retMsg.message._recipient)}`);
+            LOG_SCILLA(`Next address: ${(retMsg.message._recipient)}`);
             return retMsg.message._recipient;
         }
         // hackish solution to be changed

@@ -26,7 +26,7 @@ const walletCtrl = require("./components/wallet/wallet");
 const blockchain = require("./components/blockchain");
 
 // debug usage: DEBUG=scilla-txn node server.js
-var debug_txn = require("debug")("kaya:logic");
+var LOG_LOGIC = require("debug")("kaya:logic");
 
 // non-persistent states. Initializes whenever server starts
 var repo = {};
@@ -63,9 +63,7 @@ Date.prototype.YYYYMMDDHHMMSS = function() {
 
 module.exports = {
   processCreateTxn: (data, saveMode) => {
-    debug_txn("Processing transaction...");
-    let privateKey = zilliqa.util.generatePrivateKey();
-    console.log(zilliqa.util);
+    LOG_LOGIC("Processing transaction...");
 
     let currentBNum = blockchain.getBlockNum();
     dir = "tmp/";
@@ -74,26 +72,27 @@ module.exports = {
       dir = "data/";
     }
     // todo: check for well-formness of the payload data
-    debug_txn('Checking payload');
+    LOG_LOGIC('Checking payload');
     let payload = data[0];
+    console.log(payload);
     let _sender = zilliqa.util.getAddressFromPublicKey(
-      payload.pubKey.toString("hex")
+      payload.pubKey
     );
-    debug_txn(`Sender: ${_sender}`);
+    LOG_LOGIC(`Sender: ${_sender}`);
     userNonce = walletCtrl.getBalance(_sender).nonce;
-    debug_txn(`User Nonce: ${userNonce}`);
-    debug_txn(`Payload Nonce: ${payload.nonce}`);
-
+    LOG_LOGIC(`User Nonce: ${userNonce}`);
+    LOG_LOGIC(`Payload Nonce: ${payload.nonce}`);
+    
     // check if the payload.nonce is valid
     if (payload.nonce == userNonce + 1) {
       // p2p token transfer
       if (!payload.code && !payload.data) {
-          debug_txn(`p2p token tranfer`);
+          LOG_LOGIC(`p2p token tranfer`);
           walletCtrl.deductFunds(_sender, payload.amount + payload.gasLimit);
           walletCtrl.addFunds(payload.to, payload.amount);
       } else {
         /* contract generation */
-        debug_txn(`User is trying to create a contract or call transition in contract`); 
+        LOG_LOGIC(`User is trying to create a contract or call transition in contract`); 
         // take the sha256 hash of address+nonce, then extract the rightmost 20 bytes
         let nonceStr = zilliqa.util
           .intToByteArray(payload.nonce - 1, 64)
@@ -109,11 +108,11 @@ module.exports = {
             payload.amount + payload.gasLimit
           )
         ) {
-          debug_txn(`Insufficient funds. Returning error to client.`);
+          LOG_LOGIC(`Insufficient funds. Returning error to client.`);
           throw new Error("Insufficient funds");
         }
-        debug_txn(`Contract will be deployed at: ${contractAddr}`);
-
+        LOG_LOGIC(`Contract will be deployed at: ${contractAddr}`);
+        
         nextAddr = scillaCtrl.executeScillaRun(
           payload,
           contractAddr,
@@ -139,28 +138,28 @@ module.exports = {
         ) {
           // Update address_to_contracts DS
           if (_sender in addr_to_contracts) {
-            debug_txn("User has contracts. Appending to list");
+            LOG_LOGIC("User has contracts. Appending to list");
             addr_to_contracts[_sender].push(contractAddr);
           } else {
-            debug_txn(
+            LOG_LOGIC(
               "User do not have existing contracts. Creating new entry."
             );
             addr_to_contracts[_sender] = [contractAddr];
           }
-          debug_txn("Addr-to-Contracts: %O", addr_to_contracts);
+          LOG_LOGIC("Addr-to-Contracts: %O", addr_to_contracts);
         }
       }
     } else {
       // payload.nonce is not valid. Deduct gas anyway
       walletCtrl.deductFunds(_sender, payload.amount + payload.gasLimit);
-      debug_txn("Invalid Nonce");
+      LOG_LOGIC("Invalid Nonce");
     }
 
     // transtionID is a sha256 digest of txndetails
     testID = Buffer.from(JSON.stringify(payload));
     newTransactionID = sha256.digest(testID).toString("hex");
 
-    debug_txn(`Transaction will be logged as ${newTransactionID}`);
+    LOG_LOGIC(`Transaction will be logged as ${newTransactionID}`);
     let txnDetails = {
       version: payload.version,
       nonce: payload.nonce,
@@ -201,14 +200,14 @@ module.exports = {
 
   processGetTransaction: data => {
     if (!data) {
-      debug_txn("Invalid params");
+      LOG_LOGIC("Invalid params");
       err = new Error(
         "INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised"
       );
       throw err;
     }
 
-    debug_txn(`TxnID: ${data[0]}`);
+    LOG_LOGIC(`TxnID: ${data[0]}`);
     var data = transactions[data[0]];
     if (data) {
       return data;
@@ -227,9 +226,9 @@ module.exports = {
   },
 
   processGetSmartContractInit: (data, saveMode) => {
-    debug_txn(`Getting SmartContract Init`);
+    LOG_LOGIC(`Getting SmartContract Init`);
     if (!data) {
-      debug_txn("Invalid params");
+      LOG_LOGIC("Invalid params");
       err = new Error(
         "INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised"
       );
@@ -253,9 +252,9 @@ module.exports = {
   },
 
   processGetSmartContractCode: (data, saveMode) => {
-    debug_txn(`Getting SmartContract code`);
+    LOG_LOGIC(`Getting SmartContract code`);
     if (!data) {
-      debug_txn("Invalid params");
+      LOG_LOGIC("Invalid params");
       err = new Error(
         "INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised"
       );
@@ -274,16 +273,16 @@ module.exports = {
       console.log(`No code file found (Contract: ${contract_addr}`);
       throw new Error("Address does not exist");
     }
-    debug_txn("Returning smart contract code to caller.");
+    LOG_LOGIC("Returning smart contract code to caller.");
     data = {};
     data["code"] = fs.readFileSync(code_path, "utf-8");
     return data;
   },
 
   processGetSmartContractState: (data, saveMode) => {
-    debug_txn(`Getting SmartContract State`);
+    LOG_LOGIC(`Getting SmartContract State`);
     if (!data) {
-      debug_txn("Invalid params");
+      LOG_LOGIC("Invalid params");
       err = new Error(
         "INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised"
       );
@@ -313,7 +312,7 @@ an account
 */
   processGetSmartContracts: (data, saveMode) => {
     if (!data) {
-      debug_txn("Invalid params");
+      LOG_LOGIC("Invalid params");
       err = new Error(
         "INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised"
       );

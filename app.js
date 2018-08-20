@@ -17,9 +17,8 @@
 
 const express = require('express');
 const bodyParser = require('body-parser');
-const debug_server = require('debug')('kaya:server');
+const LOG_APPJS = require('debug')('kaya:app.js');
 const config = require('./config');
-const port = 4200;
 const app = express();
 const logic = require('./logic');
 const wallet = require('./components/wallet/wallet');
@@ -27,8 +26,7 @@ const fs = require('fs');
 const fsp = require('node-fs');
 const cors = require('cors')
 let argv = require('yargs').argv;
-var rimraf = require('rimraf');
-const utilities = require('./utilities');
+const rimraf = require('rimraf');
 app.use(bodyParser.json({ extended: false }));
 
 var isPersistence = false; // tmp is the default behavior
@@ -45,27 +43,27 @@ function makeResponse(id, jsonrpc, data, isErr) {
 }
 
 if (argv.save) {
-    console.log('Save mode enabled');
+    LOG_APPJS('Save mode enabled');
     isPersistence = true;
 }
 
 if (argv.load) {
     // loading option specified
-    console.log('Loading option specified.');
+    LOG_APPJS('Loading option specified.');
     logic.bootstrapFile(argv.load);
     isPersistence = true;
 }
 
 // cleanup old folders
 if (fs.existsSync('./tmp')) {
-    debug_server(`Tmp folder found. Removing ${__dirname}/tmp`);
+    LOG_APPJS(`Tmp folder found. Removing ${__dirname}/tmp`);
     rimraf.sync(__dirname + '/tmp');
-    debug_server(`${__dirname}/tmp removed`);
+    LOG_APPJS(`${__dirname}/tmp removed`);
 }
 
 if (!fs.existsSync('./tmp')) {
     fs.mkdirSync('./tmp');
-    debug_server(`tmp folder created in ${__dirname}/tmp`);
+    LOG_APPJS(`tmp folder created in ${__dirname}/tmp`);
 }
 if (!fs.existsSync('./data')) {
     fs.mkdirSync('./data');
@@ -73,7 +71,7 @@ if (!fs.existsSync('./data')) {
         if (err) {
             console.log(err);
         } else {
-            debug_server('Directory created');
+            LOG_APPJS('Directory created');
         }
     });
 }
@@ -85,6 +83,7 @@ wallet.printWallet();
 // cross region settings with Env
 if (process.env.NODE_ENV === 'dev') {
     app.use(cors());
+    LOG_APPJS('CORS Enabled.')
 }
 
 app.get('/', (req, res) => {
@@ -95,7 +94,7 @@ app.get('/', (req, res) => {
 app.post('/', (req, res) => {
     let body = req.body;
     let data = {};
-    console.log(`Method specified: ${body.method}`);
+    LOG_APPJS(`Method specified: ${body.method}`);
     switch (body.method) {
         case 'GetBalance':
             console.log(`Getting balance for ${body.params}`);
@@ -196,7 +195,7 @@ app.post('/', (req, res) => {
             data = { "error": "Unsupported Method" };
             res.status(404).send(data);
     }
-    console.log('Sending status');
+    LOG_APPJS('Sending status');
 
 })
 

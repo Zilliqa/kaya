@@ -27,7 +27,6 @@ let zilliqa = new Zilliqa({
 })
 
 let privateKey, address;
-
 // User supplies the private key through `--key`
 if (argv.key) {
     privateKey = argv.key;
@@ -89,5 +88,6 @@ console.log(initParams);
 // sign the transaction using util methods
 let txn = zilliqa.util.createTransactionJson(privateKey, txnDetails);
 
+//console.log(zilliqa.util.getAddressFromPubKey(txn.pubKey));
 // // send the transaction to the node
 node.createTransaction(txn, callback);

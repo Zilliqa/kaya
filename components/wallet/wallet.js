@@ -19,7 +19,7 @@
 const assert = require('assert');
 const config = require('../../config');
 const {Zilliqa} = require('zilliqa-js');
-const debug_wallet = require('debug')('kaya:wallet');
+const LOG_WALLET = require('debug')('kaya:wallet');
 
 //@dev: As this is a kaya, private keys will be stored
 // note: Real systems do not store private key
@@ -78,43 +78,43 @@ module.exports = {
     sufficientFunds: (address, amount) => {
         // checking if an address has sufficient funds for deduction
         userBalance = module.exports.getBalance(address);
-        debug_wallet(`Checking if ${address} has ${amount}`)
+        LOG_WALLET(`Checking if ${address} has ${amount}`)
         if(userBalance.balance < amount) {
-            debug_wallet(`Insufficient funds.`);
+            LOG_WALLET(`Insufficient funds.`);
             return false;
         } else {
-            debug_wallet(`Sufficient Funds.`)
+            LOG_WALLET(`Sufficient Funds.`)
             return true;
         }
     },
 
     deductFunds: (address, amount) => {
-        debug_wallet(`Deducting ${amount} from ${address}`);        
+        LOG_WALLET(`Deducting ${amount} from ${address}`);        
         assert(module.exports.sufficientFunds(address, amount));
         // deduct funds
         let currentBalance = wallets[address].amount;
-        debug_wallet(`Sender's previous Balance: ${currentBalance}`);
+        LOG_WALLET(`Sender's previous Balance: ${currentBalance}`);
         currentBalance = currentBalance - amount;
         if(currentBalance < 0) { 
             throw new Error('Unexpected error, funds went below 0');
         }
         wallets[address].amount = currentBalance;
-        debug_wallet(`Deduct funds complete. Sender's new balance: ${wallets[address].amount}`)
+        LOG_WALLET(`Deduct funds complete. Sender's new balance: ${wallets[address].amount}`)
     },
 
     addFunds: (address, amount) => { 
-        debug_wallet(`Adding ${amount} to ${address}`);        
+        LOG_WALLET(`Adding ${amount} to ${address}`);        
         let currentBalance = wallets[address].amount;
-        debug_wallet(`Recipient's previous Balance: ${currentBalance}`);
+        LOG_WALLET(`Recipient's previous Balance: ${currentBalance}`);
 
         // add amount
         currentBalance = currentBalance + amount;
         wallets[address].amount = currentBalance;
-        debug_wallet(`Adding funds complete. Recipient's new Balance: ${wallets[address].amount}`)
+        LOG_WALLET(`Adding funds complete. Recipient's new Balance: ${wallets[address].amount}`)
     },
 
     increaseNonce: (address) => { 
-        debug_wallet(`Increasing nonce for ${address}`)
+        LOG_WALLET(`Increasing nonce for ${address}`)
         if(!zilliqa.util.isAddress(address)) { 
             throw new Error('Address size not appropriate')
         }
@@ -124,7 +124,7 @@ module.exports = {
             throw new Error('Address not found');
         } else {
             wallets[address].nonce = wallets[address].nonce + 1;
-            debug_wallet(`New nonce for ${address} : ${wallets[address].nonce}`)
+            LOG_WALLET(`New nonce for ${address} : ${wallets[address].nonce}`)
         }
     },
 
