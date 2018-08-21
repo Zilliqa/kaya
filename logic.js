@@ -16,7 +16,7 @@
 **/
 
 // logic.js : Logic Script
-const sha256 = require("bcrypto").sha256;
+const hashjs = require('hash.js');
 const fs = require("fs");
 const path = require("path");
 const {Zilliqa} = require("zilliqa-js");
@@ -73,7 +73,6 @@ module.exports = {
     // todo: check for well-formness of the payload data
     LOG_LOGIC('Checking payload');
     let payload = data[0];
-    console.log(payload);
     let _sender = zilliqa.util.getAddressFromPublicKey(
       payload.pubKey
     );
@@ -97,7 +96,7 @@ module.exports = {
           .intToByteArray(payload.nonce - 1, 64)
           .join("");
         let combinedStr = _sender + nonceStr;
-        let contractPubKey = sha256.digest(new Buffer(combinedStr, "hex"));
+        let contractPubKey = hashjs.sha256().update(combinedStr).digest('hex');
         const contractAddr = contractPubKey.toString("hex", 12);
 
         // @dev: currently, the gas cost is the gaslimit. This WILL change in the future
@@ -155,8 +154,9 @@ module.exports = {
     }
 
     // transtionID is a sha256 digest of txndetails
-    testID = Buffer.from(JSON.stringify(payload));
-    newTransactionID = sha256.digest(testID).toString("hex");
+    transaction_id_buffer = Buffer.from(JSON.stringify(payload));
+    newTransactionID = hashjs.sha256().update(transaction_id_buffer)
+          .digest('hex');
 
     LOG_LOGIC(`Transaction will be logged as ${newTransactionID}`);
     let txnDetails = {
