@@ -89,8 +89,10 @@ module.exports = {
     },
 
     deductFunds: (address, amount) => {
-        LOG_WALLET(`Deducting ${amount} from ${address}`);        
-        assert(module.exports.sufficientFunds(address, amount));
+        LOG_WALLET(`Deducting ${amount} from ${address}`);
+        if(!wallets[address] || !module.exports.sufficientFunds(address, amount)) {
+            throw new Error('Insufficient Funds');
+        }        
         // deduct funds
         let currentBalance = wallets[address].amount;
         LOG_WALLET(`Sender's previous Balance: ${currentBalance}`);
@@ -103,7 +105,13 @@ module.exports = {
     },
 
     addFunds: (address, amount) => { 
-        LOG_WALLET(`Adding ${amount} to ${address}`);        
+        LOG_WALLET(`Adding ${amount} to ${address}`);
+        if(!wallets[address]) { 
+            // initialize new wallet account
+            wallets[address] = {};
+            wallets[address].amount = 0;
+            wallets[address].nonce = 0;
+        }        
         let currentBalance = wallets[address].amount;
         LOG_WALLET(`Recipient's previous Balance: ${currentBalance}`);
 
@@ -119,8 +127,6 @@ module.exports = {
             throw new Error('Address size not appropriate')
         }
         if(!wallets[address]) { 
-            // on zilliqa, default balance and nonce is 0
-            // however, since im only storing wallets that have been created, i will throw error instead of increasing dummy nonce.
             throw new Error('Address not found');
         } else {
             wallets[address].nonce = wallets[address].nonce + 1;
