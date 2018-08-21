@@ -78,7 +78,7 @@ module.exports = {
     sufficientFunds: (address, amount) => {
         // checking if an address has sufficient funds for deduction
         userBalance = module.exports.getBalance(address);
-        LOG_WALLET(`Checking if ${address} has ${amount}`)
+        LOG_WALLET(`Checking if ${address} has ${amount}`);
         if(userBalance.balance < amount) {
             LOG_WALLET(`Insufficient funds.`);
             return false;
@@ -90,9 +90,13 @@ module.exports = {
 
     deductFunds: (address, amount) => {
         LOG_WALLET(`Deducting ${amount} from ${address}`);
+        if(!zilliqa.util.isAddress(address)) { 
+            throw new Error('Address size not appropriate');
+        }       
         if(!wallets[address] || !module.exports.sufficientFunds(address, amount)) {
             throw new Error('Insufficient Funds');
-        }        
+        }
+              
         // deduct funds
         let currentBalance = wallets[address].amount;
         LOG_WALLET(`Sender's previous Balance: ${currentBalance}`);
@@ -106,8 +110,12 @@ module.exports = {
 
     addFunds: (address, amount) => { 
         LOG_WALLET(`Adding ${amount} to ${address}`);
+        if(!zilliqa.util.isAddress(address)) { 
+            throw new Error('Address size not appropriate')
+        } 
         if(!wallets[address]) { 
             // initialize new wallet account
+            LOG_WALLET(`Creating new wallet account for ${address}`)
             wallets[address] = {};
             wallets[address].amount = 0;
             wallets[address].nonce = 0;
