@@ -20,7 +20,6 @@ const sha256 = require("bcrypto").sha256;
 const fs = require("fs");
 const path = require("path");
 const {Zilliqa} = require("zilliqa-js");
-const utilities = require("./utilities");
 const scillaCtrl = require("./components/scilla/scilla");
 const walletCtrl = require("./components/wallet/wallet");
 const blockchain = require("./components/blockchain");
@@ -178,11 +177,11 @@ module.exports = {
   bootstrapFile: filepath => {
     //bootstraps state of transactions and caddr owner
     var data = JSON.parse(fs.readFileSync(filepath, "utf-8"));
-    console.log("state of blockchain:");
+    LOG_LOGIC("State of blockchain:");
     transactions = data.transactions;
     repo = data.repo;
     map_Caddr_owner = data.map_Caddr_owner;
-    console.log(transactions);
+    LOG_LOGIC(transactions);
   },
 
   dumpDataFiles: data => {

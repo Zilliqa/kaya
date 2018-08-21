@@ -40,7 +40,7 @@ if (argv.key) {
 address = zilliqa.util.getAddressFromPrivateKey(privateKey);
 let node = zilliqa.getNode();
 console.log(`Address: ${address}`);
-
+console.log(`Pubkey:  ${zilliqa.util.getPubKeyFromPrivateKey(privateKey)}`);
 function callback(err, data) {
     if (err || data.error) {
         console.log('Error');
