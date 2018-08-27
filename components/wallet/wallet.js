@@ -15,14 +15,11 @@
   kaya.  If not, see <http://www.gnu.org/licenses/>.
 **/
 
-
 /* Wallet Component */
-const crypto = require('crypto');
 const assert = require('assert');
-const zilliqa_util = require('../../lib/util')
-let colors = require('colors');
-var debug_wallet = require('debug')('kaya:wallet');
-
+const config = require('../../config');
+const {Zilliqa} = require('zilliqa-js');
+const LOG_WALLET = require('debug')('kaya:wallet');
 
 //@dev: As this is a kaya, private keys will be stored
 // note: Real systems do not store private key
@@ -30,15 +27,22 @@ var debug_wallet = require('debug')('kaya:wallet');
 // Wallet will store three things - address, private key and balance
 wallets = {};
 
+/*  Dummy constructor for zilliqajs */
+// @dev: Will be replaced once zilliqa-js exposes utils without constructors
+let zilliqa = new Zilliqa({
+    nodeUrl: 'http://localhost:8888'
+});
+
+
 function createNewWallet() {
-    let pk = zilliqa_util.generatePrivateKey();
-    let address = zilliqa_util.getAddressFromPrivateKey(pk);
+    // let pk = zilliqa.util.generatePrivateKey();
+    let pk = zilliqa.util.generatePrivateKey();
+    let address = zilliqa.util.getAddressFromPrivateKey(pk);
     let privKey_string = pk.toString('hex');
-    let amt = 100000;
     newWallet = {
         privateKey: privKey_string,
-        amount: amt,
-        nonce: 0
+        amount: config.wallet.defaultAmt,
+        nonce: config.wallet.defaultNonce
     };
     wallets[address] = newWallet;
 }
@@ -58,14 +62,14 @@ module.exports = {
             console.log('Available Accounts');
             console.log('=============================');
             keys = [];
-            for(let i = 0; i<10; i++) {
+            for(let i = 0; i< config.wallet.numAccounts; i++) {
                 var addr = Object.keys(wallets)[i];
                 console.log(`(${i}) ${addr} (Amt: ${wallets[addr].amount}) (Nonce: ${wallets[addr].nonce})`);
                 keys.push(wallets[addr].privateKey);
             }
             console.log('\n Private Keys ');
             console.log('=============================');
-            for(let i = 0; i < 10; i++) { 
+            for(let i = 0; i < config.wallet.numAccounts; i++) { 
                 console.log(`(${i}) ${keys[i]}`);
             }
         }
@@ -74,58 +78,72 @@ module.exports = {
     sufficientFunds: (address, amount) => {
         // checking if an address has sufficient funds for deduction
         userBalance = module.exports.getBalance(address);
-        debug_wallet(`Checking if ${address} has ${amount}`)
+        LOG_WALLET(`Checking if ${address} has ${amount}`);
         if(userBalance.balance < amount) {
-            debug_wallet(`Insufficient funds.`);
+            LOG_WALLET(`Insufficient funds.`);
             return false;
         } else {
-            debug_wallet(`Sufficient Funds.`)
+            LOG_WALLET(`Sufficient Funds.`)
             return true;
         }
     },
 
     deductFunds: (address, amount) => {
-        debug_wallet(`Deducting ${amount} from ${address}`);        
-        assert(module.exports.sufficientFunds(address, amount));
+        LOG_WALLET(`Deducting ${amount} from ${address}`);
+        if(!zilliqa.util.isAddress(address)) { 
+            throw new Error('Address size not appropriate');
+        }       
+        if(!wallets[address] || !module.exports.sufficientFunds(address, amount)) {
+            throw new Error('Insufficient Funds');
+        }
+              
         // deduct funds
         let currentBalance = wallets[address].amount;
-        debug_wallet(`Sender's previous Balance: ${currentBalance}`);
+        LOG_WALLET(`Sender's previous Balance: ${currentBalance}`);
         currentBalance = currentBalance - amount;
         if(currentBalance < 0) { 
             throw new Error('Unexpected error, funds went below 0');
         }
         wallets[address].amount = currentBalance;
-        debug_wallet(`Deduct funds complete. Sender's new balance: ${wallets[address].amount}`)
+        LOG_WALLET(`Deduct funds complete. Sender's new balance: ${wallets[address].amount}`)
     },
 
     addFunds: (address, amount) => { 
-        debug_wallet(`Adding ${amount} to ${address}`);        
+        LOG_WALLET(`Adding ${amount} to ${address}`);
+        if(!zilliqa.util.isAddress(address)) { 
+            throw new Error('Address size not appropriate')
+        } 
+        if(!wallets[address]) { 
+            // initialize new wallet account
+            LOG_WALLET(`Creating new wallet account for ${address}`)
+            wallets[address] = {};
+            wallets[address].amount = 0;
+            wallets[address].nonce = 0;
+        }        
         let currentBalance = wallets[address].amount;
-        debug_wallet(`Recipient's previous Balance: ${currentBalance}`);
+        LOG_WALLET(`Recipient's previous Balance: ${currentBalance}`);
 
         // add amount
         currentBalance = currentBalance + amount;
         wallets[address].amount = currentBalance;
-        debug_wallet(`Adding funds complete. Recipient's new Balance: ${wallets[address].amount}`)
+        LOG_WALLET(`Adding funds complete. Recipient's new Balance: ${wallets[address].amount}`)
     },
 
     increaseNonce: (address) => { 
-        debug_wallet(`Increasing nonce for ${address}`)
-        if(!zilliqa_util.isAddress(address)) { 
+        LOG_WALLET(`Increasing nonce for ${address}`)
+        if(!zilliqa.util.isAddress(address)) { 
             throw new Error('Address size not appropriate')
         }
         if(!wallets[address]) { 
-            // on zilliqa, default balance and nonce is 0
-            // however, since im only storing wallets that have been created, i will throw error instead of increasing dummy nonce.
             throw new Error('Address not found');
         } else {
             wallets[address].nonce = wallets[address].nonce + 1;
-            debug_wallet(`New nonce for ${address} : ${wallets[address].nonce}`)
+            LOG_WALLET(`New nonce for ${address} : ${wallets[address].nonce}`)
         }
     },
 
     getBalance: (address) => { 
-        if(!zilliqa_util.isAddress(address)) { 
+        if(!zilliqa.util.isAddress(address)) { 
             throw new Error('Address size not appropriate')
         }
         if(!wallets[address]) { 

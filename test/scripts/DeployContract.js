@@ -27,7 +27,6 @@ let zilliqa = new Zilliqa({
 })
 
 let privateKey, address;
-
 // User supplies the private key through `--key`
 if (argv.key) {
     privateKey = argv.key;
@@ -41,7 +40,7 @@ if (argv.key) {
 address = zilliqa.util.getAddressFromPrivateKey(privateKey);
 let node = zilliqa.getNode();
 console.log(`Address: ${address}`);
-
+console.log(`Pubkey:  ${zilliqa.util.getPubKeyFromPrivateKey(privateKey)}`);
 function callback(err, data) {
     if (err || data.error) {
         console.log('Error');
@@ -89,5 +88,6 @@ console.log(initParams);
 // sign the transaction using util methods
 let txn = zilliqa.util.createTransactionJson(privateKey, txnDetails);
 
+//console.log(zilliqa.util.getAddressFromPubKey(txn.pubKey));
 // // send the transaction to the node
 node.createTransaction(txn, callback);

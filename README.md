@@ -30,7 +30,7 @@ In addition, multi-contract calls are not supported yet.
 
 ## Installation
 Run `npm install`, then `node server.js`.
-Debug mode: `DEBUG=kaya* node server.js`.
+Debug mode: `npm run debug`. Debug mode provides greater verbosity about your code that was being sent to the rpc server.
 
 ### Compiling Scilla
 
@@ -43,9 +43,15 @@ To compile the interpreter:
 
 ## Server Usage
 
-To run the server, type `npm start`. The server listens on port 4200 by default.
+To run the server, do:
+* Normal: `npm start`
+* Normal with debug mode: `npm run debug`
+*
+The server listens on port 4200 by default. You can change the port through the `config.js` file.
 
+### Advanced: Persistent Storage using Kaya RPC
 By default, the data states are non-persistent. Once you shut down the node server, everything will be deleted.
+
 To enable persistence data, use:
 ```
 node server.js --save

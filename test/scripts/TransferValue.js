@@ -29,11 +29,17 @@ let zilliqa = new Zilliqa({
 /*
     usage: node TransferToken.js --from [private_key] --to [wallet_address]
 */ 
+if(argv.help) { 
+    console.log(`Usage: node TransferValue -from [private_key] --to
+    [address] --amt [0] --nonce [0]`);
+    process.exit(0);
+}
+
 
 // User supplies the private key through `--key`
 if (!argv.from) {
     console.log('Private key must be given');
-    exit(0);
+    process.exit(1);
 }
 
 if (!argv.to) { 
@@ -44,6 +50,23 @@ if (!argv.to) {
 let recipient_address = argv.to;
 let privateKey = argv.from;
 let sender_address = zilliqa.util.getAddressFromPrivateKey(privateKey);
+let nonce = 0;
+let amount = 0;
+
+if(argv.amt && !isNaN(argv.amt)) {
+    if(argv.amt < 0) { 
+        console.log(`Amount cannot be negative`);
+        process.exit(1);
+    } 
+    amount = Number(argv.amt);
+}
+if(argv.nonce && !isNaN(argv.nonce)) {
+    if(argv.nonce < 0) { 
+        console.log(`Nonce cannot be negative`);
+        process.exit(1);
+    }  
+    nonce = Number(argv.nonce);
+}
 
 let node = zilliqa.getNode();
 console.log(`From:  ${sender_address}`);
@@ -63,12 +86,13 @@ function callback(err, data) {
 console.log('Zilliqa Testing Script'.bold.cyan);
 console.log(`Connected to ${url}`);
 
+console.log(nonce);
 // transaction details - update the nonce yourself.
 let txnDetails = {
     version: 0,
-    nonce: 3,
+    nonce: nonce,
     to: argv.to ,
-    amount: new BN(990),
+    amount: new BN(amount),
     gasPrice: 1,
     gasLimit: 10
 };
