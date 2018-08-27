@@ -215,7 +215,7 @@ module.exports = {
   },
 
   processGetRecentTransactions: data => {
-    console.log(`Getting Recent Transactions`);
+    LOG_LOGIC(`Getting Recent Transactions`);
 
     var txnhashes = Object.keys(transactions);
     var responseObj = {};

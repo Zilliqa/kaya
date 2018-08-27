@@ -40,8 +40,8 @@ describe('Test the Server Connection', () => {
 const accounts = app.wallet.getAccounts();
 const testAccount1 = Object.keys(accounts)[0];
 
-describe('Test Balance: Should returned initialized balance', () => {
-    test('It should return the correct balance', async (done) => {
+describe('Server Initialization Tests', () => {
+    test('Test Accounts generated should return the correct balance', async (done) => {
         request(app.expressjs).post('/')
         .send(makeQuery("GetBalance", testAccount1))
         .then((response1) => {
@@ -57,6 +57,16 @@ describe('Test Balance: Should returned initialized balance', () => {
         .then((response1) => {
             expect(response1.statusCode).toBe(200);
             expect(response1.body).toEqual({"id": "1", "jsonrpc": "2.0", "result": {"balance": 0, "nonce": 0}});
+            done();
+        });
+    });
+
+    test('Should have zero recent transactions', async (done) => {
+        request(app.expressjs).post('/')
+        .send(makeQuery("GetRecentTransactions", ""))
+        .then((response) => {
+            expect(response.statusCode).toBe(200);
+            expect(response.body.result.number).toBe(0);
             done();
         });
     });
