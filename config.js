@@ -21,6 +21,10 @@
 
 const config = module.exports = {}
 
+
+config.port = 4200;
+config.version = "0.0.1";
+
 // blockchain specific configuration
 config.blockchain = {
     // sets timer for the block confirmation
