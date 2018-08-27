@@ -19,7 +19,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const LOG_APPJS = require('debug')('kaya:app.js');
 const config = require('./config');
-const app = express();
+const expressjs = express();
 const logic = require('./logic');
 const wallet = require('./components/wallet/wallet');
 const fs = require('fs');
@@ -27,7 +27,7 @@ const fsp = require('node-fs');
 const cors = require('cors')
 let argv = require('yargs').argv;
 const rimraf = require('rimraf');
-app.use(bodyParser.json({ extended: false }));
+expressjs.use(bodyParser.json({ extended: false }));
 
 var isPersistence = false; // tmp is the default behavior
 function makeResponse(id, jsonrpc, data, isErr) {
@@ -82,24 +82,29 @@ wallet.printWallet();
 
 // cross region settings with Env
 if (process.env.NODE_ENV === 'dev') {
-    app.use(cors());
+    expressjs.use(cors());
     LOG_APPJS('CORS Enabled.')
 }
 
-app.get('/', (req, res) => {
+expressjs.get('/', (req, res) => {
     res.status(200).send('Kaya RPC Server');
 }), 
 
 // Method handling logic for incoming POST request
-app.post('/', (req, res) => {
+expressjs.post('/', (req, res) => {
     let body = req.body;
     let data = {};
     LOG_APPJS(`Method specified: ${body.method}`);
     switch (body.method) {
         case 'GetBalance':
-            console.log(`Getting balance for ${body.params}`);
+            addr = body.params[0];
+            if(typeof(addr) == 'object') { 
+                addr = JSON.stringify(addr);
+            }
+            LOG_APPJS(`Getting balance for ${addr}`);
+
             try {
-                data = wallet.getBalance(body.params);
+                data = wallet.getBalance(addr);
             } catch (err) {
                 data = err.message;
                 res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
@@ -199,4 +204,7 @@ app.post('/', (req, res) => {
 
 })
 
-module.exports = app;
+module.exports = {
+    expressjs,
+    wallet
+};

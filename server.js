@@ -16,10 +16,11 @@
 **/
 
 const app = require('./app');
-const port = 4200;
+const config = require('./config');
+const port = config.port;
 
-const server = app.listen(port, (err) => {
-    console.log(`Zilliqa kaya Server (ver: 0.0.1)\n`.cyan);
+const server = app.expressjs.listen(port, (err) => {
+    console.log(`Zilliqa kaya Server (ver: ${config.version})\n`.cyan);
     console.log(`\nServer listening on 127.0.0.1:${port}`.yellow)
 })
 

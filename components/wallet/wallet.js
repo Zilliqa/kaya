@@ -34,8 +34,7 @@ let zilliqa = new Zilliqa({
 });
 
 
-function createNewWallet() {
-    // let pk = zilliqa.util.generatePrivateKey();
+const createNewWallet = () => {
     let pk = zilliqa.util.generatePrivateKey();
     let address = zilliqa.util.getAddressFromPrivateKey(pk);
     let privKey_string = pk.toString('hex');
@@ -53,6 +52,10 @@ module.exports = {
         for(var i=0; i < n; i++){
             createNewWallet();
         }
+    },
+
+    getAccounts: () => {
+        return wallets;
     },
 
     printWallet: () => {
@@ -142,10 +145,12 @@ module.exports = {
         }
     },
 
-    getBalance: (address) => { 
-        if(!zilliqa.util.isAddress(address)) { 
-            throw new Error('Address size not appropriate')
-        }
+    getBalance: (address) => {
+        // if(!zilliqa.util.isAddress(address)) { 
+        //     throw new Error('Address size not appropriate')
+        // }
+        LOG_WALLET(`Getting balance for ${address}`);
+
         if(!wallets[address]) { 
             return {balance: 0, nonce: 0};
         } else {
