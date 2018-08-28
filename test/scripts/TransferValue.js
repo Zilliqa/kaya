@@ -1,16 +1,16 @@
 /**
  This file is part of kaya.
   Copyright (c) 2018 - present Zilliqa Research Pvt. Ltd.
-  
+
   kaya is free software: you can redistribute it and/or modify it under the
   terms of the GNU General Public License as published by the Free Software
   Foundation, either version 3 of the License, or (at your option) any later
   version.
- 
+
   kaya is distributed in the hope that it will be useful, but WITHOUT ANY
   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
   A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
- 
+
   You should have received a copy of the GNU General Public License along with
   kaya.  If not, see <http://www.gnu.org/licenses/>.
 **/
@@ -28,8 +28,8 @@ let zilliqa = new Zilliqa({
 
 /*
     usage: node TransferToken.js --from [private_key] --to [wallet_address]
-*/ 
-if(argv.help) { 
+*/
+if(argv.help) {
     console.log(`Usage: node TransferValue -from [private_key] --to
     [address] --amt [0] --nonce [0]`);
     process.exit(0);
@@ -42,7 +42,7 @@ if (!argv.from) {
     process.exit(1);
 }
 
-if (!argv.to) { 
+if (!argv.to) {
     console.log('Recipient wallet address required');
     process.exit(0);
 }
@@ -51,20 +51,20 @@ let recipient_address = argv.to;
 let privateKey = argv.from;
 let sender_address = zilliqa.util.getAddressFromPrivateKey(privateKey);
 let nonce = 0;
-let amount = 0;
+let amount = 100;
 
 if(argv.amt && !isNaN(argv.amt)) {
-    if(argv.amt < 0) { 
+    if(argv.amt < 0) {
         console.log(`Amount cannot be negative`);
         process.exit(1);
-    } 
+    }
     amount = Number(argv.amt);
 }
 if(argv.nonce && !isNaN(argv.nonce)) {
-    if(argv.nonce < 0) { 
+    if(argv.nonce < 0) {
         console.log(`Nonce cannot be negative`);
         process.exit(1);
-    }  
+    }
     nonce = Number(argv.nonce);
 }
 

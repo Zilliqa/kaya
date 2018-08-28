@@ -37,3 +37,9 @@ config.wallet = {
     defaultAmt: 100000,  // default amount of zils assigned to each wallet
     defaultNonce: 0
 }
+
+config.testconfigs = {
+    gasPrice: 1,
+    gasLimit: 10,
+    transferAmt: 100
+}

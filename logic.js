@@ -137,6 +137,7 @@ module.exports = {
       if (!payload.code && !payload.data) {
           LOG_LOGIC(`p2p token tranfer`);
           walletCtrl.deductFunds(_sender, payload.amount + payload.gasLimit);
+          walletCtrl.increaseNonce(_sender);
           walletCtrl.addFunds(payload.to, payload.amount);
       
       } else {
