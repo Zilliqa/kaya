@@ -20,26 +20,6 @@ const request = require('supertest');
 const app = require('../app');
 const config = require('../config');
 require('isomorphic-fetch');
-const BN = require('bn.js');
-let { Zilliqa } = require('zilliqa-js');
-
-let zilliqa = new Zilliqa({
-    nodeUrl: 'http://localhost:4200'
-})
-
-
-const makeTxnDetailsP2P = (recipient, amount, nonce) => {
-    let txnDetails = {
-        version: 0,
-        nonce: nonce,
-        to: recipient ,
-        amount: new BN(amount),
-        gasPrice: 1,
-        gasLimit: 10
-    };
-    return txnDetails;
-}
-
 
 const makeQuery = (method, params) => { 
     return {

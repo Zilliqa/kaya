@@ -4,7 +4,7 @@
   "description": "Zilliqa's RPC Server",
   "main": "server.js",
   "scripts": {
-    "test": "jest",
+    "test": "jest --verbose",
     "dev": "cross-env NODE_ENV=dev node server.js",
     "start": "node server.js",
     "debug": "DEBUG=kaya* node server.js"
