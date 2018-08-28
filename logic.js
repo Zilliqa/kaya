@@ -69,6 +69,13 @@ const computeContractAddr = (sender) => {
   return digest.slice(24);
 }
 
+computeTransactionHash = (payload) => { 
+  // transtionID is a sha256 digest of txndetails
+  buf = Buffer.from(JSON.stringify(payload));
+  transactionHash = hashjs.sha256().update(buf).digest('hex');
+  return transactionHash;
+}
+
 module.exports = {
   processCreateTxn: (data, saveMode) => {
     LOG_LOGIC("Processing transaction...");
@@ -97,6 +104,7 @@ module.exports = {
           LOG_LOGIC(`p2p token tranfer`);
           walletCtrl.deductFunds(_sender, payload.amount + payload.gasLimit);
           walletCtrl.addFunds(payload.to, payload.amount);
+      
       } else {
         /* contract generation */
         LOG_LOGIC(`Task: Contract Deployment / Create Transaction`); 
@@ -125,20 +133,16 @@ module.exports = {
         walletCtrl.deductFunds(_sender, payload.amount + payload.gasLimit);
         walletCtrl.increaseNonce(_sender); // only increase if a contract is successful
 
+
         if (nextAddr != '0'.repeat(40) && nextAddr.substring(2) != _sender) {
-          console.log(
-            `Contract is calling another address. This is not supported yet.`
-          );
+          console.log(`Multi-contract calls not supported.`);
           throw new Error(`Multi-contract calls are not supported yet.`)
 
         }
 
         // Only update if it is a deployment call
-        if (
-          payload.code &&
-          payload.to == '0'.repeat(40)
-        ) {
-          // Update address_to_contracts DS
+        if (payload.code && payload.to == '0'.repeat(40)) {
+          // Update address_to_contracts
           if (_sender in addr_to_contracts) {
             LOG_LOGIC("User has contracts. Appending to list");
             addr_to_contracts[_sender].push(contractAddr);
@@ -155,25 +159,23 @@ module.exports = {
       LOG_LOGIC("Invalid Nonce");
     }
 
-    // transtionID is a sha256 digest of txndetails
-    transaction_id_buffer = Buffer.from(JSON.stringify(payload));
-    newTransactionID = hashjs.sha256().update(transaction_id_buffer)
-          .digest('hex');
-
-    LOG_LOGIC(`Transaction will be logged as ${newTransactionID}`);
+    /* 
+      Update Transactions
+    */
+    txnId = computeTransactionHash(payload);
+    LOG_LOGIC(`Transaction will be logged as ${txnId}`);
     let txnDetails = {
-      version: payload.version,
+      ID: txnId,
+      amount: payload.amount,
       nonce: payload.nonce,
-      to: payload.to,
-      pubkey: payload.pubKey,
-      ID: newTransactionID,
-      from: _sender,
-      amount: payload.amount
+      senderPubKey: payload.pubKey,
+      signature: payload.signature,
+      toAddr: payload.to,
+      version: payload.version
     };
-    transactions[newTransactionID] = txnDetails;
+    transactions[txnId] = txnDetails;
 
-    // return txnID to user
-    return newTransactionID;
+    return txnId;
   },
 
   bootstrapFile: filepath => {

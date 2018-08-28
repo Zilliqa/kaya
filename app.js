@@ -165,7 +165,7 @@ expressjs.post('/', (req, res) => {
         case 'CreateTransaction':
             try {
                 let txn_id = logic.processCreateTxn(body.params, argv.save);
-                data = { result: txn_id };
+                data = txn_id;
             } catch (err) {
                 data = err.message;
                 res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
