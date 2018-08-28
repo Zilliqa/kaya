@@ -59,6 +59,7 @@ Date.prototype.YYYYMMDDHHMMSS = function() {
   return yyyy + MM + dd + hh + mm + ss;
 };
 
+// compute contract address from the sender's current nonce
 const computeContractAddr = (sender) => {
   userNonce = walletCtrl.getBalance(sender).nonce;
   nonceStr = zilliqa.util.intToByteArray(userNonce, 64).join("");
@@ -69,6 +70,7 @@ const computeContractAddr = (sender) => {
   return digest.slice(24);
 }
 
+// compute transactionHash from the payload
 const computeTransactionHash = (payload) => { 
   // transtionID is a sha256 digest of txndetails
   payload_copy = payload;
@@ -83,10 +85,10 @@ const intersect = (a, b) => {
   return [...new Set(a)].filter(x => new Set(b).has(x));
 }
 
+
+// checks if the transactionJson is well-formed
 const checkTransactionJson = (data) => { 
-  if(data !== null && typeof data !== 'object') { 
-    return false;
-  }
+  if(data !== null && typeof data !== 'object') return false;
   payload = data[0];
 
   /* Checking the keys in the payload */
@@ -99,7 +101,7 @@ const checkTransactionJson = (data) => {
   // number of overlap keys must be the same as the expected keys
   if( expected !== actual) return false;
 
-  // validate signature
+  // validate signature - TODO
 
   return true;
 }
@@ -113,7 +115,6 @@ module.exports = {
       throw new Error('Invalid Tx Json');
     }
     
-
     let currentBNum = blockchain.getBlockNum();
     dir = "tmp/";
     if (saveMode) {
@@ -123,9 +124,8 @@ module.exports = {
     
     let payload = data[0];
 
-    let _sender = zilliqa.util.getAddressFromPublicKey(
-      payload.pubKey
-    );
+    let _sender = zilliqa.util.getAddressFromPublicKey(payload.pubKey);
+
     LOG_LOGIC(`Sender: ${_sender}`);
     userNonce = walletCtrl.getBalance(_sender).nonce;
     LOG_LOGIC(`User Nonce: ${userNonce}`);
@@ -146,12 +146,8 @@ module.exports = {
         const contractAddr = computeContractAddr(_sender);
       
         // @dev: currently, the gas cost is the gaslimit. This WILL change in the future
-        if (
-          !walletCtrl.sufficientFunds(
-            _sender,
-            payload.amount + payload.gasLimit
-          )
-        ) {
+        const gasAndAmount = payload.amount + payload.gasLimit;
+        if (!walletCtrl.sufficientFunds(_sender, gasAndAmount)) {
           LOG_LOGIC(`Insufficient funds. Returning error to client.`);
           throw new Error("Insufficient funds");
         }
@@ -171,7 +167,6 @@ module.exports = {
         if (nextAddr != '0'.repeat(40) && nextAddr.substring(2) != _sender) {
           console.log(`Multi-contract calls not supported.`);
           throw new Error(`Multi-contract calls are not supported yet.`)
-
         }
 
         // Only update if it is a deployment call
