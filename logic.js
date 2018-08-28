@@ -69,16 +69,50 @@ const computeContractAddr = (sender) => {
   return digest.slice(24);
 }
 
-computeTransactionHash = (payload) => { 
+const computeTransactionHash = (payload) => { 
   // transtionID is a sha256 digest of txndetails
-  buf = Buffer.from(JSON.stringify(payload));
+  payload_copy = payload;
+  delete payload_copy.signature; // txn hash does not include signature
+  buf = Buffer.from(JSON.stringify(payload_copy));
   transactionHash = hashjs.sha256().update(buf).digest('hex');
   return transactionHash;
+}
+
+// check for common elements within the list
+const intersect = (a, b) => {
+  return [...new Set(a)].filter(x => new Set(b).has(x));
+}
+
+const checkTransactionJson = (data) => { 
+  if(data !== null && typeof data !== 'object') { 
+    return false;
+  }
+  payload = data[0];
+
+  /* Checking the keys in the payload */
+  numKeys = Object.keys(payload).length;
+  if(numKeys < 8) return false;
+  expectedFields = ["version","nonce","to","amount","pubKey","gasPrice","gasLimit","signature"];
+  payloadKeys = Object.keys(payload);
+  expected = intersect(payloadKeys, expectedFields).length;
+  actual = Object.keys(expectedFields).length;
+  // number of overlap keys must be the same as the expected keys
+  if( expected !== actual) return false;
+
+  // validate signature
+
+  return true;
 }
 
 module.exports = {
   processCreateTxn: (data, saveMode) => {
     LOG_LOGIC("Processing transaction...");
+    // todo: check for well-formness of the payload data
+    LOG_LOGIC(`Payload well-formed? ${checkTransactionJson(data)}`);
+    if(!checkTransactionJson(data)) {
+      throw new Error('Invalid Tx Json');
+    }
+    
 
     let currentBNum = blockchain.getBlockNum();
     dir = "tmp/";
@@ -86,9 +120,9 @@ module.exports = {
       console.log("Save mode enabled.");
       dir = "data/";
     }
-    // todo: check for well-formness of the payload data
-    LOG_LOGIC('Checking payload');
+    
     let payload = data[0];
+
     let _sender = zilliqa.util.getAddressFromPublicKey(
       payload.pubKey
     );
