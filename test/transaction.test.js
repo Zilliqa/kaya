@@ -36,10 +36,13 @@ const makeTxnDetailsP2P = (recipient, amount, nonce) => {
 const accounts = app.wallet.getAccounts();
 const alice = Object.keys(accounts)[0];
 const bob = Object.keys(accounts)[1];
+const charlie = Object.keys(accounts)[2];
 const originalAmt = config.wallet.defaultAmt;
 
 
-describe.only('Testing (Alice ----100-----> Bob)', () => {
+/*  Start */
+
+describe('Testing (Alice ----100-----> Bob)', () => {
     console.log();
 
     test('Alice should have some balance', async (done) => {
@@ -95,3 +98,62 @@ describe.only('Testing (Alice ----100-----> Bob)', () => {
 
 });
 
+/* 
+    Test - Charlie sends zils to some random dude, Ranon, 
+    who was not created through the server
+*/
+describe('Testing (Charlie ----100-----> Ranon)', () => {
+    const ranon_addr = '7A8AC37E0BFD6D67E8908569814D724AC1C90DAE'; 
+
+    test('Charlie should have some balance', async (done) => {
+        request(app.expressjs).post('/')
+        .send(makeQuery("GetBalance", charlie))
+        .then((response) => {
+            expect(response.statusCode).toBe(200);
+            expect(response.body).toEqual({"id": "1", "jsonrpc": "2.0", "result": {"balance": originalAmt, "nonce": config.wallet.defaultNonce}});
+            done();
+        });
+    });
+
+    // call is successful if a txn hash is returned
+    test('Transaction should return a txn hash', async (done) => {
+        let pk_charlie = accounts[charlie]['privateKey'];
+        let txnDetails = makeTxnDetailsP2P(ranon_addr, config.testconfigs.transferAmt, 1);
+        let jsonQuery = zilliqa.util.createTransactionJson(pk_charlie, txnDetails);
+        jsonQuery.amount = config.testconfigs.transferAmt;
+        request(app.expressjs).post('/')
+        .send(makeQuery("CreateTransaction", jsonQuery))
+        .then((response) => {
+            expect(response.statusCode).toBe(200);
+            expect(response.body.result).toHaveLength(64);
+            done();
+        });
+    });
+
+    // Check Alice account
+    test('Charlie should have correct funds deducted from his account', async (done) => {
+        const expected_bal = originalAmt - config.testconfigs.transferAmt - config.testconfigs.gasLimit;
+       
+        request(app.expressjs).post('/')
+        .send(makeQuery("GetBalance", charlie))
+        .then((response) => {
+            expect(response.statusCode).toBe(200);
+            expect(response.body).toEqual({"id": "1", "jsonrpc": "2.0", "result": {"balance": expected_bal, "nonce": config.wallet.defaultNonce + 1}});
+            done();
+        });
+    });
+
+    // Check Ranon account
+    test('Ranon should have account initialized and amount transferred', async (done) => {
+        const expected_bal = config.testconfigs.transferAmt;
+       
+        request(app.expressjs).post('/')
+        .send(makeQuery("GetBalance", ranon_addr))
+        .then((response) => {
+            expect(response.statusCode).toBe(200);
+            expect(response.body).toEqual({"id": "1", "jsonrpc": "2.0", "result": {"balance": expected_bal, "nonce": config.wallet.defaultNonce}});
+            done();
+        });
+    });
+
+});
