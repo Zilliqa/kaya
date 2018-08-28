@@ -184,8 +184,9 @@ module.exports = {
       }
     } else {
       // payload.nonce is not valid. Deduct gas anyway
-      walletCtrl.deductFunds(_sender, payload.amount + payload.gasLimit);
+      walletCtrl.deductFunds(_sender, payload.gasLimit);
       LOG_LOGIC("Invalid Nonce");
+      throw new Error('Invalid Tx Json');
     }
 
     /* 
