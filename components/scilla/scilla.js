@@ -52,7 +52,7 @@ Date.prototype.YYYYMMDDHHMMSS = function () {
     return yyyy + MM + dd + hh + mm + ss;
 };
 
-function makeBlockchainJson(val) {
+const makeBlockchainJson = (val) => {
     bc_data = [
         {
             "vname": "BLOCKNUMBER",
@@ -76,6 +76,8 @@ module.exports = {
         var code_cmd = `./components/scilla/scilla-runner -iblockchain ${blockchain_path} -o tmp/${contractAddr}_out.json`;
         // Cleaning code before parsing to scilla-runner
         isCodeDeployment = false;
+
+
         if (payload.code && payload.to == '0000000000000000000000000000000000000000') {
             // initialized with standard message template
             isCodeDeployment = true;

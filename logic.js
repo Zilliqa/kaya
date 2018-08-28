@@ -18,7 +18,6 @@
 // logic.js : Logic Script
 const hashjs = require('hash.js');
 const fs = require("fs");
-const path = require("path");
 const {Zilliqa} = require("zilliqa-js");
 const scillaCtrl = require("./components/scilla/scilla");
 const walletCtrl = require("./components/wallet/wallet");
@@ -60,6 +59,16 @@ Date.prototype.YYYYMMDDHHMMSS = function() {
   return yyyy + MM + dd + hh + mm + ss;
 };
 
+const computeContractAddr = (sender) => {
+  userNonce = walletCtrl.getBalance(sender).nonce;
+  nonceStr = zilliqa.util.intToByteArray(userNonce, 64).join("");
+  digest = hashjs.sha256()
+                  .update(sender)
+                  .update(nonceStr)
+                  .digest('hex');
+  return digest.slice(24);
+}
+
 module.exports = {
   processCreateTxn: (data, saveMode) => {
     LOG_LOGIC("Processing transaction...");
@@ -90,15 +99,10 @@ module.exports = {
           walletCtrl.addFunds(payload.to, payload.amount);
       } else {
         /* contract generation */
-        LOG_LOGIC(`User is trying to create a contract or call transition in contract`); 
+        LOG_LOGIC(`Task: Contract Deployment / Create Transaction`); 
         // take the sha256 hash of address+nonce, then extract the rightmost 20 bytes
-        let nonceStr = zilliqa.util
-          .intToByteArray(payload.nonce - 1, 64)
-          .join("");
-        let combinedStr = _sender + nonceStr;
-        let contractPubKey = hashjs.sha256().update(combinedStr).digest('hex');
-        const contractAddr = contractPubKey.toString("hex", 12);
-
+        const contractAddr = computeContractAddr(_sender);
+      
         // @dev: currently, the gas cost is the gaslimit. This WILL change in the future
         if (
           !walletCtrl.sufficientFunds(
@@ -132,16 +136,14 @@ module.exports = {
         // Only update if it is a deployment call
         if (
           payload.code &&
-          payload.to == "0000000000000000000000000000000000000000"
+          payload.to == '0'.repeat(40)
         ) {
           // Update address_to_contracts DS
           if (_sender in addr_to_contracts) {
             LOG_LOGIC("User has contracts. Appending to list");
             addr_to_contracts[_sender].push(contractAddr);
           } else {
-            LOG_LOGIC(
-              "User do not have existing contracts. Creating new entry."
-            );
+            LOG_LOGIC("No existing contracts. Creating new entry.");
             addr_to_contracts[_sender] = [contractAddr];
           }
           LOG_LOGIC("Addr-to-Contracts: %O", addr_to_contracts);

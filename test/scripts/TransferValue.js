@@ -96,7 +96,7 @@ let txnDetails = {
     gasPrice: 1,
     gasLimit: 10
 };
-``
+
 // sign the transaction using util methods
 let txn = zilliqa.util.createTransactionJson(privateKey, txnDetails);
 console.log(txn);

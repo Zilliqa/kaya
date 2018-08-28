@@ -1,6 +1,45 @@
+/**
+ This file is part of kaya.
+  Copyright (c) 2018 - present Zilliqa Research Pvt. Ltd.
+  
+  kaya is free software: you can redistribute it and/or modify it under the
+  terms of the GNU General Public License as published by the Free Software
+  Foundation, either version 3 of the License, or (at your option) any later
+  version.
+ 
+  kaya is distributed in the hope that it will be useful, but WITHOUT ANY
+  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+  A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ 
+  You should have received a copy of the GNU General Public License along with
+  kaya.  If not, see <http://www.gnu.org/licenses/>.
+**/
+
+
 const request = require('supertest');
 const app = require('../app');
 const config = require('../config');
+require('isomorphic-fetch');
+const BN = require('bn.js');
+let { Zilliqa } = require('zilliqa-js');
+
+let zilliqa = new Zilliqa({
+    nodeUrl: 'http://localhost:4200'
+})
+
+
+const makeTxnDetailsP2P = (recipient, amount, nonce) => {
+    let txnDetails = {
+        version: 0,
+        nonce: nonce,
+        to: recipient ,
+        amount: new BN(amount),
+        gasPrice: 1,
+        gasLimit: 10
+    };
+    return txnDetails;
+}
+
 
 const makeQuery = (method, params) => { 
     return {
@@ -71,5 +110,3 @@ describe('Server Initialization Tests', () => {
         });
     });
 });
-
-
