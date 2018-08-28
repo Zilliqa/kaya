@@ -38,6 +38,7 @@ const alice = Object.keys(accounts)[0];
 const bob = Object.keys(accounts)[1];
 const charlie = Object.keys(accounts)[2];
 const originalAmt = config.wallet.defaultAmt;
+var pastTxn;
 
 
 /*  Start */
@@ -66,6 +67,23 @@ describe('Testing (Alice ----100-----> Bob)', () => {
         .then((response) => {
             expect(response.statusCode).toBe(200);
             expect(response.body.result).toHaveLength(64);
+            pastTxn = response.body.result;
+            done();
+        });
+    });
+
+    test('Transaction hash should be retrievable with the correct details', async (done) => {
+        request(app.expressjs).post('/')
+        .send(makeQuery("GetTransaction", pastTxn))
+        .then((response) => {
+            expect(response.statusCode).toBe(200);
+            expect(response.body.result).toHaveProperty('ID');
+            expect(response.body.result).toHaveProperty('amount');
+            expect(response.body.result).toHaveProperty('senderPubKey');
+            expect(response.body.result).toHaveProperty('nonce');
+            expect(response.body.result).toHaveProperty('signature');
+            expect(response.body.result).toHaveProperty('toAddr');
+            expect(response.body.result).toHaveProperty('version');
             done();
         });
     });
@@ -116,6 +134,7 @@ describe('Testing (Charlie ----100-----> Ranon)', () => {
     });
 
     // call is successful if a txn hash is returned
+   
     test('Transaction should return a txn hash', async (done) => {
         let pk_charlie = accounts[charlie]['privateKey'];
         let txnDetails = makeTxnDetailsP2P(ranon_addr, config.testconfigs.transferAmt, 1);
@@ -126,9 +145,28 @@ describe('Testing (Charlie ----100-----> Ranon)', () => {
         .then((response) => {
             expect(response.statusCode).toBe(200);
             expect(response.body.result).toHaveLength(64);
+            pastTxn = response.body.result;
             done();
         });
     });
+
+    test('Transaction hash should be retrievable with the correct details', async (done) => {
+        request(app.expressjs).post('/')
+        .send(makeQuery("GetTransaction", pastTxn))
+        .then((response) => {
+            expect(response.statusCode).toBe(200);
+            expect(response.body.result).toHaveProperty('ID');
+            expect(response.body.result).toHaveProperty('amount');
+            expect(response.body.result).toHaveProperty('senderPubKey');
+            expect(response.body.result).toHaveProperty('nonce');
+            expect(response.body.result).toHaveProperty('signature');
+            expect(response.body.result).toHaveProperty('toAddr');
+            expect(response.body.result).toHaveProperty('version');
+            done();
+        });
+    });
+
+
 
     // Check Alice account
     test('Charlie should have correct funds deducted from his account', async (done) => {

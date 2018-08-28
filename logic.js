@@ -72,8 +72,8 @@ const computeContractAddr = (sender) => {
 
 // compute transactionHash from the payload
 const computeTransactionHash = (payload) => { 
-  // transtionID is a sha256 digest of txndetails
-  payload_copy = payload;
+  // transactionID is a sha256 digest of txndetails
+  const payload_copy = JSON.parse(JSON.stringify(payload));
   delete payload_copy.signature; // txn hash does not include signature
   buf = Buffer.from(JSON.stringify(payload_copy));
   transactionHash = hashjs.sha256().update(buf).digest('hex');
@@ -115,6 +115,7 @@ module.exports = {
       throw new Error('Invalid Tx Json');
     }
     
+    
     let currentBNum = blockchain.getBlockNum();
     dir = "tmp/";
     if (saveMode) {
@@ -122,7 +123,7 @@ module.exports = {
       dir = "data/";
     }
     
-    let payload = data[0];
+    const payload = data[0];
 
     let _sender = zilliqa.util.getAddressFromPublicKey(payload.pubKey);
 
@@ -132,14 +133,13 @@ module.exports = {
     LOG_LOGIC(`Payload Nonce: ${payload.nonce}`);
     
     // check if the payload.nonce is valid
-    if (payload.nonce == userNonce + 1) {
+    if (payload.nonce === userNonce + 1) {
       // p2p token transfer
       if (!payload.code && !payload.data) {
           LOG_LOGIC(`p2p token tranfer`);
           walletCtrl.deductFunds(_sender, payload.amount + payload.gasLimit);
           walletCtrl.increaseNonce(_sender);
-          walletCtrl.addFunds(payload.to, payload.amount);
-      
+          walletCtrl.addFunds(payload.to, payload.amount);      
       } else {
         /* contract generation */
         LOG_LOGIC(`Task: Contract Deployment / Create Transaction`); 
