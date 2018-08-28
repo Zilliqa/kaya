@@ -362,7 +362,7 @@ an account
 
     var stateLists = [];
     if (!addr_to_contracts[addr]) {
-      throw new Error("Address not found");
+      throw new Error("Address does not exist");
     }
     // Addr found - proceed to append state to return list
     dir = saveMode ? "data/" : "tmp/";

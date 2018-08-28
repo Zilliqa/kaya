@@ -35,7 +35,7 @@ function makeResponse(id, jsonrpc, data, isErr) {
     responseObj['id'] = id;
     responseObj['jsonrpc'] = jsonrpc;
     if (isErr) {
-        responseObj['Error'] = data;
+        responseObj['result'] = {"Error": data};
     } else {
         responseObj['result'] = data;
     }

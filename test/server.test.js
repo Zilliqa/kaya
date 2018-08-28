@@ -90,3 +90,55 @@ describe('Server Initialization Tests', () => {
         });
     });
 });
+
+/* Check for presence of smart-contract related methods */
+
+describe('Smart Contract related methods Tests', () => {
+    test('GetSmartContracts should correctly return zero-address error', async (done) => {
+        request(app.expressjs).post('/')
+        .send(makeQuery("GetSmartContracts", "50e9247a39e87a734355a203666ff7415c8a0802"))
+        .then((response) => {
+            expect(response.statusCode).toBe(200);
+            expect(response.body).toEqual(
+                {"id":"1","jsonrpc":"2.0","result":{"Error":"Address does not exist"}}
+            );
+            done();
+        });
+    });
+
+    test('GetSmartContractInit should correctly return zero-address error', async (done) => {
+        request(app.expressjs).post('/')
+        .send(makeQuery("GetSmartContractInit", "50e9247a39e87a734355a203666ff7415c8a0802"))
+        .then((response) => {
+            expect(response.statusCode).toBe(200);
+            expect(response.body).toEqual(
+                {"id":"1","jsonrpc":"2.0","result":{"Error":"Address does not exist"}}
+            );
+            done();
+        });
+    });
+
+    test('GetSmartContractState should correctly return zero-address error', async (done) => {
+        request(app.expressjs).post('/')
+        .send(makeQuery("GetSmartContractState", "50e9247a39e87a734355a203666ff7415c8a0802"))
+        .then((response) => {
+            expect(response.statusCode).toBe(200);
+            expect(response.body).toEqual(
+                {"id":"1","jsonrpc":"2.0","result":{"Error":"Address does not exist"}}
+            );
+            done();
+        });
+    });
+
+    test('GetSmartContractCode should correctly return zero-address error', async (done) => {
+        request(app.expressjs).post('/')
+        .send(makeQuery("GetSmartContractCode", "50e9247a39e87a734355a203666ff7415c8a0802"))
+        .then((response) => {
+            expect(response.statusCode).toBe(200);
+            expect(response.body).toEqual(
+                {"id":"1","jsonrpc":"2.0","result":{"Error":"Address does not exist"}}
+            );
+            done();
+        });
+    });
+});
