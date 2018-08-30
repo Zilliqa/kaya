@@ -1,5 +1,5 @@
 {
-  "name": "Kaya",
+  "name": "kaya",
   "version": "0.0.1",
   "description": "Zilliqa's RPC Server",
   "main": "server.js",
