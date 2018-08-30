@@ -19,6 +19,8 @@ const fs = require('fs');
 const utilities = require('../../utilities');
 const LOG_SCILLA = require('debug')('kaya:scilla');
 let blockchain_path = 'tmp/blockchain.json'
+let colors = require('colors');
+
 
 const template_state = [
     {
@@ -81,25 +83,20 @@ module.exports = {
         //dump blocknum into a json file
         makeBlockchainJson(currentBnum);
 
-        var msg_path, state_path, code_path, init_path;
+        let msg_path, state_path, code_path, init_path, cmd;
+        let isCodeDeployment = payload.code && payload.to == '0'.repeat(40);
+        contractAddr = isCodeDeployment ? contractAddr : payload.to;
 
-        // build code_cmd to be run as an execSync
-
-        let cmd;
-        var code_cmd = `./components/scilla/scilla-runner -iblockchain ${blockchain_path} -o tmp/${contractAddr}_out.json`;
-        // Cleaning code before parsing to scilla-runner
-        isCodeDeployment = false;
-
-
-        if (payload.code && payload.to == '0000000000000000000000000000000000000000') {
+        if (isCodeDeployment) {
             // initialized with standard message template
             cmd = `./components/scilla/scilla-runner -iblockchain ${blockchain_path} -o tmp/${contractAddr}_out.json`;
-
             isCodeDeployment = true;
+
             init_path = `${dir}${contractAddr}_init.json`;
             code_path = `${dir}${contractAddr}_code.scilla`;
 
             LOG_SCILLA('Code Deployment');
+
             rawCode = JSON.stringify(payload.code);
             cleanedCode = utilities.codeCleanup(rawCode);
             fs.writeFileSync(code_path, cleanedCode);
