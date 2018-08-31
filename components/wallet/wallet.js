@@ -33,9 +33,14 @@ let zilliqa = new Zilliqa({
     nodeUrl: 'http://localhost:8888'
 });
 
+const console_print = (text) => { 
+    if (process.env.NODE_ENV != 'test') {
+        console.log(text);
+    }
+}
 
-function createNewWallet() {
-    // let pk = zilliqa.util.generatePrivateKey();
+
+const createNewWallet = () => {
     let pk = zilliqa.util.generatePrivateKey();
     let address = zilliqa.util.getAddressFromPrivateKey(pk);
     let privKey_string = pk.toString('hex');
@@ -55,22 +60,26 @@ module.exports = {
         }
     },
 
+    getAccounts: () => {
+        return wallets;
+    },
+
     printWallet: () => {
         if(wallets.length == 0) { 
             console.log('No wallets generated.');
         } else {
-            console.log('Available Accounts');
-            console.log('=============================');
+            console_print('Available Accounts');
+            console_print('=============================');
             keys = [];
             for(let i = 0; i< config.wallet.numAccounts; i++) {
                 var addr = Object.keys(wallets)[i];
-                console.log(`(${i}) ${addr} (Amt: ${wallets[addr].amount}) (Nonce: ${wallets[addr].nonce})`);
+                console_print(`(${i}) ${addr} (Amt: ${wallets[addr].amount}) (Nonce: ${wallets[addr].nonce})`);
                 keys.push(wallets[addr].privateKey);
             }
-            console.log('\n Private Keys ');
-            console.log('=============================');
+            console_print('\n Private Keys ');
+            console_print('=============================');
             for(let i = 0; i < config.wallet.numAccounts; i++) { 
-                console.log(`(${i}) ${keys[i]}`);
+                console_print(`(${i}) ${keys[i]}`);
             }
         }
     },
@@ -142,10 +151,12 @@ module.exports = {
         }
     },
 
-    getBalance: (address) => { 
-        if(!zilliqa.util.isAddress(address)) { 
-            throw new Error('Address size not appropriate')
-        }
+    getBalance: (address) => {
+        // if(!zilliqa.util.isAddress(address)) { 
+        //     throw new Error('Address size not appropriate')
+        // }
+        LOG_WALLET(`Getting balance for ${address}`);
+
         if(!wallets[address]) { 
             return {balance: 0, nonce: 0};
         } else {

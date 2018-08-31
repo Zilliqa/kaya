@@ -21,6 +21,10 @@
 
 const config = module.exports = {}
 
+
+config.port = 4200;
+config.version = "0.0.1";
+
 // blockchain specific configuration
 config.blockchain = {
     // sets timer for the block confirmation
@@ -32,4 +36,10 @@ config.wallet = {
     numAccounts: 10,    // number of default accounts
     defaultAmt: 100000,  // default amount of zils assigned to each wallet
     defaultNonce: 0
+}
+
+config.testconfigs = {
+    gasPrice: 1,
+    gasLimit: 10,
+    transferAmt: 100
 }

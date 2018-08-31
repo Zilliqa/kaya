@@ -15,23 +15,17 @@
   kaya.  If not, see <http://www.gnu.org/licenses/>.
 **/
 
-const config = require('./config');
-const port = config.port;
-let colors = require('colors');
-console.log(`Zilliqa kaya Server (ver: ${config.version})`.cyan);
-console.log(`\nServer listening on 127.0.0.1:${port}`.yellow)
+const config = {
+    verbose: true,
+    collectCoverage: true
+    // coverageThreshold: {
+    //     "global": {
+    //         "branches": 80,
+    //         "functions": 80,
+    //         "lines": 80,
+    //         "statements": 80
+    //     }
+    // }
 
-const app = require('./app');
-const server = app.expressjs.listen(port, (err) => {
-    if(err) {
-        process.exit(1);
-    }
-})
-
-// Listener for connections opening on the server
-let connections = [];
-server.on('connection', connection => {
-    connections.push(connection);
-    connection.on('close', () => connections = 
-        connections.filter(curr => curr !== connection));
-});
+}
+module.exports = config;

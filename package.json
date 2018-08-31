@@ -1,10 +1,10 @@
 {
-  "name": "Kaya",
+  "name": "kaya",
   "version": "0.0.1",
   "description": "Zilliqa's RPC Server",
   "main": "server.js",
   "scripts": {
-    "test": "jest --silent",
+    "test": "jest -c jest.config.js",
     "dev": "cross-env NODE_ENV=dev node server.js",
     "start": "node server.js",
     "debug": "DEBUG=kaya* node server.js"
