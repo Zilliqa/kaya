@@ -21,16 +21,6 @@ const LOG_SCILLA = require('debug')('kaya:scilla');
 let blockchain_path = 'tmp/blockchain.json'
 let colors = require('colors');
 
-
-const template_state = [
-    {
-        "vname": "_balance",
-        "type": "Uint128",
-        "value": "0"
-    }
-];
-
-
 function pad(number, length) {
     var str = '' + number;
     while (str.length < length) {
@@ -60,6 +50,17 @@ const makeBlockchainJson = (val) => {
     ];
     fs.writeFileSync(blockchain_path, JSON.stringify(bc_data));
     LOG_SCILLA(`blockchain.json file prepared for blocknumber: ${val}`);
+}
+
+const initializeContractState = (amt) => {
+    let initState = [
+        {
+            "vname": "_balance",
+            "type": "Uint128",
+            "value": amt.toString()
+        }
+    ]
+    return initState;
 }
 
 
@@ -96,6 +97,7 @@ module.exports = {
             code_path = `${dir}${contractAddr}_code.scilla`;
 
             LOG_SCILLA('Code Deployment');
+            console.log(payload);
 
             rawCode = JSON.stringify(payload.code);
             cleanedCode = utilities.codeCleanup(rawCode);
@@ -109,7 +111,6 @@ module.exports = {
             fs.writeFileSync(init_path, cleaned_params);
 
         } else {
-            // todo: check for contract
             contractAddr = payload.to;
             cmd = `./components/scilla/scilla-runner -iblockchain ${blockchain_path} -o tmp/${contractAddr}_out.json`;
             LOG_SCILLA(`Calling transition within contract ${payload.to}`);
@@ -154,9 +155,10 @@ module.exports = {
         if (!isCodeDeployment) {
             fs.writeFileSync(`${dir}${contractAddr}_state.json`, JSON.stringify(retMsg.states));
         } else {
-            LOG_SCILLA(`Contract has been initialized with template state`);
-            fs.writeFileSync(`${dir}${contractAddr}_state.json`, JSON.stringify(template_state));
+            fs.writeFileSync(`${dir}${contractAddr}_state.json`, JSON.stringify(initializeContractState(payload.amount)));
+            LOG_SCILLA(`Contract has been initialized with balance: ${payload.amount}`);
         }
+        initializeContractState(11);
         LOG_SCILLA(`State logged down in ${contractAddr}_state.json`)
 
         console.log(`Contract Address Deployed: ` + `${contractAddr}`.green);
