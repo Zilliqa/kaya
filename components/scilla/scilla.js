@@ -17,6 +17,7 @@
 
 const fs = require('fs');
 const utilities = require('../../utilities');
+const config = require('../../config');
 const LOG_SCILLA = require('debug')('kaya:scilla');
 let blockchain_path = 'tmp/blockchain.json'
 let colors = require('colors');
@@ -66,6 +67,11 @@ const initializeContractState = (amt) => {
 
 const runScillaInterpreterSync = (command) => {
     // Run Scilla Interpreter
+    if(!fs.existsSync(config.scilla.runner_path)) {
+        LOG_SCILLA('Scilla runner not found. Hint: Have you compiled the scilla binaries?');
+        throw new Error('Kaya RPC Runtime Error: Scilla-runner not found');
+    }
+
     const exec = require('child_process').execSync;
     const child = exec(command,
         (error, stdout) => {
@@ -90,14 +96,13 @@ module.exports = {
 
         if (isCodeDeployment) {
             // initialized with standard message template
-            cmd = `./components/scilla/scilla-runner -iblockchain ${blockchain_path} -o tmp/${contractAddr}_out.json`;
+            cmd = `${config.scilla.runner_path} -iblockchain ${blockchain_path} -o tmp/${contractAddr}_out.json`;
             isCodeDeployment = true;
 
             init_path = `${dir}${contractAddr}_init.json`;
             code_path = `${dir}${contractAddr}_code.scilla`;
 
             LOG_SCILLA('Code Deployment');
-            console.log(payload);
 
             rawCode = JSON.stringify(payload.code);
             cleanedCode = utilities.codeCleanup(rawCode);

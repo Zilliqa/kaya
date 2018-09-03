@@ -68,7 +68,7 @@ console.log(`Connected to ${url}`);
 let msg = {
     "_tag": "setHello",
     "_amount": "0",
-    "_sender" : "0x1234567890123456789012345678901234567890",
+    "_sender" : "0xea20c73d2f5609ae1c391b5e074d4676e295cc04",
     "params": [
     {
         "vname" : "msg",
