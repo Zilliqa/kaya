@@ -1,0 +1,46 @@
+(* HelloWorld contract *)
+
+
+(***************************************************)
+(*               Associated library                *)
+(***************************************************)
+library HelloWorld
+
+let one_msg = 
+  fun (msg : Message) => 
+  let nil_msg = Nil {Message} in
+  Cons {Message} msg nil_msg
+
+let no_msg = Nil {Message}
+
+
+let not_owner_code = Int32 1
+let set_hello_code = Int32 2
+
+(***************************************************)
+(*             The contract definition             *)
+(***************************************************)
+
+contract HelloWorld
+(owner: ByStr20)
+
+field welcome_msg : String = ""
+
+transition setHello (msg : String)
+  is_owner = builtin eq owner _sender;
+  match is_owner with
+  | False =>
+    send no_msg
+  | True =>
+    welcome_msg := msg;
+    send no_msg
+  end
+end
+
+
+transition getHello ()
+    r <- welcome_msg;
+    msg = {_tag : "Main"; _recipient : _sender; _amount : Uint128 0; msg : r};
+    msgs = one_msg msg;
+    send msgs
+end

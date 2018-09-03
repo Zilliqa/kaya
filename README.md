@@ -26,7 +26,9 @@ Methods that are NOT supported:
 * `GetLatestDsBlock`
 * `GetLatestTxBlock`
 
-In addition, multi-contract calls are not supported yet.
+In addition, the following features are not supported yet:
+* Multi-contract calls
+* Events
 
 ## Installation
 Run `npm install`, then `node server.js`.

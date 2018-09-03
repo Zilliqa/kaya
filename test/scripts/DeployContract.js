@@ -57,7 +57,7 @@ console.log(`Connected to ${url}`);
 
 /* Contract specific Parameters */
 
-var code = fs.readFileSync('contract.scilla', 'utf-8');
+var code = fs.readFileSync('contract_nomsg.scilla', 'utf-8');
 // the immutable initialisation variables
 let initParams = [
     {

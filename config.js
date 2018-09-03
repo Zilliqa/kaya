@@ -38,6 +38,10 @@ config.wallet = {
     defaultNonce: 0
 }
 
+config.scilla = {
+    runner_path: './components/scilla/scilla-runner'
+}
+
 config.testconfigs = {
     gasPrice: 1,
     gasLimit: 10,

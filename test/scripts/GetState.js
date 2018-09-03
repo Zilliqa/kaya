@@ -15,14 +15,13 @@
   kaya.  If not, see <http://www.gnu.org/licenses/>.
 **/
 
-
+require('isomorphic-fetch');
 let { Zilliqa } = require('zilliqa-js');
-let fs = require('fs');
 let argv = require('yargs').argv;
 let colors = require('colors');
 
 let zilliqa = new Zilliqa({
-    nodeUrl: 'https://localhost:4200'
+    nodeUrl: 'http://localhost:4200'
 })
 
 console.log('Zilliqa Testing Script'.bold.cyan);
