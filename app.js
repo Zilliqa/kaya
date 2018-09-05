@@ -54,17 +54,21 @@ if (argv.load) {
     isPersistence = true;
 }
 
+
+/* account creation/loading based on presets given */
 if(argv.accounts) { 
     LOG_APPJS(`Bootstrapping from account fixture files: ${argv.accounts}`);
     let accountsPath = argv.accounts;
     if(!fs.existsSync(accountsPath)) {
         throw new Error('Account Path Invalid');
     }
+    
     accounts = JSON.parse(fs.readFileSync(accountsPath, "utf-8"));
     wallet.loadAccounts(accounts);
 }   else {
     /* Create Dummy Accounts */
-    wallet.createWallets(config.wallet.numAccounts); // create 10 wallets by default
+    // create 10 wallets by default
+    wallet.createWallets(config.wallet.numAccounts); 
 }
 wallet.printWallet();
 

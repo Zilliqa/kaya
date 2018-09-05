@@ -52,6 +52,45 @@ const createNewWallet = () => {
 }
 
 
+// validate an accounts object to check validity
+const validateAccounts = (accounts) => { 
+
+    Object.keys(accounts).forEach(function(key) {
+        if(!zilliqa.util.isAddress(key)) { 
+            throw new Error(`Invalid address ${key}`);
+        }
+        account = accounts[key];
+        // check if account has the necessary properties
+        if(!(
+            account.hasOwnProperty('privateKey') && 
+            account.hasOwnProperty('nonce') &&
+            account.hasOwnProperty('amount')
+        )) {
+            throw new Error('Invalid fields');
+        }
+
+        let addressFromPK = zilliqa.util.getAddressFromPrivateKey(account.privateKey);
+        if(addressFromPK != key) {
+            LOG_WALLET('Validation failure: Invalid Address and Private key-pair')
+            throw new Error(`Invalid address for ${key}`);
+        }
+        if(Number.isInteger(account['nonce']) && Number.isInteger(account['amount'])) {
+            if(account['nonce'] < 0 || account['amount'] < 0) {
+                throw new Error('Invalid nonce or amount');
+
+            }
+        } else {
+            LOG_WALLET('Amount/nonce is not valid type')
+            throw new Error('Invalid nonce or amount');
+
+        };
+
+    });
+    LOG_WALLET('Valid accounts file');
+    
+}
+
+
 module.exports = {
     createWallets: (n) => { 
         assert(n > 0);
@@ -62,6 +101,8 @@ module.exports = {
 
     // load accounts object into wallets
     loadAccounts: (accounts) => {
+        validateAccounts(accounts);
+        LOG_WALLET(`${Object.keys(accounts).length} wallets bootstrapped from file`)
         wallets = accounts;
     },
 
