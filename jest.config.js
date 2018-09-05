@@ -17,7 +17,15 @@
 
 const config = {
     verbose: true,
-    collectCoverage: true
+    collectCoverage: true,
+    collectCoverageFrom: [
+        "**/*.{js,jsx}",
+        "!**/node_modules/**",
+        "!**/vendor/**",
+        "!**/coverage/**",
+        "!**/test/**"
+    ]
+
     // coverageThreshold: {
     //     "global": {
     //         "branches": 80,

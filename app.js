@@ -54,6 +54,9 @@ if (argv.load) {
     isPersistence = true;
 }
 
+if (process.env.NODE_ENV == 'test') {
+    argv.accounts = 'test/account-fixtures.json'
+}
 
 /* account creation/loading based on presets given */
 if(argv.accounts) { 
@@ -62,12 +65,12 @@ if(argv.accounts) {
     if(!fs.existsSync(accountsPath)) {
         throw new Error('Account Path Invalid');
     }
-    
     accounts = JSON.parse(fs.readFileSync(accountsPath, "utf-8"));
     wallet.loadAccounts(accounts);
 }   else {
     /* Create Dummy Accounts */
     // create 10 wallets by default
+
     wallet.createWallets(config.wallet.numAccounts); 
 }
 wallet.printWallet();
