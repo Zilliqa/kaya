@@ -39,7 +39,6 @@ const console_print = (text) => {
     }
 }
 
-
 const createNewWallet = () => {
     let pk = zilliqa.util.generatePrivateKey();
     let address = zilliqa.util.getAddressFromPrivateKey(pk);
@@ -52,12 +51,18 @@ const createNewWallet = () => {
     wallets[address] = newWallet;
 }
 
+
 module.exports = {
     createWallets: (n) => { 
         assert(n > 0);
         for(var i=0; i < n; i++){
             createNewWallet();
         }
+    },
+
+    // load accounts object into wallets
+    loadAccounts: (accounts) => {
+        wallets = accounts;
     },
 
     getAccounts: () => {

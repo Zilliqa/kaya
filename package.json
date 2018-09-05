@@ -7,7 +7,9 @@
     "test": "jest -c jest.config.js",
     "dev": "cross-env NODE_ENV=dev node server.js",
     "start": "node server.js",
-    "debug": "DEBUG=kaya* node server.js"
+    "start:fixtures": "node server.js --accounts test/account-fixtures.json",
+    "debug": "DEBUG=kaya* node server.js",
+    "debug:fixtures": "DEBUG=kaya* node server.js --accounts test/account-fixtures.json"
   },
   "author": "Edison Lim",
   "license": "GPL-3.0-or-later",

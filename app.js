@@ -54,6 +54,20 @@ if (argv.load) {
     isPersistence = true;
 }
 
+if(argv.accounts) { 
+    LOG_APPJS(`Bootstrapping from account fixture files: ${argv.accounts}`);
+    let accountsPath = argv.accounts;
+    if(!fs.existsSync(accountsPath)) {
+        throw new Error('Account Path Invalid');
+    }
+    accounts = JSON.parse(fs.readFileSync(accountsPath, "utf-8"));
+    wallet.loadAccounts(accounts);
+}   else {
+    /* Create Dummy Accounts */
+    wallet.createWallets(config.wallet.numAccounts); // create 10 wallets by default
+}
+wallet.printWallet();
+
 // cleanup old folders
 if (fs.existsSync('./tmp')) {
     LOG_APPJS(`Tmp folder found. Removing ${__dirname}/tmp`);
@@ -76,9 +90,6 @@ if (!fs.existsSync('./data')) {
     });
 }
 
-/* Create Dummy Accounts */
-wallet.createWallets(config.wallet.numAccounts); // create 10 wallets by default
-wallet.printWallet();
 
 // cross region settings with Env
 if (process.env.NODE_ENV === 'dev') {
