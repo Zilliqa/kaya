@@ -70,7 +70,6 @@ if(argv.accounts) {
 }   else {
     /* Create Dummy Accounts */
     // create 10 wallets by default
-
     wallet.createWallets(config.wallet.numAccounts); 
 }
 wallet.printWallet();
@@ -97,6 +96,10 @@ if (!fs.existsSync('./data')) {
     });
 }
 
+
+const wrapAsync = (fn) => (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+};
 
 // cross region settings with Env
 if (process.env.NODE_ENV === 'dev') {
@@ -182,6 +185,7 @@ expressjs.post('/', (req, res) => {
             break;
         case 'CreateTransaction':
             try {
+                
                 let txn_id = logic.processCreateTxn(body.params, argv.save);
                 data = txn_id;
             } catch (err) {

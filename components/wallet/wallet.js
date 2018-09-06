@@ -33,6 +33,7 @@ let zilliqa = new Zilliqa({
     nodeUrl: 'http://localhost:8888'
 });
 
+// wrapper: print only when not in test mode
 const console_print = (text) => { 
     if (process.env.NODE_ENV != 'test') {
         console.log(text);

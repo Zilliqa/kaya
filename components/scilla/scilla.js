@@ -20,6 +20,7 @@ const utilities = require('../../utilities');
 const config = require('../../config');
 const LOG_SCILLA = require('debug')('kaya:scilla');
 let blockchain_path = 'tmp/blockchain.json'
+const {asyncfunc} = require('./cmd');
 let colors = require('colors');
 
 function pad(number, length) {
@@ -66,6 +67,7 @@ const initializeContractState = (amt) => {
 
 
 const runScillaInterpreterSync = (command) => {
+    LOG_SCILLA('Running local scilla interpreter (Sync)');
     // Run Scilla Interpreter
     if(!fs.existsSync(config.scilla.runner_path)) {
         LOG_SCILLA('Scilla runner not found. Hint: Have you compiled the scilla binaries?');
@@ -75,18 +77,18 @@ const runScillaInterpreterSync = (command) => {
     const exec = require('child_process').execSync;
     const child = exec(command,
         (error, stdout) => {
-            if (error !== null) {
+            if (error) {
                 console.warn(`exec error: ${error}`);
                 throw new Error(`Unable to run scilla. Error: ${error}`);
             }
-            LOG_SCILLA(stdout);
         });
-    LOG_SCILLA('Scilla run completed. Performing state changes now');
+    LOG_SCILLA('Scilla execution completed');
 }
 
 module.exports = {
 
     executeScillaRun: (payload, contractAddr, dir, currentBnum) => {
+
         //dump blocknum into a json file
         makeBlockchainJson(currentBnum);
 
@@ -94,38 +96,33 @@ module.exports = {
         let isCodeDeployment = payload.code && payload.to == '0'.repeat(40);
         contractAddr = isCodeDeployment ? contractAddr : payload.to;
 
-        if (isCodeDeployment) {
-            // initialized with standard message template
-            cmd = `${config.scilla.runner_path} -iblockchain ${blockchain_path} -o tmp/${contractAddr}_out.json`;
-            isCodeDeployment = true;
+        init_path = `${dir}${contractAddr}_init.json`;
+        code_path = `${dir}${contractAddr}_code.scilla`;
+        output_path = `tmp/${contractAddr}_out.json`;
+        state_path = `${dir}${contractAddr}_state.json`;
 
-            init_path = `${dir}${contractAddr}_init.json`;
-            code_path = `${dir}${contractAddr}_code.scilla`;
+        cmd = `${config.scilla.runner_path} -iblockchain ${blockchain_path} -o ${output_path} -init ${init_path} -i ${code_path}`;
+
+        if (isCodeDeployment) {
 
             LOG_SCILLA('Code Deployment');
 
-            rawCode = JSON.stringify(payload.code);
-            cleanedCode = utilities.codeCleanup(rawCode);
-            fs.writeFileSync(code_path, cleanedCode);
-
-            cmd = `${cmd} -init ${init_path} -i ${code_path}`;
+            // initialized with standard message template
+            isCodeDeployment = true;
 
             // get init data from payload
             let initParams = JSON.stringify(payload.data);
             cleaned_params = utilities.paramsCleanup(initParams);
             fs.writeFileSync(init_path, cleaned_params);
 
+            rawCode = JSON.stringify(payload.code);
+            cleanedCode = utilities.codeCleanup(rawCode);
+            fs.writeFileSync(code_path, cleanedCode);
+
         } else {
+            
             contractAddr = payload.to;
-            cmd = `./components/scilla/scilla-runner -iblockchain ${blockchain_path} -o tmp/${contractAddr}_out.json`;
             LOG_SCILLA(`Calling transition within contract ${payload.to}`);
-
-            init_path = `${dir}${contractAddr}_init.json`;
-            code_path = `${dir}${contractAddr}_code.scilla`;
-            state_path = `${dir}${contractAddr}_state.json`;
-
-            cmd = `${cmd} -init ${init_path} -i ${code_path} -istate ${state_path}`;
-
 
             LOG_SCILLA(`Code Path: ${code_path}`);
             LOG_SCILLA(`Init Path: ${init_path}`);
@@ -142,11 +139,9 @@ module.exports = {
             cleaned_msg = utilities.paramsCleanup(incomingMessage);
             fs.writeFileSync(msg_path, cleaned_msg);
             
-            cmd = `${cmd} -imessage ${msg_path}`
+            cmd = `${cmd} -imessage ${msg_path} -istate ${state_path}`
 
         }
-
-        LOG_SCILLA(cmd)
 
         if (!fs.existsSync(code_path) || !fs.existsSync(init_path)) {
             LOG_SCILLA('Error, contract has not been created.')
@@ -163,7 +158,7 @@ module.exports = {
             fs.writeFileSync(`${dir}${contractAddr}_state.json`, JSON.stringify(initializeContractState(payload.amount)));
             LOG_SCILLA(`Contract has been initialized with balance: ${payload.amount}`);
         }
-        initializeContractState(11);
+
         LOG_SCILLA(`State logged down in ${contractAddr}_state.json`)
 
         console.log(`Contract Address Deployed: ` + `${contractAddr}`.green);
