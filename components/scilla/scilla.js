@@ -20,7 +20,6 @@ const utilities = require('../../utilities');
 const config = require('../../config');
 const LOG_SCILLA = require('debug')('kaya:scilla');
 let blockchain_path = 'tmp/blockchain.json'
-const {asyncfunc} = require('./cmd');
 let colors = require('colors');
 
 function pad(number, length) {
@@ -66,7 +65,7 @@ const initializeContractState = (amt) => {
 }
 
 
-const runScillaInterpreterSync = (command) => {
+const runLocalInterpreterSync = (command, output_path) => {
     LOG_SCILLA('Running local scilla interpreter (Sync)');
     // Run Scilla Interpreter
     if(!fs.existsSync(config.scilla.runner_path)) {
@@ -83,6 +82,9 @@ const runScillaInterpreterSync = (command) => {
             }
         });
     LOG_SCILLA('Scilla execution completed');
+
+    let retMsg = JSON.parse(fs.readFileSync(output_path, 'utf-8'));
+    return retMsg;
 }
 
 module.exports = {
@@ -139,34 +141,32 @@ module.exports = {
             cleaned_msg = utilities.paramsCleanup(incomingMessage);
             fs.writeFileSync(msg_path, cleaned_msg);
             
-            cmd = `${cmd} -imessage ${msg_path} -istate ${state_path}`
-
+            // Invoke contract requires additional message and state paths
+            cmd = `${cmd} -imessage ${msg_path} -istate ${state_path}`;
         }
 
-        if (!fs.existsSync(code_path) || !fs.existsSync(init_path)) {
+        if (!fs.existsSync(code_path) || !fs.existsSync(init_path)|| !fs.existsSync(state_path)) {
             LOG_SCILLA('Error, contract has not been created.')
             throw new Error('Address does not exist');
         }
 
-        runScillaInterpreterSync(cmd); 
+        let retMsg = runLocalInterpreterSync(cmd); 
 
         // Extract state from tmp/out.json
-        var retMsg = JSON.parse(fs.readFileSync(`tmp/${contractAddr}_out.json`, 'utf-8'));
-        if (!isCodeDeployment) {
-            fs.writeFileSync(`${dir}${contractAddr}_state.json`, JSON.stringify(retMsg.states));
-        } else {
-            fs.writeFileSync(`${dir}${contractAddr}_state.json`, JSON.stringify(initializeContractState(payload.amount)));
-            LOG_SCILLA(`Contract has been initialized with balance: ${payload.amount}`);
+        
+        let newState = JSON.stringify(retMsg.states);
+        if (isCodeDeployment) {
+            newState = JSON.stringify(initializeContractState(payload.amount));
         }
-
-        LOG_SCILLA(`State logged down in ${contractAddr}_state.json`)
-
+        fs.writeFileSync(state_path, newState);
+        LOG_SCILLA(`State logged down in ${state_path}`)
         console.log(`Contract Address Deployed: ` + `${contractAddr}`.green);
+
         if (retMsg.message != null) {
             LOG_SCILLA(`Next address: ${(retMsg.message._recipient)}`);
             return retMsg.message._recipient;
         }
-        // hackish solution to be changed
+        // Contract deployment runs do not have returned message
         return '0'.repeat(40);
     }
 }

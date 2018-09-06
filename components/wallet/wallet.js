@@ -20,6 +20,7 @@ const assert = require('assert');
 const config = require('../../config');
 const {Zilliqa} = require('zilliqa-js');
 const LOG_WALLET = require('debug')('kaya:wallet');
+const fs = require('fs');
 
 //@dev: As this is a kaya, private keys will be stored
 // note: Real systems do not store private key

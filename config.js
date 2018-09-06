@@ -39,7 +39,8 @@ config.wallet = {
 }
 
 config.scilla = {
-    runner_path: './components/scilla/scilla-runner'
+    runner_path: './components/scilla/scilla-runner',
+    mode: 'local'    // may include remote mode next time
 }
 
 config.testconfigs = {
