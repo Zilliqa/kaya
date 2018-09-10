@@ -107,12 +107,16 @@ if (process.env.NODE_ENV === 'dev') {
     LOG_APPJS('CORS Enabled.')
 }
 
+
+
 expressjs.get('/', (req, res) => {
     res.status(200).send('Kaya RPC Server');
-}), 
+});
 
 // Method handling logic for incoming POST request
-expressjs.post('/', (req, res) => {
+
+
+const handler = async (req, res) => {
     let body = req.body;
     let data = {};
     LOG_APPJS(`Method specified: ${body.method}`);
@@ -186,7 +190,7 @@ expressjs.post('/', (req, res) => {
         case 'CreateTransaction':
             try {
                 
-                let txn_id = logic.processCreateTxn(body.params, argv.save);
+                let txn_id = await logic.processCreateTxn(body.params, argv.save);
                 data = txn_id;
             } catch (err) {
                 data = err.message;
@@ -223,8 +227,9 @@ expressjs.post('/', (req, res) => {
             res.status(404).send(data);
     }
     LOG_APPJS('Sending status');
+};
 
-})
+expressjs.post('/', wrapAsync(handler));
 
 module.exports = {
     expressjs,

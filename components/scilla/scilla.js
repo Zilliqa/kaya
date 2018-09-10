@@ -19,8 +19,12 @@ const fs = require('fs');
 const utilities = require('../../utilities');
 const config = require('../../config');
 const LOG_SCILLA = require('debug')('kaya:scilla');
+const {promisify} = require('util');
+const {exec} = require('child_process');
 let blockchain_path = 'tmp/blockchain.json'
 let colors = require('colors');
+
+const execAsync = promisify(exec);
 
 function pad(number, length) {
     var str = '' + number;
@@ -64,7 +68,7 @@ const initializeContractState = (amt) => {
     return initState;
 }
 
-const runLocalInterpreterSync = (command, output_path) => {
+const runLocalInterpreterAsync = async (command, output_path) => {
     LOG_SCILLA('Running local scilla interpreter (Sync)');
     // Run Scilla Interpreter
     if(!fs.existsSync(config.scilla.runner_path)) {
@@ -72,14 +76,8 @@ const runLocalInterpreterSync = (command, output_path) => {
         throw new Error('Kaya RPC Runtime Error: Scilla-runner not found');
     }
 
-    const exec = require('child_process').execSync;
-    const child = exec(command,
-        (error, stdout) => {
-            if (error) {
-                console.warn(`exec error: ${error}`);
-                throw new Error(`Unable to run scilla. Error: ${error}`);
-            }
-        });
+    const result = await execAsync(command);
+
     LOG_SCILLA('Scilla execution completed');
 
     let retMsg = JSON.parse(fs.readFileSync(output_path, 'utf-8'));
@@ -88,7 +86,7 @@ const runLocalInterpreterSync = (command, output_path) => {
 
 module.exports = {
 
-    executeScillaRun: (payload, contractAddr, dir, currentBnum) => {
+    executeScillaRun: async (payload, contractAddr, dir, currentBnum) => {
 
         //dump blocknum into a json file
         makeBlockchainJson(currentBnum);
@@ -149,7 +147,7 @@ module.exports = {
             throw new Error('Address does not exist');
         }
 
-        let retMsg = runLocalInterpreterSync(cmd, output_path); 
+        let retMsg = await runLocalInterpreterAsync(cmd, output_path); 
 
         // Extract state from tmp/out.json
         let newState = JSON.stringify(retMsg.states);

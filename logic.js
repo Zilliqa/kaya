@@ -107,7 +107,7 @@ const checkTransactionJson = (data) => {
 }
 
 module.exports = {
-  processCreateTxn: (data, saveMode) => {
+  processCreateTxn: async (data, saveMode) => {
     LOG_LOGIC("Processing transaction...");
     // todo: check for well-formness of the payload data
     LOG_LOGIC(`Payload well-formed? ${checkTransactionJson(data)}`);
@@ -154,7 +154,7 @@ module.exports = {
         }
         LOG_LOGIC(`Contract will be deployed at: ${contractAddr}`);
         
-        nextAddr = scillaCtrl.executeScillaRun(
+        nextAddr = await scillaCtrl.executeScillaRun(
           payload,
           contractAddr,
           dir,
