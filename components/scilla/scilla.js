@@ -64,7 +64,6 @@ const initializeContractState = (amt) => {
     return initState;
 }
 
-
 const runLocalInterpreterSync = (command, output_path) => {
     LOG_SCILLA('Running local scilla interpreter (Sync)');
     // Run Scilla Interpreter
@@ -145,19 +144,19 @@ module.exports = {
             cmd = `${cmd} -imessage ${msg_path} -istate ${state_path}`;
         }
 
-        if (!fs.existsSync(code_path) || !fs.existsSync(init_path)|| !fs.existsSync(state_path)) {
+        if (!fs.existsSync(code_path) || !fs.existsSync(init_path)) {
             LOG_SCILLA('Error, contract has not been created.')
             throw new Error('Address does not exist');
         }
 
-        let retMsg = runLocalInterpreterSync(cmd); 
+        let retMsg = runLocalInterpreterSync(cmd, output_path); 
 
         // Extract state from tmp/out.json
-        
         let newState = JSON.stringify(retMsg.states);
         if (isCodeDeployment) {
             newState = JSON.stringify(initializeContractState(payload.amount));
         }
+
         fs.writeFileSync(state_path, newState);
         LOG_SCILLA(`State logged down in ${state_path}`)
         console.log(`Contract Address Deployed: ` + `${contractAddr}`.green);
