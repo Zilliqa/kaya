@@ -24,7 +24,7 @@ const expressjs = express();
 const fs = require('fs');
 const fsp = require('node-fs');
 const cors = require('cors');
-const argv = require('yargs').argv;
+const { argv } = require('yargs');
 const rimraf = require('rimraf');
 const path = require('path');
 
@@ -35,12 +35,13 @@ const wallet = require('./components/wallet/wallet');
 expressjs.use(bodyParser.json({ extended: false }));
 
 let isPersistence = false; // tmp is the default behavior
+
 function makeResponse(id, jsonrpc, data, isErr) {
   const responseObj = {};
   responseObj.id = id;
   responseObj.jsonrpc = jsonrpc;
   if (isErr) {
-    responseObj.result = {Error: data };
+    responseObj.result = { Error: data };
   } else {
     responseObj.result = data;
   }
@@ -59,8 +60,8 @@ if (argv.load) {
   isPersistence = true;
 }
 
-if (process.env.NODE_ENV == 'test') {
-  argv.accounts = 'test/account-fixtures.json'
+if (process.env.NODE_ENV === 'test') {
+  argv.accounts = 'test/account-fixtures.json';
 }
 
 /* account creation/loading based on presets given */
@@ -101,7 +102,6 @@ if (!fs.existsSync('./data')) {
   });
 }
 
-
 const wrapAsync = fn => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
 };
@@ -109,10 +109,8 @@ const wrapAsync = fn => (req, res, next) => {
 // cross region settings with Env
 if (process.env.NODE_ENV === 'dev') {
   expressjs.use(cors());
-  LOG_APPJS('CORS Enabled.')
+  LOG_APPJS('CORS Enabled.');
 }
-
-
 
 expressjs.get('/', (req, res) => {
   res.status(200).send('Kaya RPC Server');
@@ -122,15 +120,16 @@ expressjs.get('/', (req, res) => {
 
 
 const handler = async (req, res) => {
-  let body = req.body;
+  const { body } = req;
   let data = {};
   let result;
-  let addr; 
+  let addr;
   LOG_APPJS(`Method specified: ${body.method}`);
   switch (body.method) {
     case 'GetBalance':
-      [addr] = body.params[0];
-      if (typeof (addr) === 'object') { 
+      // [addr, ... ] = body.params;
+      addr = body.params[0];
+      if (typeof (addr) === 'object') {
         addr = JSON.stringify(addr);
       }
       LOG_APPJS(`Getting balance for ${addr}`);
