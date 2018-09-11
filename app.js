@@ -216,7 +216,7 @@ const handler = async (req, res) => {
       break;
     case 'GetRecentTransactions':
       try {
-        const obj = logic.processGetRecentTransactions(body.params);
+        const obj = logic.processGetRecentTransactions();
         data = obj;
       } catch (err) {
         data = err.message;

@@ -26,8 +26,5 @@ function addBnum() {
 setInterval(addBnum, config.blockchain.blockInterval);
 
 module.exports = {
-
-  getBlockNum: () => {
-    return bnum;
-  },
+  getBlockNum: () => bnum,
 };
