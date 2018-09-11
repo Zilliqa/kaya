@@ -67,6 +67,7 @@ describe('Testing (Alice ----100-----> Bob)', () => {
         .then((response) => {
             expect(response.statusCode).toBe(200);
             expect(response.body.result).toHaveLength(64);
+            expect(response.body.result).toBe('849bbfa5774336f4923a731ec9710a328ab9850fd5986d1aea8c33c0930fe717');
             pastTxn = response.body.result;
             done();
         });
