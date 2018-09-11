@@ -19,7 +19,6 @@
 const hashjs = require('hash.js');
 const fs = require('fs');
 const { Zilliqa } = require('zilliqa-js');
-// debug usage: DEBUG=scilla-txn node server.js
 const LOG_LOGIC = require('debug')('kaya:logic');
 
 const scillaCtrl = require('./components/scilla/scilla');
@@ -27,10 +26,8 @@ const walletCtrl = require('./components/wallet/wallet');
 const blockchain = require('./components/blockchain');
 
 // non-persistent states. Initializes whenever server starts
-const repo = {};
 const transactions = {};
-const createdContractsByUsers = {};
-const contractCreators = {};
+const createdContractsByUsers = {}; // address => contract addresses
 
 /*  Dummy constructor for zilliqajs */
 // @dev: Will be replaced once zilliqa-js exposes utils without constructors
@@ -205,7 +202,6 @@ module.exports = {
     const data = JSON.parse(fs.readFileSync(filepath, 'utf-8'));
     LOG_LOGIC('State of blockchain:');
     transactions = data.transactions;
-    contractCreators = data.contractCreators;
     LOG_LOGIC(transactions);
   },
 
@@ -345,21 +341,21 @@ an account
     // Addr found - proceed to append state to return list
     const dir = saveMode ? 'data/' : 'tmp/';
     const contracts = createdContractsByUsers[addr];
-    for (var i in contracts) {
-      contractID = contracts[i];
+    console.log(contracts);
 
-      var statePath = `${dir}${contractID.toLowerCase()}_state.json`;
+    contracts.forEach((contractId) => {
+      const statePath = `${dir}${contractId.toLowerCase()}_state.json`;
       if (!fs.existsSync(statePath)) {
-        console.log(`No state file found (Contract: ${contractID}`);
+        console.log(`No state file found (Contract: ${contractId}`);
         throw new Error('Address does not exist');
       }
       const retMsg = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
-      const data = {};
-      data.address = contractID;
-      data.state = retMsg;
-      stateLists.push(data);
-    }
+      const contractStateObj = {};
+      contractStateObj.address = contractId;
+      contractStateObj.state = retMsg;
+      stateLists.push(contractStateObj);
+    });
 
     return stateLists;
-  }
+  },
 };
