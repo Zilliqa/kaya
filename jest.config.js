@@ -16,24 +16,23 @@
 **/
 
 const config = {
-    verbose: true,
-    collectCoverage: true,
-    collectCoverageFrom: [
-        "**/*.{js,jsx}",
-        "!**/node_modules/**",
-        "!**/vendor/**",
-        "!**/coverage/**",
-        "!**/test/**"
-    ]
+  verbose: true,
+  collectCoverage: true,
+  collectCoverageFrom: [
+    '**/*.{js,jsx}',
+    '!**/node_modules/**',
+    '!**/vendor/**',
+    '!**/coverage/**',
+    '!**/test/**',
+  ],
 
-    // coverageThreshold: {
-    //     "global": {
-    //         "branches": 80,
-    //         "functions": 80,
-    //         "lines": 80,
-    //         "statements": 80
-    //     }
-    // }
-
+  // coverageThreshold: {
+  //     "global": {
+  //         "branches": 80,
+  //         "functions": 80,
+  //         "lines": 80,
+  //         "statements": 80
+  //     }
+  // }
 }
-module.exports = config;
+module.exports = config

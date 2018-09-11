@@ -4,5 +4,5 @@
       "no-underscore-dangle": 0,
       "no-return-assign": 0
     },
-    "extends": "airbnb-base"
+    "extends": "prettier"
 }

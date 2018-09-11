@@ -16,45 +16,45 @@
 */
 
 module.exports = {
-
-  removeComments: (str) => {
-    let commentStart;
-    let commentEnd;
-    let str1;
-    let str2;
-    let str3;
-    const originalStr = str;
+  removeComments: str => {
+    let commentStart
+    let commentEnd
+    let str1
+    let str2
+    let str3
+    const originalStr = str
 
     try {
       // loop till all comments beginning with '(*' are removed
-      while (commentStart = str.match(/\(\*/)) {
+      while ((commentStart = str.match(/\(\*/))) {
         // get the string till comment start
-        str1 = str.substr(0, commentStart.index);
-        
+        str1 = str.substr(0, commentStart.index)
+
         // get the string after comment start
-        str2 = str.substr(commentStart.index);
-        commentEnd = str2.match(/\*\)/);
-        str3 = str2.substr(commentEnd.index + 2);
-        
-        str = str1 + str3;
+        str2 = str.substr(commentStart.index)
+        commentEnd = str2.match(/\*\)/)
+        str3 = str2.substr(commentEnd.index + 2)
+
+        str = str1 + str3
       }
     } catch (e) {
-      return originalStr;
+      return originalStr
     }
-    return str;
+    return str
   },
 
-  codeCleanup: (str) => {
-    let cleanedCode = module.exports.removeComments(str);
-    cleanedCode = cleanedCode.replace(/\\n/g, ' ').replace(/\\"/g, '"');
-    cleanedCode = cleanedCode.substring(1, cleanedCode.length - 1);
-    return cleanedCode;
+  codeCleanup: str => {
+    let cleanedCode = module.exports.removeComments(str)
+    cleanedCode = cleanedCode.replace(/\\n/g, ' ').replace(/\\"/g, '"')
+    cleanedCode = cleanedCode.substring(1, cleanedCode.length - 1)
+    return cleanedCode
   },
 
-  paramsCleanup: (initParams) => {
-    let cleanedParams = initParams.trim();
-    cleanedParams = cleanedParams.substring(1, cleanedParams.length - 1).replace(/\\"/g, '"');
-    return cleanedParams;
+  paramsCleanup: initParams => {
+    let cleanedParams = initParams.trim()
+    cleanedParams = cleanedParams
+      .substring(1, cleanedParams.length - 1)
+      .replace(/\\"/g, '"')
+    return cleanedParams
   },
-
-};
+}
