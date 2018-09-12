@@ -28,6 +28,7 @@ config.blockchain = {
   // sets timer for the block confirmation
   blockInterval: 10000, // 10000 = 10 seconds for one block
   blockStart: 0,
+  gasPrice: 1 // ratio of gas to zil (dummy value of 1:1)
 }
 
 config.wallet = {
