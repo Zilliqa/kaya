@@ -55,7 +55,7 @@ function callback(err, data) {
 /*
      MAIN LOGIC
 */
-console.log('Zilliqa Testing Script'.bold.cyan);
+console.log('Zilliqa Testing Script');
 console.log(`Connected to ${url}`);
 
 /* Contract specific Parameters */

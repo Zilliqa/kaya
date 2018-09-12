@@ -37,10 +37,16 @@ config.wallet = {
   defaultNonce: 0,
 };
 
+/*
+  Settings for the scilla interpreter
+  - runner-path: Relative path to your scilla-runner
+  - remote: Use the remote scilla interpreter. (Default: True). False: Use local scilla interpreter
+  - url: URL to the remote scilla interpreter
+*/
 config.scilla = {
   runner_path: './components/scilla/scilla-runner',
-  mode: 'local', // may include remote mode next time
-  url: 'https://api.zilliqa.com/v1/runner',
+  remote: true,
+  url: '', // To be filled with actual interpreter server
 };
 
 config.testconfigs = {

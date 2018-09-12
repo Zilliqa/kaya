@@ -51,13 +51,21 @@ const initializeContractState = (amt) => {
   return initState;
 };
 
+
+/*
+  Runs the remote interpreter (currently hosted by zilliqa)
+  [DEFAULT] - configurable through the config file
+  @params: data object containing the code, state, init, message and blockchain filepath
+  @returns: Output message received from the remote scilla interpreter
+*/
 const runRemoteInterpreterAsync = async (data) => {
   LOG_SCILLA('Running Remote Interpreter');
+
   const reqData = {
     code: fs.readFileSync(data.code, 'utf-8'),
     init: fs.readFileSync(data.init, 'utf-8'),
     blockchain: fs.readFileSync(data.blockchain, 'utf-8'),
-    gaslimit: 2000,
+    gaslimit: data.gas,
   };
 
   if (!data.isDeployment) {
@@ -68,7 +76,7 @@ const runRemoteInterpreterAsync = async (data) => {
 
   const options = {
     method: 'POST',
-    url: config.scilla.urlv2,
+    url: config.scilla.url,
     json: true,
     body: reqData,
   };
@@ -85,6 +93,7 @@ const runRemoteInterpreterAsync = async (data) => {
 
   return response.message;
 };
+
 
 const runLocalInterpreterAsync = async (command, outputPath) => {
   LOG_SCILLA('Running local scilla interpreter');
@@ -144,7 +153,6 @@ module.exports = {
       LOG_SCILLA(`Code Path: ${codePath}`);
       LOG_SCILLA(`Init Path: ${initPath}`);
       if (!fs.existsSync(codePath) || !fs.existsSync(initPath)) {
-        // tocheck what is the expected behavior on jsonrpc
         LOG_SCILLA('Error, contract has not been created.');
         throw new Error('Address does not exist');
       }
@@ -195,14 +203,13 @@ module.exports = {
     const responseData = {};
     responseData.gasRemaining = retMsg.gas_remaining;
 
-    // get the error message log
+    // Obtains the next address based on the message
     if (retMsg.message != null) {
       LOG_SCILLA(`Next address: ${retMsg.message._recipient}`);
       responseData.nextAddress = retMsg.message._recipient;
     }
     // Contract deployment runs do not have returned message
     responseData.nextAddress = '0'.repeat(40);
-    console.log(responseData);
 
     return responseData;
   },
