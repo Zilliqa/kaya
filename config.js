@@ -40,6 +40,7 @@ config.wallet = {
 config.scilla = {
   runner_path: './components/scilla/scilla-runner',
   mode: 'local', // may include remote mode next time
+  url: 'https://api.zilliqa.com/v1/runner',
 };
 
 config.testconfigs = {

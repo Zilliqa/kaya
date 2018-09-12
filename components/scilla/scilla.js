@@ -18,6 +18,7 @@
 const fs = require('fs');
 const LOG_SCILLA = require('debug')('kaya:scilla');
 const { promisify } = require('util');
+const rp = require('request-promise');
 const { exec } = require('child_process');
 
 const utilities = require('../../utilities');
@@ -50,8 +51,48 @@ const initializeContractState = (amt) => {
   return initState;
 };
 
+const runRemoteInterpreterAsync = async (data) => {
+  LOG_SCILLA('Running Remote Interpreter');
+  const reqData = {
+    code: fs.readFileSync(data.code, 'utf-8'),
+    init: fs.readFileSync(data.init, 'utf-8'),
+    blockchain: fs.readFileSync(data.blockchain, 'utf-8'),
+    message: data.msg,
+  };
+
+  // const test = {
+  //   code: fs.readFileSync(data.code, 'utf-8'),
+  //   message: '',
+  //   blockchain: JSON.parse(fs.readFileSync(data.blockchain, 'utf-8')),
+  //   init: JSON.parse(fs.readFileSync(data.init, 'utf-8')),
+  //   state: '',
+  // };
+
+  if (data.isDeployment) {
+    // contract invoke requires state and message
+    reqData.state = '[\n  {\n    \"vname\": \"_balance\",\n    \"type\" : \"Uint128\",\n    \"value\": \"0\"\n  }\n]';
+  } else {
+    reqData.state = fs.readFileSync(data.state, 'utf-8');
+  }
+
+  const options = {
+    method: 'POST',
+    url: config.scilla.url,
+    json: true,
+    body: reqData,
+  };
+
+  const response = await rp(options);
+  if (!response.gas_remaining) {
+    console.log('WARNING: You are using an outdated scilla interpreter. Please upgrade to the latest version');
+    LOG_SCILLA('Defaulting to specify 2000 as gas limit');
+    // fixme : Add validation to check if user has enough funds
+  }
+  return JSON.stringify(response);
+};
+
 const runLocalInterpreterAsync = async (command, outputPath) => {
-  LOG_SCILLA('Running local scilla interpreter (Sync)');
+  LOG_SCILLA('Running local scilla interpreter');
   // Run Scilla Interpreter
   if (!fs.existsSync(config.scilla.runner_path)) {
     LOG_SCILLA(
@@ -87,7 +128,6 @@ module.exports = {
     let cmd = `${
       config.scilla.runner_path
     } -iblockchain ${blockchainPath} -o ${outputPath} -init ${initPath} -i ${codePath} -gaslimit ${gasLimit}`;
-    console.log(cmd);
 
     if (isCodeDeployment) {
       LOG_SCILLA('Code Deployment');
@@ -131,6 +171,21 @@ module.exports = {
     }
 
     const retMsg = await runLocalInterpreterAsync(cmd, outputPath);
+
+    const apiReqParams = {
+      output: outputPath,
+      state: statePath,
+      code: codePath,
+      msg: payload.data,
+      init: initPath,
+      blockchain: blockchainPath,
+      gas: payload.gasLimit,
+      isDeployment: isCodeDeployment,
+    };
+
+    const test = await runRemoteInterpreterAsync(apiReqParams);
+    console.log(test);
+    console.log('---------------------');
 
     // Extract state from tmp/out.json
     let newState = JSON.stringify(retMsg.states);
