@@ -92,7 +92,7 @@ const runLocalInterpreterAsync = async (command, outputPath) => {
 }
 
 module.exports = {
-  executeScillaRun: async (payload, address, dir, currentBnum) => {
+  executeScillaRun: async (payload, address, dir, currentBnum, gasLimit) => {
     // Get the blocknumber into a json file
     makeBlockchainJson(currentBnum)
 
@@ -106,7 +106,8 @@ module.exports = {
 
     let cmd = `${
       config.scilla.runner_path
-    } -iblockchain ${blockchainPath} -o ${outputPath} -init ${initPath} -i ${codePath}`
+    } -iblockchain ${blockchainPath} -o ${outputPath} -init ${initPath} -i ${codePath} -gaslimit ${gasLimit}`
+    console.log(cmd);
 
     if (isCodeDeployment) {
       LOG_SCILLA('Code Deployment')

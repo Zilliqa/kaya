@@ -163,7 +163,8 @@ module.exports = {
           payload,
           contractAddr,
           dir,
-          currentBNum
+          currentBNum,
+          payload.gasLimit
         )
         // Deduct funds
         walletCtrl.deductFunds(senderAddress, payload.amount + payload.gasLimit)
