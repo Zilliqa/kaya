@@ -44,9 +44,10 @@ config.wallet = {
   - url: URL to the remote scilla interpreter
 */
 config.scilla = {
-  runner_path: './components/scilla/scilla-runner',
-  remote: true,
-  url: '', // To be filled with actual interpreter server
+  runnerPath: './components/scilla/scilla-runner',
+  localLibDir: './components/scilla/stdlib',
+  remote: false,
+  url: '', // Intentionally omitted. To be added with actual server API
 };
 
 config.testconfigs = {

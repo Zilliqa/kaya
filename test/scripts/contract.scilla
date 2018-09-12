@@ -4,6 +4,8 @@
 (***************************************************)
 (*               Associated library                *)
 (***************************************************)
+import ListUtils
+
 library HelloWorld
 
 let one_msg = 

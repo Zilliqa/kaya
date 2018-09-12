@@ -98,7 +98,7 @@ const runRemoteInterpreterAsync = async (data) => {
 const runLocalInterpreterAsync = async (command, outputPath) => {
   LOG_SCILLA('Running local scilla interpreter');
   // Run Scilla Interpreter
-  if (!fs.existsSync(config.scilla.runner_path)) {
+  if (!fs.existsSync(config.scilla.runnerPath)) {
     LOG_SCILLA(
       'Scilla runner not found. Hint: Have you compiled the scilla binaries?',
     );
@@ -130,8 +130,8 @@ module.exports = {
     const statePath = `${dir}${contractAddr}_state.json`;
 
     let cmd = `${
-      config.scilla.runner_path
-    } -iblockchain ${blockchainPath} -o ${outputPath} -init ${initPath} -i ${codePath} -gaslimit ${gasLimit}`;
+      config.scilla.runnerPath
+    } -iblockchain ${blockchainPath} -o ${outputPath} -init ${initPath} -i ${codePath} -gaslimit ${gasLimit} -libdir ${config.scilla.localLibDir}`;
 
     if (isCodeDeployment) {
       LOG_SCILLA('Code Deployment');
