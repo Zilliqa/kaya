@@ -57,38 +57,33 @@ const runRemoteInterpreterAsync = async (data) => {
     code: fs.readFileSync(data.code, 'utf-8'),
     init: fs.readFileSync(data.init, 'utf-8'),
     blockchain: fs.readFileSync(data.blockchain, 'utf-8'),
-    message: data.msg,
+    gaslimit: 2000,
   };
 
-  // const test = {
-  //   code: fs.readFileSync(data.code, 'utf-8'),
-  //   message: '',
-  //   blockchain: JSON.parse(fs.readFileSync(data.blockchain, 'utf-8')),
-  //   init: JSON.parse(fs.readFileSync(data.init, 'utf-8')),
-  //   state: '',
-  // };
-
-  if (data.isDeployment) {
+  if (!data.isDeployment) {
     // contract invoke requires state and message
-    reqData.state = '[\n  {\n    \"vname\": \"_balance\",\n    \"type\" : \"Uint128\",\n    \"value\": \"0\"\n  }\n]';
-  } else {
     reqData.state = fs.readFileSync(data.state, 'utf-8');
+    reqData.message = data.msg;
   }
 
   const options = {
     method: 'POST',
-    url: config.scilla.url,
+    url: config.scilla.urlv2,
     json: true,
     body: reqData,
   };
 
   const response = await rp(options);
-  if (!response.gas_remaining) {
-    console.log('WARNING: You are using an outdated scilla interpreter. Please upgrade to the latest version');
-    LOG_SCILLA('Defaulting to specify 2000 as gas limit');
-    // fixme : Add validation to check if user has enough funds
+  if (response.error) {
+    throw new Error(`REMOTE INTERPRETER ERROR: ${response.error}`);
   }
-  return JSON.stringify(response);
+
+  if (!response.message.gas_remaining) {
+    console.log('WARNING: You are using an outdated scilla interpreter. Please upgrade to the latest version');
+    throw new Error('Outdated scilla binaries');
+  }
+
+  return response.message;
 };
 
 const runLocalInterpreterAsync = async (command, outputPath) => {
@@ -170,22 +165,22 @@ module.exports = {
       throw new Error('Address does not exist');
     }
 
-    const retMsg = await runLocalInterpreterAsync(cmd, outputPath);
-
-    const apiReqParams = {
-      output: outputPath,
-      state: statePath,
-      code: codePath,
-      msg: payload.data,
-      init: initPath,
-      blockchain: blockchainPath,
-      gas: payload.gasLimit,
-      isDeployment: isCodeDeployment,
-    };
-
-    const test = await runRemoteInterpreterAsync(apiReqParams);
-    console.log(test);
-    console.log('---------------------');
+    let retMsg;
+    if (!config.scilla.remote) {
+      retMsg = await runLocalInterpreterAsync(cmd, outputPath);
+    } else {
+      const apiReqParams = {
+        output: outputPath,
+        state: statePath,
+        code: codePath,
+        msg: payload.data,
+        init: initPath,
+        blockchain: blockchainPath,
+        gas: payload.gasLimit,
+        isDeployment: isCodeDeployment,
+      };
+      retMsg = await runRemoteInterpreterAsync(apiReqParams);
+    }
 
     // Extract state from tmp/out.json
     let newState = JSON.stringify(retMsg.states);
