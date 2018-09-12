@@ -150,16 +150,15 @@ module.exports = {
         LOG_LOGIC('Task: Contract Deployment / Create Transaction')
         // take the sha256 hash of address+nonce, then extract the rightmost 20 bytes
         const contractAddr = computeContractAddr(senderAddress)
-
-        // @dev: currently, the gas cost is the gaslimit. This WILL change in the future
-        const gasAndAmount = payload.amount + payload.gasLimit
+        const gasAndAmount = payload.amount + payload.gasLimit;
+        
         if (!walletCtrl.sufficientFunds(senderAddress, gasAndAmount)) {
           LOG_LOGIC('Insufficient funds. Returning error to client.')
           throw new Error('Insufficient funds')
         }
         LOG_LOGIC(`Contract will be deployed at: ${contractAddr}`)
 
-        const nextAddr = await scillaCtrl.executeScillaRun(
+        const responseData = await scillaCtrl.executeScillaRun(
           payload,
           contractAddr,
           dir,
@@ -167,7 +166,10 @@ module.exports = {
           payload.gasLimit
         )
         // Deduct funds
-        walletCtrl.deductFunds(senderAddress, payload.amount + payload.gasLimit)
+        let nextAddr = responseData.nextAddress;
+        let gasConsumed = payload.gasLimit - responseData.gasRemaining;
+
+        walletCtrl.deductFunds(senderAddress, payload.amount + gasConsumed)
         walletCtrl.increaseNonce(senderAddress) // only increase if a contract is successful
 
         if (
@@ -193,6 +195,9 @@ module.exports = {
       }
     } else {
       // payload.nonce is not valid. Deduct gas anyway
+      // FIX ME: Waiting for scilla interpreter to return a structured output about out of gas errors
+      // https://github.com/Zilliqa/scilla/issues/214 
+
       walletCtrl.deductFunds(senderAddress, payload.gasLimit)
       LOG_LOGIC('Invalid Nonce')
       throw new Error('Invalid Tx Json')

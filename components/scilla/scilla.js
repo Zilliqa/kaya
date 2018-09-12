@@ -162,11 +162,18 @@ module.exports = {
     LOG_SCILLA(`State logged down in ${statePath}`)
     console.log(`Contract Address Deployed: ${contractAddr}`)
 
+    responseData = {};
+    responseData.gasRemaining = retMsg.gas_remaining;
+
+    // get the error message log
     if (retMsg.message != null) {
       LOG_SCILLA(`Next address: ${retMsg.message._recipient}`)
-      return retMsg.message._recipient
+      responseData.nextAddress = retMsg.message._recipient
     }
     // Contract deployment runs do not have returned message
-    return '0'.repeat(40)
+    responseData.nextAddress = '0'.repeat(40);
+    console.log(responseData);
+
+    return responseData;
   },
 }

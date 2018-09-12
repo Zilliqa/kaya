@@ -82,7 +82,7 @@ const txnDetails = {
   to: '0000000000000000000000000000000000000000',
   amount: new BN(0),
   gasPrice: 1,
-  gasLimit: 50,
+  gasLimit: 16,
   code: codeStr,
   data: JSON.stringify(initParams).replace(/\\' /g, '"'),
 };
