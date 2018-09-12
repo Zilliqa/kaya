@@ -82,8 +82,8 @@ const txnDetails = {
   nonce: 2,
   to: argv.to,
   amount: new BN(0),
-  gasPrice: 1,
-  gasLimit: 10,
+  gasPrice: 0,
+  gasLimit: 100,
   data: JSON.stringify(msg).replace(/\\"/g, '"'),
 };
 
