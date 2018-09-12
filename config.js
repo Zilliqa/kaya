@@ -18,32 +18,32 @@
 /* Configuration file */
 /* Feel free to add more things to this file that will help you in development */
 
-const config = module.exports
+const config = module.exports;
 
-config.port = 4200
-config.version = '0.0.1'
+config.port = 4200;
+config.version = '0.0.1';
 
 // blockchain specific configuration
 config.blockchain = {
   // sets timer for the block confirmation
   blockInterval: 10000, // 10000 = 10 seconds for one block
   blockStart: 0,
-  gasPrice: 1 // ratio of gas to zil (dummy value of 1:1)
-}
+  gasPrice: 1, // ratio of gas to zil (dummy value of 1:1)
+};
 
 config.wallet = {
   numAccounts: 10, // number of default accounts
   defaultAmt: 100000, // default amount of zils assigned to each wallet
   defaultNonce: 0,
-}
+};
 
 config.scilla = {
   runner_path: './components/scilla/scilla-runner',
   mode: 'local', // may include remote mode next time
-}
+};
 
 config.testconfigs = {
   gasPrice: 1,
   gasLimit: 10,
   transferAmt: 100,
-}
+};
