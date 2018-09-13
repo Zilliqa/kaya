@@ -15,17 +15,23 @@
   kaya.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-let colors = require('colors');
-
 const config = require('./config');
+
+/* Information about Kaya RPC Server */
+
+console.log(`ZILLIQA KAYA RPC SERVER (ver: ${config.version})`);
+console.log(`Server listening on 127.0.0.1:${config.port}`);
+
+if (config.scilla.remote) {
+  console.log(`Scilla interperter running remotely from: ${config.scilla.url}`);
+} else {
+  console.log('Scilla interpreter running locally');
+}
+console.log('='.repeat(80));
+
 const app = require('./app');
 
-const { port } = config;
-
-console.log(`Zilliqa kaya Server (ver: ${config.version})`.cyan);
-console.log(`\nServer listening on 127.0.0.1:${port}`.yellow);
-
-const server = app.expressjs.listen(port, err => {
+const server = app.expressjs.listen(config.port, (err) => {
   if (err) {
     process.exit(1);
   }
@@ -33,7 +39,7 @@ const server = app.expressjs.listen(port, err => {
 
 // Listener for connections opening on the server
 let connections = [];
-server.on('connection', connection => {
+server.on('connection', (connection) => {
   connections.push(connection);
   connection.on(
     'close',

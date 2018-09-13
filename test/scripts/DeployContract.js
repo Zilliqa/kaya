@@ -15,7 +15,6 @@
   kaya.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 require('isomorphic-fetch');
 const { Zilliqa } = require('zilliqa-js');
 const fs = require('fs');
@@ -28,14 +27,19 @@ const zilliqa = new Zilliqa({
 });
 
 let privateKey;
-// User supplies the private key through `--key`
-if (argv.key) {
-  privateKey = argv.key;
-  console.log(`Your Private Key: ${privateKey} \n`);
+
+if (argv.test) {
+  privateKey = 'db11cfa086b92497c8ed5a4cc6edb3a5bfe3a640c43ffb9fc6aa0873c56f2ee3';
 } else {
-  console.log('No private key given! Generating random privatekey.'.green);
-  privateKey = zilliqa.util.generatePrivateKey();
-  console.info(`Your Private Key: ${privateKey.toString('hex')}`);
+  // User supplies the private key through `--key`
+  if (argv.key) {
+    privateKey = argv.key;
+    console.log(`Your Private Key: ${privateKey} \n`);
+  } else {
+    console.log('No private key given! Generating random privatekey.');
+    privateKey = zilliqa.util.generatePrivateKey();
+    console.info(`Your Private Key: ${privateKey.toString('hex')}`);
+  }
 }
 
 const address = zilliqa.util.getAddressFromPrivateKey(privateKey);
@@ -46,7 +50,7 @@ console.log(`Pubkey:  ${zilliqa.util.getPubKeyFromPrivateKey(privateKey)}`);
 
 function callback(err, data) {
   if (err || data.error) {
-    console.log('Error');
+    console.log(err);
   } else {
     console.log(data);
   }
@@ -60,7 +64,7 @@ console.log(`Connected to ${url}`);
 
 /* Contract specific Parameters */
 
-const codeStr = fs.readFileSync('contract_nomsg.scilla', 'utf-8');
+const codeStr = fs.readFileSync('contract.scilla', 'utf-8');
 // the immutable initialisation variables
 const initParams = [
   {
@@ -82,7 +86,7 @@ const txnDetails = {
   to: '0000000000000000000000000000000000000000',
   amount: new BN(0),
   gasPrice: 1,
-  gasLimit: 16,
+  gasLimit: 2000,
   code: codeStr,
   data: JSON.stringify(initParams).replace(/\\' /g, '"'),
 };

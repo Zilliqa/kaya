@@ -21,7 +21,7 @@
 const config = module.exports;
 
 config.port = 4200;
-config.version = '0.0.1';
+config.version = '0.2.0';
 
 // blockchain specific configuration
 config.blockchain = {
@@ -46,8 +46,8 @@ config.wallet = {
 config.scilla = {
   runnerPath: './components/scilla/scilla-runner',
   localLibDir: './components/scilla/stdlib',
-  remote: false,
-  url: '', // Intentionally omitted. To be added with actual server API
+  remote: true,
+  url: 'https://scilla-runner.zilliqa.com/contract/call',
 };
 
 config.testconfigs = {
