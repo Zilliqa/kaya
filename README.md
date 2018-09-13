@@ -30,29 +30,40 @@ In addition, the following features are not supported yet:
 * Multi-contract calls
 * Events
 
-## Installation
-Run `npm install`, then `node server.js`.
-Debug mode: `npm run debug`. Debug mode provides greater verbosity about your code that was being sent to the rpc server.
+## Getting Started
+### Installation
+Install the node packages and dependencies: `npm install`
 
-### Compiling Scilla
+Scilla files must be processed using the `scilla-interpreter`. The [Scilla interpreter](https://scilla.readthedocs.io/en/latest/interface.html) executable provides a calling interface that enables users to invoke transitions with specified inputs and obtain outputs. 
 
-`Kaya` uses the scilla interpreter (scilla-runner) to interpret `.scilla` files. As such, you will have to compile the binary yourself from the [scilla repository](https://github.com/Zilliqa/scilla).
+#### Using Remote Scilla Interpreter (Default)
 
-To compile the interpreter:
+By default, Kaya RPC uses the remote scilla interpreter to process `.scilla` files. You do not have to change any configurations.
+
+#### Using Local Scilla Interpreter
+You can choose to use your own scilla interpreter locally. To do it, you will have to compile the binary yourself from the [scilla repository](https://github.com/Zilliqa/scilla) and transfer it to the correct directory within Kaya RPC. 
+
+Instructions: 
 1. Ensure that you have installed the related dependencies: [INSTALL.md](https://github.com/Zilliqa/scilla/blob/master/INSTALL.md)
 2. Then, run `make clean; make`
 3. Copy the `scilla-runner` from `[SCILLA_DIR]/bin` into `[Kaya_DIR]/components/scilla/`
+4. Open `config.js` file and set the `config.scilla.remote` to `false`
 
-## Server Usage
+### Usage
+Kaya RPC two modes: normal and debug. The server listens on port `4200` by default. You can change the port through the `config.js` file.
+- `npm start` : Normal mode
+- `npm run debug`: Enables verbosity mode. Display logs about activities. Useful for debugging
 
-To run the server, do:
-* Normal: `npm start`
-* Normal with debug mode: `npm run debug`
-*
-The server listens on port 4200 by default. You can change the port through the `config.js` file.
+Developers can also start Kaya RPC with accounts from a `fixtures` file. The fixture file is configurable through `config.js`. If you wish to change this file, you will have to follow the format just like `account-fixtures.json`.
+
+To start Kaya RPC with accounts from a file, run one of the following commands:
+- `npm run start:fixtures`: Normal mode
+- `npm run debug:fixtures`: Greater verbosity. Shows log trail about server activities.
+
+__Recommendation__: We recommend running `npm run debug:fixtures`. Without account fixtures, accounts will be randomly generated at every run. It can be time consuming to change the private keys and addresses each time.
 
 ### Advanced: Persistent Storage using Kaya RPC
-By default, the data states are non-persistent. Once you shut down the node server, everything will be deleted.
+By default, the data states are non-persistent. Once you shut down the node server, state files and transactions will be deleted.
 
 To enable persistence data, use:
 ```
@@ -67,7 +78,7 @@ node server.js --load data/save/YYYYMMDDhhmmss_blockchain_states.json
 
 ## Testing
 
-Automated tests are a work-in-progress. For now, you have to run tests manually. 
+Some of the functions in Kaya RPC are covered under automated testing using `jest`. However, scilla related transactions are not covered through automated testing. To test the `CreateTransaction` functionalities, you will have to test it manually.
 
 From `test/scripts/`, you can use run `node DeployContract.js` to test contract deployment. 
 Then, use `node CreateTransaction --key [private-key] --to [contract_addr]` to make transition calls. 
@@ -75,11 +86,13 @@ You can use the `curl` commands stated in the [jsonrpc apidocs](https://apidocs.
 
 Use `--key` to specify a private key. Otherwise, a random privatekey will be generated.
 
-Sample Test Procedure: 
-1. Start the server using `node server.js`
-2. Deploy a contract using `node DeployContract.js --key [private_key]`.
+### Testing with Fixture Files
+
+You can also use the `--test` flag, which uses default test configurations: 
+1. Start the server using `npm run debug:fixtures`
+2. Deploy a contract using `node DeployContract.js --test`.
 3. Check where the contract is deployed. It should be on the logs if you have enabled `debug` mode, otherwise you can check it through the `GetSmartContracts` method.
-4. Send a transaction using `node CreateTransaction.js --key [private_key] --to [Contract_address]`
+4. Send a transaction using `node CreateTransaction.js --test`
 
 ## License
 
