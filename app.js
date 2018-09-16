@@ -37,14 +37,8 @@ expressjs.use(bodyParser.json({ extended: false }));
 let isPersistence = false; // tmp is the default behavior
 
 function makeResponse(id, jsonrpc, data, isErr) {
-  const responseObj = {};
-  responseObj.id = id;
-  responseObj.jsonrpc = jsonrpc;
-  if (isErr) {
-    responseObj.result = { Error: data };
-  } else {
-    responseObj.result = data;
-  }
+  const responseObj = {id, jsonrpc};
+  responseObj.result = isErr ? { Error: data } : data;
   return responseObj;
 }
 
@@ -75,7 +69,6 @@ if (argv.accounts) {
   wallet.loadAccounts(accounts);
 } else {
   /* Create Dummy Accounts */
-  // create 10 wallets by default
   wallet.createWallets(config.wallet.numAccounts);
 }
 wallet.printWallet();

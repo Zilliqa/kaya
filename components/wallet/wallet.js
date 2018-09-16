@@ -44,9 +44,8 @@ const consolePrint = (text) => {
 const createNewWallet = () => {
   const pk = zilliqa.util.generatePrivateKey();
   const address = zilliqa.util.getAddressFromPrivateKey(pk);
-  const pkString = pk.toString('hex');
   const newWallet = {
-    privateKey: pkString,
+    privateKey: pk,
     amount: config.wallet.defaultAmt,
     nonce: config.wallet.defaultNonce,
   };
