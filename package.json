@@ -23,8 +23,11 @@
     "cross-env": "^5.2.0",
     "eslint": "^5.5.0",
     "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-config-prettier": "^3.0.1",
     "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-prettier": "^2.6.2",
     "jest": "^23.5.0",
+    "prettier": "^1.14.2",
     "superagent": "^3.8.3",
     "supertest": "^3.1.0"
   },
@@ -39,6 +42,8 @@
     "hash.js": "^1.1.5",
     "isomorphic-fetch": "^2.2.1",
     "node-fs": "^0.1.7",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.2",
     "rimraf": "^2.6.2",
     "yargs": "^12.0.1",
     "zilliqa-js": "^0.1.8"

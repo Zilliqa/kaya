@@ -2,7 +2,10 @@
     "rules": {
       "no-console": 0,
       "no-underscore-dangle": 0,
-      "no-return-assign": 0
+      "no-return-assign": 0,
+      "no-extend-native": 0,
+      "no-lonely-if": 0,
+      "prefer-destructuring": 0
     },
-    "extends": "prettier"
+    "extends": ["airbnb-base"]
 }

@@ -34,5 +34,5 @@ const config = {
   //         "statements": 80
   //     }
   // }
-}
-module.exports = config
+};
+module.exports = config;

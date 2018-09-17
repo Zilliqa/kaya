@@ -15,16 +15,17 @@
   kaya.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-const config = require('../config')
+const config = require('../config');
 
-let bnum = config.blockchain.blockStart
+let bnum = config.blockchain.blockStart;
+
 function addBnum() {
-  bnum += 1
+  bnum += 1;
 }
 
 // blockinterval is duration for each block number increment
-setInterval(addBnum, config.blockchain.blockInterval)
+setInterval(addBnum, config.blockchain.blockInterval);
 
 module.exports = {
   getBlockNum: () => bnum,
-}
+};

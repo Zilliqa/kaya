@@ -27,20 +27,30 @@ const zilliqa = new Zilliqa({
 });
 
 let privateKey;
-// User supplies the private key through `--key`
-if (argv.key) {
-  privateKey = argv.key;
-  console.log(`Your Private Key: ${privateKey} \n`);
+let recipient;
+
+if (argv.test) {
+  // test mode uses keys from the account fixtures
+  privateKey = 'db11cfa086b92497c8ed5a4cc6edb3a5bfe3a640c43ffb9fc6aa0873c56f2ee3';
+  recipient = 'cef48d2ec4086bd5799b659261948daab02b760d';
 } else {
-  console.log('No private key given! Generating random privatekey.'.green);
-  privateKey = zilliqa.util.generatePrivateKey();
-  console.info(`Your Private Key: ${privateKey.toString('hex')}`);
+  // User supplies the private key through `--key`
+  if (argv.key) {
+    privateKey = argv.key;
+    console.log(`Your Private Key: ${privateKey} \n`);
+  } else {
+    console.log('No private key given! Generating random privatekey.'.green);
+    privateKey = zilliqa.util.generatePrivateKey();
+    console.info(`Your Private Key: ${privateKey.toString('hex')}`);
+  }
+
+  if (!argv.to) {
+    console.log('To address required');
+    process.exit(0);
+  }
+  recipient = argv.to;
 }
 
-if (!argv.to) {
-  console.log('To address required');
-  process.exit(0);
-}
 
 const address = zilliqa.util.getAddressFromPrivateKey(privateKey);
 
@@ -57,7 +67,7 @@ function callback(err, data) {
 
 /*  MAIN LOGIC  */
 
-console.log('Zilliqa Testing Script'.bold.cyan);
+console.log('Zilliqa Testing Script');
 console.log(`Connected to ${url}`);
 
 /* Contract specific Parameters */
@@ -67,23 +77,21 @@ const msg = {
   _tag: 'setHello',
   _amount: '0',
   _sender: '0x7bb3b0e8a59f3f61d9bff038f4aeb42cae2ecce8',
-  params: [
-    {
-      vname: 'msg',
-      type: 'String',
-      value: 'Morning',
-    },
-  ],
+  params: [{
+    vname: 'msg',
+    type: 'String',
+    value: 'Morning',
+  }],
 };
 
 // transaction details
 const txnDetails = {
   version: 0,
   nonce: 2,
-  to: argv.to,
+  to: recipient,
   amount: new BN(0),
-  gasPrice: 0,
-  gasLimit: 100,
+  gasPrice: 1,
+  gasLimit: 2000,
   data: JSON.stringify(msg).replace(/\\"/g, '"'),
 };
 
