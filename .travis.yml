@@ -1,11 +1,22 @@
 language: node_js
-sudo: true
-node_js: 
-  - "stable"
+sudo: required
+service:
+- docker
+node_js:
+- stable
+before_install:
+- curl -L https://goss.rocks/install | sudo sh
+- docker build -t visibilityspots/openstackclient-kilo .
 install:
-  - npm install
+- npm install
 script:
-  - npm run test
+- npm run test
+after_success:
+- if [ "$TRAVIS_BRANCH" == "master" ]; then docker login -u=visibilityspots -p="$DOCKER_PASSWORD";
+  docker push visibilityspots/kaya-rpc; fi
 cache:
   directories:
-    - $HOME/.npm
+  - "$HOME/.npm"
+env:
+  global:
+    secure: anqO8o+QQVLp7ETDbuFm0wJZlYrk3vq3v1wIudpFnidl+bf5FSM8BANIaLlzg9ktPitw+c5abM92QKO8ZWISw8QgJ5zX+JDUiyH4yff1mnEy1jMr4HDOjPg5zpdogkzXAoc3LH1SuraKNaR03ViL8+bUPKn2SEAlp0xBQ99eiyfZX7or2BYOVEHB9TENztOQ/honBOJyJMdHegq92izQ1qOFrOi83blenRA8LIzNzMIn+Mb1ZfrAlvfj4OeGIXRgGAnOQQ7ZyWwru/HxJxA+7baHX3tye4j2HM3i7JKQyPDUm0xICasIfg0bHvXFxxWrND2zR0lRkhm2cR61ygxBHEhBbuWY7R7fiQN5pv+0LvyQd3YNBgTXkM4Ky2M3RDjm9sHenlSCTrRHrDHO+BBNi6fKVz8iU1FD8ARy+g2QYkPsGzm7JxofOHOE4s1QAIQxOYj8BjGNhR/kS64xDzaHFn/wXyz/gbvFmDM8ClYBS3b4u7L+RA5lZ9yD5iZ4fRMeD4Ew/rjDsLiodH9Avn01SCfvHPmV6ZoFOMVW8GRh4qYwGYx3aQ6FGd5MrS3jNKp7PTsI4hx46XofXFubxWhAWd0NUkKu5xU+DU2hyUrlSmsLwMGG4nXhHRzE+3SWXx1Lwr66Sgdlnz6Y7NgBMKCwf90Q4BRZyT4yxRdd455eM/0=
