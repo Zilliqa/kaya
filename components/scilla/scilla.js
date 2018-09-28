@@ -81,10 +81,16 @@ const runRemoteInterpreterAsync = async (data) => {
     body: reqData,
   };
 
-  const response = await rp(options);
-  if (response.error) {
-    throw new Error(`REMOTE INTERPRETER ERROR: ${response.error}`);
+  let response;
+  try {
+    response = await rp(options);
+  } catch (err) { 
+    console.log(`Interpreter failed to process code. Error message received:`);
+    console.log(`${err.message}`);
+    console.log('Possible fix: Have your code passed type checking?');
+    throw new Error('KayaRPC-specific: Interpreter error');
   }
+  
 
   if (!response.message.gas_remaining) {
     console.log('WARNING: You are using an outdated scilla interpreter. Please upgrade to the latest version');
