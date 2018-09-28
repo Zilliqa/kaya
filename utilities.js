@@ -45,7 +45,7 @@ module.exports = {
 
   codeCleanup: str => {
     let cleanedCode = module.exports.removeComments(str);
-    cleanedCode = cleanedCode.replace(/\\n/g, ' ').replace(/\\"/g, '"');
+    cleanedCode = cleanedCode.replace(/\\n|\\t/g, ' ').replace(/\\"/g, '"');
     cleanedCode = cleanedCode.substring(1, cleanedCode.length - 1);
     return cleanedCode;
   },
