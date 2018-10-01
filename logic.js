@@ -22,7 +22,7 @@ const { Zilliqa } = require('zilliqa-js');
 const scillaCtrl = require('./components/scilla/scilla');
 const walletCtrl = require('./components/wallet/wallet');
 const blockchain = require('./components/blockchain');
-const { logVerbose } = require('./utilities');
+const { logVerbose, consolePrint } = require('./utilities');
 const config = require('./config');
 
 const logLabel = ('Logic.js');
@@ -292,14 +292,14 @@ module.exports = {
 
     const contractAddress = data[0];
     if (contractAddress == null || !zilliqa.util.isAddress(contractAddress)) {
-      console.log('Invalid request');
+      consolePrint('Invalid request');
       throw new Error('Address size inappropriate');
     }
 
     const dir = saveMode ? 'data/' : 'tmp/';
     const initFile = `${dir}${contractAddress.toLowerCase()}_init.json`;
     if (!fs.existsSync(initFile)) {
-      console.log(`No init file found (Contract: ${contractAddress}`);
+      consolePrint(`No init file found (Contract: ${contractAddress}`);
       throw new Error('Address does not exist');
     }
     const retMsg = JSON.parse(fs.readFileSync(initFile, 'utf-8'));
@@ -351,7 +351,7 @@ module.exports = {
     }
 
     const dir = saveMode ? 'data/' : 'tmp/';
-    const statePath = `${dir}${contractAddress.toLowerCase()}_state.json`;
+    const statePath = `${dir}${contractAddress.toUpperCase()}_state.json`;
     if (!fs.existsSync(statePath)) {
       console.log(`No state file found (Contract: ${contractAddress}`);
       throw new Error('Address does not exist');

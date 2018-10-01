@@ -32,6 +32,13 @@ module.exports = {
     }
   },
 
+  // wrapper: print only when not in test mode
+    consolePrint : (text) => {
+    if (process.env.NODE_ENV !== 'test') {
+      console.log(text);
+    }
+  },
+
   /*
   * @returns : { string } : Datetime format (e.g. 20181001T154832 )
   */

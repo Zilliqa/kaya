@@ -18,7 +18,7 @@
 /* Wallet Component */
 const assert = require('assert');
 const { Zilliqa } = require('zilliqa-js');
-const { logVerbose } = require('../../utilities');
+const { logVerbose, consolePrint } = require('../../utilities');
 const config = require('../../config');
 const logLabel = 'Wallet'
 
@@ -34,12 +34,7 @@ const zilliqa = new Zilliqa({
   nodeUrl: 'http://localhost:8888',
 });
 
-// wrapper: print only when not in test mode
-const consolePrint = (text) => {
-  if (process.env.NODE_ENV !== 'test') {
-    console.log(text);
-  }
-};
+
 
 const createNewWallet = () => {
   const pk = zilliqa.util.generatePrivateKey();
@@ -112,7 +107,7 @@ module.exports = {
       for (let i = 0; i < config.wallet.numAccounts; i += 1) {
         const addr = Object.keys(wallets)[i];
         consolePrint(
-          `(${i}) ${addr} (Amt: ${wallets[addr].amount}) (Nonce: ${
+          `(${i}) ${addr.toUpperCase()} (Amt: ${wallets[addr].amount}) (Nonce: ${
             wallets[addr].nonce
           })`,
         );
@@ -121,7 +116,7 @@ module.exports = {
       consolePrint('\n Private Keys ');
       consolePrint('=============================');
       for (let i = 0; i < config.wallet.numAccounts; i += 1) {
-        consolePrint(`(${i}) ${keys[i]}`);
+        consolePrint(`(${i}) ${keys[i].toUpperCase()}`);
       }
     }
   },

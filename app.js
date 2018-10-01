@@ -25,7 +25,7 @@ const yargs = require('yargs');
 const config = require('./config');
 const logic = require('./logic');
 const wallet = require('./components/wallet/wallet');
-const { prepareDirectories, logVerbose } = require('./utilities');
+const { prepareDirectories, logVerbose, consolePrint } = require('./utilities');
 const init = require('./argv');
 const logLabel = 'App.js';
 
@@ -48,9 +48,9 @@ let options = {
   save : argv.s,
   load : argv.l
 }
-console.log(`Running from ${options.remote ? 'remote' : 'local'} interpreter`)
-if(options.remote) { console.log(config.scilla.url)};
-console.log('='.repeat(80));
+consolePrint(`Running from ${options.remote ? 'remote' : 'local'} interpreter`)
+if(options.remote) { consolePrint(config.scilla.url)};
+consolePrint('='.repeat(80));
 
 prepareDirectories(options.data_path); // prepare the directories required
 let isPersistence = false; // tmp is the default behavior
@@ -219,7 +219,7 @@ const handler = async (req, res) => {
 expressjs.post('/', wrapAsync(handler));
 
 process.on( 'SIGINT', function() {
-    console.log( "Gracefully shutting down from SIGINT (Ctrl-C)" );
+    consolePrint( "Gracefully shutting down from SIGINT (Ctrl-C)" );
 
     // move data files to saved files directory
 
