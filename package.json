@@ -17,6 +17,9 @@
     "type": "git",
     "url": "https://github.com/Zilliqa/kaya"
   },
+  "bin": {
+    "kaya": "./server.js"
+  },
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-preset-env": "^1.7.0",
