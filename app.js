@@ -25,12 +25,12 @@ const yargs = require('yargs');
 const config = require('./config');
 const logic = require('./logic');
 const wallet = require('./components/wallet/wallet');
-const utils = require('./utilities');
+const { prepareDirectories, logVerbose } = require('./utilities');
 const init = require('./argv');
-utils.prepareDirectories(); // prepare the directories required
-expressjs.use(bodyParser.json({ extended: false }));
+const logLabel = 'App.js';
 
-logger = utils.makeLogger('APP');
+prepareDirectories(); // prepare the directories required
+expressjs.use(bodyParser.json({ extended: false }));
 const argv = init(yargs).argv;
 
 // flags override the config files
@@ -50,17 +50,14 @@ function makeResponse(id, jsonrpc, data, isErr) {
   return responseObj;
 }
 
-// silly does not log data
-const loggingEnabled = options.verbose ? 'info' : 'silly';
-
 if (argv.save) {
-  logger.log(loggingEnabled, 'Save mode enabled');
+  logVerbose(logLabel, 'Save enabled');
   isPersistence = true;
 }
 
 if (argv.load) {
   // loading option specified
-  logger.log(loggingEnabled, 'Loading option specified.');
+  logVerbose(logLabel, 'Loading option specified');
   // loads file into db_path from the given bootstrap file
   logic.bootstrapFile(argv.load);
   isPersistence = true;
@@ -72,7 +69,7 @@ if (process.env.NODE_ENV === 'test') {
 
 /* account creation/loading based on presets given */
 if (argv.accounts) {
-  logger.log(loggingEnabled, `Bootstrapping from account fixture files: ${argv.accounts}`);
+  logVerbose(logLabel, `Bootstrapping from account fixture files: ${argv.accounts}`);
   const accountsPath = argv.accounts;
   if (!fs.existsSync(accountsPath)) {
     throw new Error('Account Path Invalid');
@@ -93,7 +90,7 @@ const wrapAsync = fn => (req, res, next) => {
 // cross region settings with Env
 if (process.env.NODE_ENV === 'dev') {
   expressjs.use(cors());
-  logger.log(loggingEnabled, 'CORS Enabled.');
+  logVerbose(logLabel, 'CORS Enabled');
 }
 
 expressjs.get('/', (req, res) => {
@@ -107,7 +104,7 @@ const handler = async (req, res) => {
   let data = {};
   let result;
   let addr;
-  logger.log(loggingEnabled, `Method specified: ${body.method}`);
+  logVerbose(logLabel, `Method specified ${body.method}`);
   switch (body.method) {
     case 'GetBalance':
       // [addr, ... ] = body.params;
@@ -115,7 +112,7 @@ const handler = async (req, res) => {
       if (typeof addr === 'object') {
         addr = JSON.stringify(addr);
       }
-      logger.log(loggingEnabled, `Getting balance for ${addr}`);
+      logVerbose(logLabel, `Getting balance for ${addr}`);
 
       try {
         data = wallet.getBalance(addr);
@@ -211,7 +208,7 @@ const handler = async (req, res) => {
       data = { Error: 'Unsupported Method' };
       res.status(404).send(data);
   }
-  logger.log(loggingEnabled, 'Sending response back to client');
+  logVerbose(logLabel, 'Sending response back to client');
 };
 
 expressjs.post('/', wrapAsync(handler));

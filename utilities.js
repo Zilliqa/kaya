@@ -17,27 +17,19 @@
 
 const rimraf = require('rimraf');
 const path = require('path');
-const LOG_UTILS = require('debug')('kaya:utilities.js');
 const fs = require('fs');
-const { createLogger, format, transports } = require('winston');
-const { combine, label, printf } = format;
+const yargs = require('yargs');
+const init = require('./argv');
+const argv = init(yargs).argv;
+const logLabel = 'Utilities.js';
 
 module.exports = {
-  makeLogger : labelValue => {
-    
-    const myFormat = printf(info => {
-      return `[${info.label}] ${info.level}: ${info.message}`;
-    });
-    
-    const logger = createLogger({
-      format: combine(
-        label({ label: labelValue }),
-        myFormat
-      ),
-      transports: [new transports.Console()]
-    });
 
-    return logger;
+  // log function that logs only when verbose mode is on
+  logVerbose : (src, msg) => {
+    if(argv.v) {
+      console.log(`[${src}] : ${msg}`);
+    }
   },
 
   removeComments: str => {
@@ -84,16 +76,17 @@ module.exports = {
 
   /* prepareDirectories : Called by app.js */
   prepareDirectories: () => {
+
     // cleanup old folders
     if (fs.existsSync('./tmp')) {
-      LOG_UTILS(`Tmp folder found. Removing ${__dirname}/tmp`);
+      module.exports.logVerbose(logLabel, `Tmp folder found. Removing ${__dirname}/tmp`);
       rimraf.sync(path.join(__dirname, '/tmp'));
-      LOG_UTILS(`${__dirname}/tmp removed`);
+      module.exports.logVerbose(logLabel, `${__dirname}/tmp removed`);
     }
 
     if (!fs.existsSync('./tmp')) {
       fs.mkdirSync('./tmp');
-      LOG_UTILS(`tmp folder created in ${__dirname}/tmp`);
+      module.exports.logVerbose(logLabel, `tmp folder created in ${__dirname}/tmp`);
     }
     if (!fs.existsSync('./data')) {
       fs.mkdirSync('./data');
@@ -101,7 +94,7 @@ module.exports = {
         if (err) {
           console.log(err);
         } else {
-          LOG_UTILS('Directory created');
+          module.exports.logVerbose(logLabel, 'Directory created');
         }
       });
     }

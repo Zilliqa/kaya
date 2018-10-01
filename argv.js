@@ -39,6 +39,24 @@ module.exports = function(yargs) {
             default: config.wallet.numAccounts,
             describe: 'Number of accounts to load at start up. Only used if fixtures file is not defined.'
         })
+        .option('f', {
+            group: 'Other',
+            alias: 'fixtures',
+            type: 'string',
+            describe: 'Path to JSON file which contains the private keys to predefined set of wallets'
+        })
+        .option('l', {
+            group: 'Other',
+            alias: 'load',
+            type: 'string',
+            describe: 'Load state files from a path'
+        })
+        .option('s', {
+            group: 'Other',
+            alias: 'save',
+            type: 'boolean',
+            describe: 'Save file to a permanent directory'
+        })
         .option('v', {
             group: 'Other',
             alias: 'verbose',
