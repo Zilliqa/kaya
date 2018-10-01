@@ -7,9 +7,9 @@
     "test": "jest -c jest.config.js",
     "dev": "cross-env NODE_ENV=dev node server.js",
     "start": "node server.js",
-    "start:fixtures": "node server.js --accounts test/account-fixtures.json",
-    "debug": "DEBUG=kaya* node server.js",
-    "debug:fixtures": "DEBUG=kaya* node server.js -f test/account-fixtures.json -v"
+    "start:fixtures": "node server.js --f test/account-fixtures.json",
+    "debug": "node server.js",
+    "debug:fixtures": "node server.js -f test/account-fixtures.json -v"
   },
   "author": "Edison Lim",
   "license": "GPL-3.0-or-later",
@@ -45,6 +45,6 @@
     "request-promise": "^4.2.2",
     "rimraf": "^2.6.2",
     "yargs": "^12.0.1",
-    "zilliqa-js": "^0.1.8"
+    "zilliqa-js": "^0.1.19"
   }
 }

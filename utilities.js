@@ -75,28 +75,11 @@ module.exports = {
   },
 
   /* prepareDirectories : Called by app.js */
-  prepareDirectories: () => {
+  prepareDirectories: (data_path) => {
 
-    // cleanup old folders
-    if (fs.existsSync('./tmp')) {
-      module.exports.logVerbose(logLabel, `Tmp folder found. Removing ${__dirname}/tmp`);
-      rimraf.sync(path.join(__dirname, '/tmp'));
-      module.exports.logVerbose(logLabel, `${__dirname}/tmp removed`);
-    }
-
-    if (!fs.existsSync('./tmp')) {
-      fs.mkdirSync('./tmp');
-      module.exports.logVerbose(logLabel, `tmp folder created in ${__dirname}/tmp`);
-    }
-    if (!fs.existsSync('./data')) {
-      fs.mkdirSync('./data');
-      fsp.mkdir('./data/save', 777, true, (err) => {
-        if (err) {
-          console.log(err);
-        } else {
-          module.exports.logVerbose(logLabel, 'Directory created');
-        }
-      });
+    if (!fs.existsSync(data_path)) {
+      fs.mkdirSync(data_path);
+      module.exports.logVerbose(logLabel, `${data_path} folder created in ${__dirname}/${data_path}`);
     }
   }
 };

@@ -29,7 +29,6 @@ const { prepareDirectories, logVerbose } = require('./utilities');
 const init = require('./argv');
 const logLabel = 'App.js';
 
-prepareDirectories(); // prepare the directories required
 expressjs.use(bodyParser.json({ extended: false }));
 const argv = init(yargs).argv;
 
@@ -42,6 +41,7 @@ let options = {
   verbose : argv.v
 }
 
+prepareDirectories(options.data_path); // prepare the directories required
 let isPersistence = false; // tmp is the default behavior
 
 function makeResponse(id, jsonrpc, data, isErr) {
@@ -78,7 +78,7 @@ if (options.fixtures) {
   wallet.loadAccounts(accounts);
 } else {
   /* Create Dummy Accounts */
-  wallet.createWallets(config.wallet.numAccounts);
+  wallet.createWallets(options.numAccts);
 }
 
 wallet.printWallet();

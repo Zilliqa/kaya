@@ -31,7 +31,6 @@ if (config.scilla.remote) {
 console.log('='.repeat(80));
 
 const app = require('./app');
-console.log(argv.p);
 
 const server = app.expressjs.listen(config.port, (err) => {
   if (err) {
