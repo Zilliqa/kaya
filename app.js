@@ -24,16 +24,19 @@ const expressjs = express();
 const fs = require('fs');
 const fsp = require('node-fs');
 const cors = require('cors');
-const { argv } = require('yargs');
+const yargs = require('yargs');
 
 const config = require('./config');
 const logic = require('./logic');
 const wallet = require('./components/wallet/wallet');
 const utils = require('./utilities');
-
+const init = require('./argv');
 utils.prepareDirectories(); // prepare the directories required
 expressjs.use(bodyParser.json({ extended: false }));
 
+
+var argv = init(yargs).argv;
+console.log(argv);
 let isPersistence = false; // tmp is the default behavior
 
 function makeResponse(id, jsonrpc, data, isErr) {
@@ -50,12 +53,24 @@ if (argv.save) {
 if (argv.load) {
   // loading option specified
   LOG_APPJS('Loading option specified.');
+  // loads file into db_path from the given bootstrap file
   logic.bootstrapFile(argv.load);
   isPersistence = true;
 }
 
+// flags override the config files
+let options = {
+  fixtures: argv.f,
+  numAccts: argv.n,
+  data_path : argv.db,
+  remote : argv.r,
+  verbose : argv.v
+}
+
+console.log(options);
+
 if (process.env.NODE_ENV === 'test') {
-  options.accounts = 'test/account-fixtures.json';
+  options.fixtures = 'test/account-fixtures.json';
 }
 
 /* account creation/loading based on presets given */
