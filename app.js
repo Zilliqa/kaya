@@ -32,34 +32,39 @@ const logLabel = 'App.js';
 expressjs.use(bodyParser.json({ extended: false }));
 const argv = init(yargs).argv;
 
+const makeResponse = (id, jsonrpc, data, isErr) => {
+    const responseObj = {id, jsonrpc};
+    responseObj.result = isErr ? { Error: data } : data;
+    return responseObj;
+  }
+
 // flags override the config files
 let options = {
   fixtures: argv.f,
   numAccts: argv.n,
   data_path : argv.db,
   remote : argv.r,
-  verbose : argv.v
+  verbose : argv.v,
+  save : argv.s,
+  load : argv.l
 }
+console.log(`Running from ${options.remote ? 'remote' : 'local'} interpreter`)
+if(options.remote) { console.log(config.scilla.url)};
+console.log('='.repeat(80));
 
 prepareDirectories(options.data_path); // prepare the directories required
 let isPersistence = false; // tmp is the default behavior
 
-function makeResponse(id, jsonrpc, data, isErr) {
-  const responseObj = {id, jsonrpc};
-  responseObj.result = isErr ? { Error: data } : data;
-  return responseObj;
-}
-
-if (argv.save) {
-  logVerbose(logLabel, 'Save enabled');
+if (options.save) {
+  logVerbose(logLabel, 'Save enabled. Data files from this session will be saved');
   isPersistence = true;
 }
 
-if (argv.load) {
+if (options.load) {
   // loading option specified
   logVerbose(logLabel, 'Loading option specified');
   // loads file into db_path from the given bootstrap file
-  logic.bootstrapFile(argv.load);
+  logic.bootstrapFile(options.load);
   isPersistence = true;
 }
 
@@ -162,7 +167,7 @@ const handler = async (req, res) => {
       break;
     case 'GetSmartContracts':
       try {
-        result = logic.processGetSmartContracts(body.params, argv.save);
+        result = logic.processGetSmartContracts(body.params, options.save);
         data = result;
       } catch (err) {
         data = err.message;
@@ -173,7 +178,7 @@ const handler = async (req, res) => {
       break;
     case 'CreateTransaction':
       try {
-        const txnId = await logic.processCreateTxn(body.params, argv.save);
+        const txnId = await logic.processCreateTxn(body.params, options.save);
         data = txnId;
       } catch (err) {
         data = err.message;
@@ -212,6 +217,14 @@ const handler = async (req, res) => {
 };
 
 expressjs.post('/', wrapAsync(handler));
+
+process.on( 'SIGINT', function() {
+    console.log( "Gracefully shutting down from SIGINT (Ctrl-C)" );
+
+    // move data files to saved files directory
+
+    process.exit(0);
+})
 
 module.exports = {
   expressjs,

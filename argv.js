@@ -1,6 +1,6 @@
 const config = require('./config');
 
-module.exports = function(yargs) {
+module.exports = function() {
     return argv = require('yargs')
         .strict()
         .usage('Usage: node $0 <cmd> [options]')

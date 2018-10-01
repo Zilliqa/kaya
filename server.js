@@ -23,13 +23,6 @@ const { argv } = require('yargs');
 console.log(`ZILLIQA KAYA RPC SERVER (ver: ${config.version})`);
 console.log(`Server listening on 127.0.0.1:${config.port}`);
 
-if (config.scilla.remote) {
-  console.log(`Scilla interperter running remotely from: ${config.scilla.url}`);
-} else {
-  console.log('Scilla interpreter running locally');
-}
-console.log('='.repeat(80));
-
 const app = require('./app');
 
 const server = app.expressjs.listen(config.port, (err) => {

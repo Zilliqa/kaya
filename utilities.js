@@ -32,6 +32,20 @@ module.exports = {
     }
   },
 
+  /*
+  * @returns : { string } : Datetime format (e.g. 20181001T154832 )
+  */
+  getDateTimeString : () => {
+    let d = new Date();
+    let d_str = d.toISOString().slice(0, -5); // truncates milliseconds
+    return d_str.replace( /:|-/g, "" );
+  },
+
+  /*
+  * Given a piece of scilla code, removes comments
+  * @param : { string } : scilla code
+  * @returns : { string } : scilla code without comments
+  */
   removeComments: str => {
     let commentStart;
     let commentEnd;
@@ -76,10 +90,9 @@ module.exports = {
 
   /* prepareDirectories : Called by app.js */
   prepareDirectories: (data_path) => {
-
     if (!fs.existsSync(data_path)) {
       fs.mkdirSync(data_path);
-      module.exports.logVerbose(logLabel, `${data_path} folder created in ${__dirname}/${data_path}`);
+      module.exports.logVerbose(logLabel, `${__dirname}/${data_path} created`);
     }
   }
 };
