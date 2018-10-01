@@ -84,7 +84,7 @@ const runRemoteInterpreterAsync = async (data) => {
   let response;
   try {
     response = await rp(options);
-  } catch (err) { 
+  } catch (err) {
     console.log(`Interpreter failed to process code. Error message received:`);
     console.log(`${err.message}`);
     console.log('Possible fix: Have your code passed type checking?');

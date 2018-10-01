@@ -25,13 +25,13 @@ const fs = require('fs');
 const fsp = require('node-fs');
 const cors = require('cors');
 const { argv } = require('yargs');
-const rimraf = require('rimraf');
-const path = require('path');
 
 const config = require('./config');
 const logic = require('./logic');
 const wallet = require('./components/wallet/wallet');
+const utils = require('./utilities');
 
+utils.prepareDirectories(); // prepare the directories required
 expressjs.use(bodyParser.json({ extended: false }));
 
 let isPersistence = false; // tmp is the default behavior
@@ -55,7 +55,7 @@ if (argv.load) {
 }
 
 if (process.env.NODE_ENV === 'test') {
-  argv.accounts = 'test/account-fixtures.json';
+  options.accounts = 'test/account-fixtures.json';
 }
 
 /* account creation/loading based on presets given */
@@ -72,28 +72,6 @@ if (argv.accounts) {
   wallet.createWallets(config.wallet.numAccounts);
 }
 wallet.printWallet();
-
-// cleanup old folders
-if (fs.existsSync('./tmp')) {
-  LOG_APPJS(`Tmp folder found. Removing ${__dirname}/tmp`);
-  rimraf.sync(path.join(__dirname, '/tmp'));
-  LOG_APPJS(`${__dirname}/tmp removed`);
-}
-
-if (!fs.existsSync('./tmp')) {
-  fs.mkdirSync('./tmp');
-  LOG_APPJS(`tmp folder created in ${__dirname}/tmp`);
-}
-if (!fs.existsSync('./data')) {
-  fs.mkdirSync('./data');
-  fsp.mkdir('./data/save', 777, true, (err) => {
-    if (err) {
-      console.log(err);
-    } else {
-      LOG_APPJS('Directory created');
-    }
-  });
-}
 
 const wrapAsync = fn => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);

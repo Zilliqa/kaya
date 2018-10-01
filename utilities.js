@@ -15,6 +15,11 @@
   kaya.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+const rimraf = require('rimraf');
+const path = require('path');
+const LOG_UTILS = require('debug')('kaya:utilities.js');
+const fs = require('fs');
+
 module.exports = {
   removeComments: str => {
     let commentStart;
@@ -57,4 +62,29 @@ module.exports = {
       .replace(/\\"/g, '"');
     return cleanedParams;
   },
+
+  /* prepareDirectories : Called by app.js */
+  prepareDirectories: () => {
+    // cleanup old folders
+    if (fs.existsSync('./tmp')) {
+      LOG_UTILS(`Tmp folder found. Removing ${__dirname}/tmp`);
+      rimraf.sync(path.join(__dirname, '/tmp'));
+      LOG_UTILS(`${__dirname}/tmp removed`);
+    }
+
+    if (!fs.existsSync('./tmp')) {
+      fs.mkdirSync('./tmp');
+      LOG_UTILS(`tmp folder created in ${__dirname}/tmp`);
+    }
+    if (!fs.existsSync('./data')) {
+      fs.mkdirSync('./data');
+      fsp.mkdir('./data/save', 777, true, (err) => {
+        if (err) {
+          console.log(err);
+        } else {
+          LOG_UTILS('Directory created');
+        }
+      });
+    }
+  }
 };
