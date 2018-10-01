@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /*
  This file is part of kaya.
   Copyright (c) 2018 - present Zilliqa Research Pvt. Ltd.
