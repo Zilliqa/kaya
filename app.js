@@ -68,9 +68,9 @@ if (process.env.NODE_ENV === 'test') {
 }
 
 /* account creation/loading based on presets given */
-if (argv.accounts) {
-  logVerbose(logLabel, `Bootstrapping from account fixture files: ${argv.accounts}`);
-  const accountsPath = argv.accounts;
+if (options.fixtures) {
+  logVerbose(logLabel, `Bootstrapping from account fixture files: ${options.fixtures}`);
+  const accountsPath = options.fixtures;
   if (!fs.existsSync(accountsPath)) {
     throw new Error('Account Path Invalid');
   }

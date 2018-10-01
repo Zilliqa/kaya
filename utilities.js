@@ -21,14 +21,14 @@ const fs = require('fs');
 const yargs = require('yargs');
 const init = require('./argv');
 const argv = init(yargs).argv;
-const logLabel = 'Utilities.js';
+const logLabel = 'Utilities';
 
 module.exports = {
 
   // log function that logs only when verbose mode is on
   logVerbose : (src, msg) => {
     if(argv.v) {
-      console.log(`[${src}] : ${msg}`);
+      console.log(`[${src}]\t : ${msg}`);
     }
   },
 

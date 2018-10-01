@@ -16,14 +16,12 @@
 */
 
 const fs = require('fs');
-const LOG_SCILLA = require('debug')('kaya:scilla');
 const { promisify } = require('util');
 const rp = require('request-promise');
 const { exec } = require('child_process');
-
-const utilities = require('../../utilities');
+const { paramsCleanup, codeCleanup, logVerbose } = require('../../utilities');
 const config = require('../../config');
-
+const logLabel = 'Scilla';
 const blockchainPath = 'tmp/blockchain.json';
 
 const execAsync = promisify(exec);
@@ -37,7 +35,7 @@ const makeBlockchainJson = (val) => {
     },
   ];
   fs.writeFileSync(blockchainPath, JSON.stringify(blockchainData));
-  LOG_SCILLA(`blockchain.json file prepared for blocknumber: ${val}`);
+  logVerbose(logLabel,`blockchain.json file prepared for blocknumber: ${val}`);
 };
 
 const initializeContractState = (amt) => {
@@ -59,7 +57,7 @@ const initializeContractState = (amt) => {
   @returns: Output message received from the remote scilla interpreter
 */
 const runRemoteInterpreterAsync = async (data) => {
-  LOG_SCILLA('Running Remote Interpreter');
+  logVerbose(logLabel,'Running Remote Interpreter');
 
   const reqData = {
     code: fs.readFileSync(data.code, 'utf-8'),
@@ -102,10 +100,10 @@ const runRemoteInterpreterAsync = async (data) => {
 
 
 const runLocalInterpreterAsync = async (command, outputPath) => {
-  LOG_SCILLA('Running local scilla interpreter');
+  logVerbose(logLabel,'Running local scilla interpreter');
   // Run Scilla Interpreter
   if (!fs.existsSync(config.scilla.runnerPath)) {
-    LOG_SCILLA(
+    logVerbose(logLabel,
       'Scilla runner not found. Hint: Have you compiled the scilla binaries?',
     );
     throw new Error('Kaya RPC Runtime Error: Scilla-runner not found');
@@ -116,7 +114,7 @@ const runLocalInterpreterAsync = async (command, outputPath) => {
     throw new Error(`Interpreter error: ${result.stderr}`);
   }
 
-  LOG_SCILLA('Scilla execution completed');
+  logVerbose(logLabel,'Scilla execution completed');
 
   const retMsg = JSON.parse(fs.readFileSync(outputPath, 'utf-8'));
   return retMsg;
@@ -140,34 +138,34 @@ module.exports = {
     } -iblockchain ${blockchainPath} -o ${outputPath} -init ${initPath} -i ${codePath} -gaslimit ${gasLimit} -libdir ${config.scilla.localLibDir}`;
 
     if (isCodeDeployment) {
-      LOG_SCILLA('Code Deployment');
+      logVerbose(logLabel,'Code Deployment');
 
       // initialized with standard message template
       isCodeDeployment = true;
 
       // get init data from payload
       const initParams = JSON.stringify(payload.data);
-      const cleanedParams = utilities.paramsCleanup(initParams);
+      const cleanedParams = paramsCleanup(initParams);
       fs.writeFileSync(initPath, cleanedParams);
 
       const rawCode = JSON.stringify(payload.code);
-      const cleanedCode = utilities.codeCleanup(rawCode);
+      const cleanedCode = codeCleanup(rawCode);
       fs.writeFileSync(codePath, cleanedCode);
     } else {
-      LOG_SCILLA(`Calling transition within contract ${payload.to}`);
+      logVerbose(logLabel,`Calling transition within contract ${payload.to}`);
 
-      LOG_SCILLA(`Code Path: ${codePath}`);
-      LOG_SCILLA(`Init Path: ${initPath}`);
+      logVerbose(logLabel,`Code Path: ${codePath}`);
+      logVerbose(logLabel,`Init Path: ${initPath}`);
       if (!fs.existsSync(codePath) || !fs.existsSync(initPath)) {
-        LOG_SCILLA('Error, contract has not been created.');
+        logVerbose(logLabel,'Error, contract has not been created.');
         throw new Error('Address does not exist');
       }
 
       // get message from payload information
       const msgPath = `${dir}${payload.to}_message.json`;
-      LOG_SCILLA('Payload Received %O', payload.data);
+      logVerbose(logLabel,'Payload Received %O', payload.data);
       const incomingMessage = JSON.stringify(payload.data);
-      const cleanedMsg = utilities.paramsCleanup(incomingMessage);
+      const cleanedMsg = paramsCleanup(incomingMessage);
       fs.writeFileSync(msgPath, cleanedMsg);
 
       // Invoke contract requires additional message and state paths
@@ -175,7 +173,7 @@ module.exports = {
     }
 
     if (!fs.existsSync(codePath) || !fs.existsSync(initPath)) {
-      LOG_SCILLA('Error, contract has not been created.');
+      logVerbose(logLabel,'Error, contract has not been created.');
       throw new Error('Address does not exist');
     }
 
@@ -203,7 +201,7 @@ module.exports = {
     }
 
     fs.writeFileSync(statePath, newState);
-    LOG_SCILLA(`State logged down in ${statePath}`);
+    logVerbose(logLabel,`State logged down in ${statePath}`);
     console.log(`Contract Address Deployed: ${contractAddr}`);
 
     const responseData = {};
@@ -211,7 +209,7 @@ module.exports = {
 
     // Obtains the next address based on the message
     if (retMsg.message != null) {
-      LOG_SCILLA(`Next address: ${retMsg.message._recipient}`);
+      logVerbose(logLabel,`Next address: ${retMsg.message._recipient}`);
       responseData.nextAddress = retMsg.message._recipient;
     }
     // Contract deployment runs do not have returned message
