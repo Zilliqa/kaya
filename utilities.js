@@ -19,8 +19,27 @@ const rimraf = require('rimraf');
 const path = require('path');
 const LOG_UTILS = require('debug')('kaya:utilities.js');
 const fs = require('fs');
+const { createLogger, format, transports } = require('winston');
+const { combine, label, printf } = format;
 
 module.exports = {
+  makeLogger : labelValue => {
+    
+    const myFormat = printf(info => {
+      return `[${info.label}] ${info.level}: ${info.message}`;
+    });
+    
+    const logger = createLogger({
+      format: combine(
+        label({ label: labelValue }),
+        myFormat
+      ),
+      transports: [new transports.Console()]
+    });
+
+    return logger;
+  },
+
   removeComments: str => {
     let commentStart;
     let commentEnd;

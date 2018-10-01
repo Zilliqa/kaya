@@ -17,12 +17,8 @@
 
 const express = require('express');
 const bodyParser = require('body-parser');
-const LOG_APPJS = require('debug')('kaya:app.js');
-
 const expressjs = express();
-
 const fs = require('fs');
-const fsp = require('node-fs');
 const cors = require('cors');
 const yargs = require('yargs');
 
@@ -34,29 +30,8 @@ const init = require('./argv');
 utils.prepareDirectories(); // prepare the directories required
 expressjs.use(bodyParser.json({ extended: false }));
 
-
-var argv = init(yargs).argv;
-console.log(argv);
-let isPersistence = false; // tmp is the default behavior
-
-function makeResponse(id, jsonrpc, data, isErr) {
-  const responseObj = {id, jsonrpc};
-  responseObj.result = isErr ? { Error: data } : data;
-  return responseObj;
-}
-
-if (argv.save) {
-  LOG_APPJS('Save mode enabled');
-  isPersistence = true;
-}
-
-if (argv.load) {
-  // loading option specified
-  LOG_APPJS('Loading option specified.');
-  // loads file into db_path from the given bootstrap file
-  logic.bootstrapFile(argv.load);
-  isPersistence = true;
-}
+logger = utils.makeLogger('APP');
+const argv = init(yargs).argv;
 
 // flags override the config files
 let options = {
@@ -67,7 +42,29 @@ let options = {
   verbose : argv.v
 }
 
-console.log(options);
+let isPersistence = false; // tmp is the default behavior
+
+function makeResponse(id, jsonrpc, data, isErr) {
+  const responseObj = {id, jsonrpc};
+  responseObj.result = isErr ? { Error: data } : data;
+  return responseObj;
+}
+
+// silly does not log data
+const loggingEnabled = options.verbose ? 'info' : 'silly';
+
+if (argv.save) {
+  logger.log(loggingEnabled, 'Save mode enabled');
+  isPersistence = true;
+}
+
+if (argv.load) {
+  // loading option specified
+  logger.log(loggingEnabled, 'Loading option specified.');
+  // loads file into db_path from the given bootstrap file
+  logic.bootstrapFile(argv.load);
+  isPersistence = true;
+}
 
 if (process.env.NODE_ENV === 'test') {
   options.fixtures = 'test/account-fixtures.json';
@@ -75,7 +72,7 @@ if (process.env.NODE_ENV === 'test') {
 
 /* account creation/loading based on presets given */
 if (argv.accounts) {
-  LOG_APPJS(`Bootstrapping from account fixture files: ${argv.accounts}`);
+  logger.log(loggingEnabled, `Bootstrapping from account fixture files: ${argv.accounts}`);
   const accountsPath = argv.accounts;
   if (!fs.existsSync(accountsPath)) {
     throw new Error('Account Path Invalid');
@@ -86,6 +83,7 @@ if (argv.accounts) {
   /* Create Dummy Accounts */
   wallet.createWallets(config.wallet.numAccounts);
 }
+
 wallet.printWallet();
 
 const wrapAsync = fn => (req, res, next) => {
@@ -95,7 +93,7 @@ const wrapAsync = fn => (req, res, next) => {
 // cross region settings with Env
 if (process.env.NODE_ENV === 'dev') {
   expressjs.use(cors());
-  LOG_APPJS('CORS Enabled.');
+  logger.log(loggingEnabled, 'CORS Enabled.');
 }
 
 expressjs.get('/', (req, res) => {
@@ -109,7 +107,7 @@ const handler = async (req, res) => {
   let data = {};
   let result;
   let addr;
-  LOG_APPJS(`Method specified: ${body.method}`);
+  logger.log(loggingEnabled, `Method specified: ${body.method}`);
   switch (body.method) {
     case 'GetBalance':
       // [addr, ... ] = body.params;
@@ -117,7 +115,7 @@ const handler = async (req, res) => {
       if (typeof addr === 'object') {
         addr = JSON.stringify(addr);
       }
-      LOG_APPJS(`Getting balance for ${addr}`);
+      logger.log(loggingEnabled, `Getting balance for ${addr}`);
 
       try {
         data = wallet.getBalance(addr);
@@ -213,7 +211,7 @@ const handler = async (req, res) => {
       data = { Error: 'Unsupported Method' };
       res.status(404).send(data);
   }
-  LOG_APPJS('Sending status');
+  logger.log(loggingEnabled, 'Sending response back to client');
 };
 
 expressjs.post('/', wrapAsync(handler));
