@@ -21,7 +21,7 @@ const expressjs = express();
 const fs = require('fs');
 const cors = require('cors');
 const yargs = require('yargs');
-
+const rimraf = require('rimraf');
 const config = require('./config');
 const logic = require('./logic');
 const wallet = require('./components/wallet/wallet');
@@ -33,24 +33,32 @@ expressjs.use(bodyParser.json({ extended: false }));
 const argv = init(yargs).argv;
 
 const makeResponse = (id, jsonrpc, data, isErr) => {
-    const responseObj = {id, jsonrpc};
-    responseObj.result = isErr ? { Error: data } : data;
-    return responseObj;
-  }
+  const responseObj = { id, jsonrpc };
+  responseObj.result = isErr ? { Error: data } : data;
+  return responseObj;
+}
+
+const wrapAsync = fn => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
+
+if (argv.db.trim() === 'saved/') {
+  throw new Error('Saved dir is reserved for saved files');
+}
 
 // flags override the config files
 let options = {
   fixtures: argv.f,
   numAccts: argv.n,
-  dataPath : argv.db,
-  remote : argv.r,
-  verbose : argv.v,
-  save : argv.s,
-  load : argv.l
+  dataPath: argv.db,
+  remote: argv.r,
+  verbose: argv.v,
+  save: argv.s,
+  load: argv.l
 }
 
 consolePrint(`Running from ${options.remote ? 'remote' : 'local'} interpreter`)
-if(options.remote) { consolePrint(config.scilla.url)};
+if (options.remote) { consolePrint(config.scilla.url) };
 consolePrint('='.repeat(80));
 
 prepareDirectories(options.dataPath); // prepare the directories required
@@ -88,9 +96,6 @@ if (options.fixtures) {
 
 wallet.printWallet();
 
-const wrapAsync = fn => (req, res, next) => {
-  Promise.resolve(fn(req, res, next)).catch(next);
-};
 
 // cross region settings with Env
 if (process.env.NODE_ENV === 'dev') {
@@ -218,29 +223,32 @@ const handler = async (req, res) => {
 
 expressjs.post('/', wrapAsync(handler));
 
-process.on( 'SIGINT', function() {
-    consolePrint( "Gracefully shutting down from SIGINT (Ctrl-C)" );
+process.on('SIGINT', function () {
+  consolePrint("Gracefully shutting down from SIGINT (Ctrl-C)");
 
-    // If `save` is enabled, store files under the saved/ directory
-    if(options.save) {
-      // move data files to saved files directory
-      const dir = config.savedFilesDir;
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir);
-      }
-
-      const timestamp = getDateTimeString();
-      const targetFilePath = `${dir}${timestamp}_data.json`;
-
-      // Extracts Data to be exported
-      const data = logic.exportData();
-      data.accounts = wallet.getAccounts();
-      fs.writeFileSync(targetFilePath, JSON.stringify(data));
-      consolePrint(`Files will be saved at ${targetFilePath}`);
+  // If `save` is enabled, store files under the saved/ directory
+  if (options.save) {
+    console.log(`Save mode enabled. Extracting data now..`);
+    // move data files to saved files directory
+    const dir = config.savedFilesDir;
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir);
     }
-    
 
-    process.exit(0);
+    const timestamp = getDateTimeString();
+    const targetFilePath = `${dir}${timestamp}_data.json`;
+    consolePrint(`Files will be saved at ${targetFilePath}`);
+
+    // Extracts Data to be exported
+    const data = logic.exportData();
+    data.accounts = wallet.getAccounts();
+    consolePrint(`Transactions and account data extracted`);
+    fs.writeFileSync(targetFilePath, JSON.stringify(data));
+  }
+
+  rimraf.sync(`${options.dataPath}*`);
+  console.log(`Files from ${options.dataPath} removed.`);
+  process.exit(0);  
 })
 
 module.exports = {

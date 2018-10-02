@@ -15,8 +15,6 @@
   kaya.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-const rimraf = require('rimraf');
-const path = require('path');
 const fs = require('fs');
 const yargs = require('yargs');
 const init = require('./argv');
