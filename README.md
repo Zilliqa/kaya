@@ -100,10 +100,10 @@ a Dockerfile has been created to build a docker image which can be used to start
 
 `$ docker build -t kaya .`
 
-and run it afterwards:
+and run it afterwards with the defaults on port 4200, debugging false and against a remote scilla interperter:
 
 `
-$ docker run --rm -d --name kay-local -p 4200:4200 kaya
+$ docker run --rm -d -p 4200:4200 kaya
 
 $ docker logs -f kaya-local
 docker run --rm -p 4200:4200 kaya
@@ -141,43 +141,43 @@ $ curl http://localhost:4200
 Kaya RPC Server%
 `
 
-or fetch it from the automated build
+or run it with some custom parameters to enable debugging, a custom port and against a local scilla interpereter.
 
 `
-$ docker run --rm -d --name kaya-upstream -p 4200:4200 visibilityspots/kaya-rpc:latest
+$ docker run --rm -p 5000:5000 -e PORT="5000" -e REMOTE="false" kaya:latest --debug
 
-$ docker logs -f kaya-upstream
 ZILLIQA KAYA RPC SERVER (ver: 0.2.0)
-Server listening on 127.0.0.1:4200
-Scilla interperter running remotely from: https://scilla-runner.zilliqa.com/contract/call
+Server listening on 127.0.0.1:5000
+Scilla interpreter running locally
 ================================================================================
 Available Accounts
 =============================
-(0) fd9905cf96dec76949292ebd9bf066bacdca648e (Amt: 100000) (Nonce: 0)
-(1) 1fa618bffd884dc99bf73b551818237d90196454 (Amt: 100000) (Nonce: 0)
-(2) 334dffaa1e7283f08d659a7d82cec558675021b6 (Amt: 100000) (Nonce: 0)
-(3) a2663fbdd33e52ae35b780b5188544366f272920 (Amt: 100000) (Nonce: 0)
-(4) 9366fc14a80be3ed46154f9990ea49e00825ba31 (Amt: 100000) (Nonce: 0)
-(5) a1743a68dc75913e82ab6bccc65e994aa7a2bd3b (Amt: 100000) (Nonce: 0)
-(6) 81543d1cf83c1cbcce24dcb1ef8706cea5762843 (Amt: 100000) (Nonce: 0)
-(7) d1ec7854a4bdf2453559dd967b037c5620e2afc8 (Amt: 100000) (Nonce: 0)
-(8) bda52dbf7435e97787560d89cdf971016498e987 (Amt: 100000) (Nonce: 0)
-(9) 89bdcfced980f99b2ff009afdd69cc5f71c82127 (Amt: 100000) (Nonce: 0)
+(0) 6b20c0cb05228d6461eda3290e0dcffac224557f (Amt: 100000) (Nonce: 0)
+(1) 4c6835acab74b6fe79642f7cd77135c957581413 (Amt: 100000) (Nonce: 0)
+(2) a37243176688a70f9942cdd09152accdbd95bf8a (Amt: 100000) (Nonce: 0)
+(3) fc1f02454bb972d9ce28a787a47afb81280fe586 (Amt: 100000) (Nonce: 0)
+(4) ce6d38378c41a086dd0181c22819d8948961e426 (Amt: 100000) (Nonce: 0)
+(5) 82746cba7b213851e89a6edb1b2617b19c509ed7 (Amt: 100000) (Nonce: 0)
+(6) 2535fccbddaad3234c719080fbeedfe6acd0855e (Amt: 100000) (Nonce: 0)
+(7) 9a769c1aa062ffa0074cda3c751df1e9073da103 (Amt: 100000) (Nonce: 0)
+(8) afb3a62f3f166a9107b7d59a9bc60a4a092fdf0f (Amt: 100000) (Nonce: 0)
+(9) bf6a645e533696ad6184c6890dd2e03f703b8979 (Amt: 100000) (Nonce: 0)
 
  Private Keys
  =============================
- (0) 0f3f87a5de0ed3f2f2f820f29329dac6cdf3441f509a17fc691dd685a774ad0d
- (1) 63b8fcf20369e52d30a9349391c9882e0b0fb233016681b73a00841feb10c119
- (2) a4432a8ab8364d67f643297ebdf96715ffdfe7aaa7640c03d69aaa56e318dd31
- (3) 78c08ac47ff61e93fcc8756ecd867fe1bdde63e64818819e900da67ce22294eb
- (4) b407ab787e6f25f48fce0b5e069ae16ab1df41f8cc1825a3b26c0319927b5f1f
- (5) 76b3325c8748c6053bd5f17f73b673fcaed338911a51dc64feddd0e5151f55bc
- (6) db0123b9a3c5c99af8c5955dbcd59b723c5291ba2fe8a502c8ffb9a529ee7428
- (7) a1c5e235070f9898a47f814728f0a9111068eaace15e4f3bb0e938658ccfa3aa
- (8) 54ec3f82d12fd3bf3c1e205045b8ebca63768abd3dd8ac66f4cbb754a3bc6fcc
- (9) d1e95e1ec1c398308f12c7b4fc8070f75ace08baf977deffac72fa25441ecb4d
+ (0) 5dca73222536b068c4de37ebce3f309218d254b39afde984f28d0fe133d8edfd
+ (1) 64540242416897b42e024ee7c92cc54bc1222437aae37043eb94eb9f50b1a670
+ (2) f1d3607480889a40ebe6d7b5a7e2f35b887eedd5c14a58440cc13e1d3273505c
+ (3) 3e9b86c0999c3e8e9c86b88d500218f7c2899101bd395fe6cef777c2ec975e78
+ (4) 6fc03a088b6f5ad0fd6cdd98bfa48535102b3be2fdffe8a2c3f4a11dd2fec3fb
+ (5) 78e57fb6be4b039b3d767eb9f4c94c9c94c2458af4c2058500b28953d399f05c
+ (6) 5fffdebf924952416efa4992699bcc144abb788d4a2164e124df9acae7048732
+ (7) 07eb4be6ad36ac255f6401580dd4ac6ef81e429b06c8ae2aabf87201b6a8be39
+ (8) 6670b623d93d52cb8d610d0fc68f4862b48cb90426a4cd4b837374e424d8349e
+ (9) eb5f1e20dfbe52982e22443c5e1360338aec0f6d99a101c475f3a4139cb615d5
 
-$ curl http://localhost:4200
+
+$ curl http://localhost:5000
 Kaya RPC Server%
 `
 
