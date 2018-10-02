@@ -118,12 +118,12 @@ const checkTransactionJson = (data) => {
 module.exports = {
 
   /*
+  * Function that handles the create transaction requests
   * @params : data { Object } : Message object passed from client through server.js
   * @params: options { Object } : List of options passed from server.js
   * @returns: txnId { String } : Transaction hash
   * Throws in the event of error. Caller should catch or delegate these errors
   */
-
   processCreateTxn: async (data, options) => {
     logVerbose(logLabel, 'Processing transaction...');
     logVerbose(logLabel, `Payload well-formed? ${checkTransactionJson(data)}`);
@@ -134,7 +134,7 @@ module.exports = {
     }
 
     const currentBNum = blockchain.getBlockNum();
-    const dir = options.data_path;
+    const dir = options.dataPath;
     const payload = data[0];
     const senderAddress = zilliqa.util.getAddressFromPublicKey(payload.pubKey);
 
@@ -148,7 +148,7 @@ module.exports = {
     if (payload.gasPrice < blockchainGasPrice) {
       throw new Error(
         `Payload gas price is insufficient. Current gas price is ${
-          config.blockchain.gasPrice
+        config.blockchain.gasPrice
         }`,
       );
     }
@@ -285,89 +285,52 @@ module.exports = {
     return responseObj;
   },
 
-  processGetSmartContractInit: (data, data_path) => {
-    logVerbose(logLabel, 'Getting SmartContract Init');
+  /*
+  * Function to process GetSmartContract's state, init or code
+  * @params : { String } : enum of either data, init or state
+  */
+  processGetDataFromContract: (data, dataPath, type) => {
+
+    const fileType = type.trim().toLowerCase();
+    if (!['init', 'state', 'code'].includes(fileType)) {
+      throw new Error('Invalid option flag');
+    }
+    const ext = fileType === 'code' ? 'scilla' : 'json';
+    logVerbose(logLabel, `Getting SmartContract ${fileType}`);
+
     if (!data) {
       logVerbose(logLabel, 'Invalid params');
-      const err = new Error(
+      throw new Error(
         'INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised',
       );
-      throw err;
     }
 
+    // checking contract address's validity
     const contractAddress = data[0];
     if (contractAddress == null || !zilliqa.util.isAddress(contractAddress)) {
       consolePrint('Invalid request');
       throw new Error('Address size inappropriate');
     }
+    const filePath = `${dataPath}${contractAddress.toUpperCase()}_${fileType}.${ext}`;
+    logVerbose(logLabel, `Retrieving data from ${filePath}`);
 
-    const dir = data_path;
-    const initFile = `${dir}${contractAddress.toUpperCase()}_init.json`;
-    if (!fs.existsSync(initFile)) {
-      consolePrint(`No init file found (Contract: ${contractAddress}`);
+    if (!fs.existsSync(filePath)) {
+      consolePrint(`No ${type} file found (Contract: ${contractAddress}`);
       throw new Error('Address does not exist');
     }
-    const retMsg = JSON.parse(fs.readFileSync(initFile, 'utf-8'));
-    return retMsg;
-  },
 
-  processGetSmartContractCode: (data, data_path) => {
-    logVerbose(logLabel, 'Getting SmartContract code');
-    if (!data) {
-      logVerbose(logLabel, 'Invalid params');
-      const err = new Error(
-        'INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised',
-      );
-      throw err;
+    const responseData = fs.readFileSync(filePath, 'utf-8');
+    if (fileType === 'code') {
+      return { code: responseData };
     }
-
-    const contractAddress = data[0];
-    if (contractAddress == null || !zilliqa.util.isAddress(contractAddress)) {
-      console.log('Invalid request');
-      throw new Error('Address size inappropriate');
-    }
-
-    const codePath = `${data_path}${contractAddress.toUpperCase()}_code.scilla`;
-    if (!fs.existsSync(codePath)) {
-      console.log(`No code file found (Contract: ${contractAddress}`);
-      throw new Error('Address does not exist');
-    }
-    logVerbose(logLabel, 'Returning smart contract code to caller.');
-    const res = {};
-    res.code = fs.readFileSync(codePath, 'utf-8');
-    return res;
-  },
-
-  processGetSmartContractState: (data, data_path) => {
-    logVerbose(logLabel, 'Getting SmartContract State');
-    if (!data) {
-      logVerbose(logLabel, 'Invalid params');
-      const err = new Error(
-        'INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised',
-      );
-      throw err;
-    }
-
-    const contractAddress = data[0];
-    if (contractAddress == null || !zilliqa.util.isAddress(contractAddress)) {
-      console.log('Invalid request');
-      throw new Error('Address size inappropriate');
-    }
-
-    const statePath = `${data_path}${contractAddress.toUpperCase()}_state.json`;
-    if (!fs.existsSync(statePath)) {
-      console.log(`No state file found (Contract: ${contractAddress}`);
-      throw new Error('Address does not exist');
-    }
-    const retMsg = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
-    logVerbose(logLabel, retMsg);
-    return retMsg;
+    // handles init and state json after parsing
+    return JSON.parse(responseData);
   },
 
   /*
-getSmartContracts: Returns the list of smart contracts created by an account
-*/
-  processGetSmartContracts: (data, data_path) => {
+    Function returns the list of smart contracts created by an account
+  */
+  processGetSmartContracts: (data, dataPath) => {
     if (!data) {
       logVerbose(logLabel, 'Invalid params');
       const err = new Error(
@@ -391,7 +354,7 @@ getSmartContracts: Returns the list of smart contracts created by an account
     const contracts = createdContractsByUsers[addr];
 
     contracts.forEach((contractId) => {
-      const statePath = `${data_path}${contractId.toUpperCase()}_state.json`;
+      const statePath = `${dataPath}${contractId.toUpperCase()}_state.json`;
       if (!fs.existsSync(statePath)) {
         console.log(`No state file found (Contract: ${contractId}`);
         throw new Error('Address does not exist');

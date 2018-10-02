@@ -16,7 +16,7 @@ module.exports = function() {
             group: 'Blockchain',
             alias: 'data',
             type: 'string',
-            default: config.data_path,
+            default: config.dataPath,
             describe: 'Relative path where state data will be stored. Creates directory if path does not exists'
         })
         .option('r', {

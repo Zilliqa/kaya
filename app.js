@@ -42,17 +42,18 @@ const makeResponse = (id, jsonrpc, data, isErr) => {
 let options = {
   fixtures: argv.f,
   numAccts: argv.n,
-  data_path : argv.db,
+  dataPath : argv.db,
   remote : argv.r,
   verbose : argv.v,
   save : argv.s,
   load : argv.l
 }
+console.log(options)
 consolePrint(`Running from ${options.remote ? 'remote' : 'local'} interpreter`)
 if(options.remote) { consolePrint(config.scilla.url)};
 consolePrint('='.repeat(80));
 
-prepareDirectories(options.data_path); // prepare the directories required
+prepareDirectories(options.dataPath); // prepare the directories required
 let isPersistence = false; // tmp is the default behavior
 
 if (options.save) {
@@ -134,7 +135,7 @@ const handler = async (req, res) => {
       break;
     case 'GetSmartContractCode':
       try {
-        result = logic.processGetSmartContractCode(body.params, options.data_path);
+        result = logic.processGetDataFromContract(body.params, options.dataPath, 'code');
         data = result;
       } catch (err) {
         data = err.message;
@@ -145,7 +146,7 @@ const handler = async (req, res) => {
       break;
     case 'GetSmartContractState':
       try {
-        result = logic.processGetSmartContractState(body.params, options.data_path);
+        result = logic.processGetDataFromContract(body.params, options.dataPath, 'state');
         data = result;
       } catch (err) {
         data = err.message;
@@ -156,7 +157,7 @@ const handler = async (req, res) => {
       break;
     case 'GetSmartContractInit':
       try {
-        result = logic.processGetSmartContractInit(body.params, options.data_path);
+        result = logic.processGetDataFromContract(body.params, options.dataPath, 'init');
         data = result;
       } catch (err) {
         data = err.message;
