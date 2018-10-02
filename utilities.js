@@ -33,7 +33,7 @@ module.exports = {
   },
 
   // wrapper: print only when not in test mode
-    consolePrint : (text) => {
+  consolePrint : (text) => {
     if (process.env.NODE_ENV !== 'test') {
       console.log(text);
     }
@@ -96,10 +96,10 @@ module.exports = {
   },
 
   /* prepareDirectories : Called by app.js */
-  prepareDirectories: (data_path) => {
-    if (!fs.existsSync(data_path)) {
-      fs.mkdirSync(data_path);
-      module.exports.logVerbose(logLabel, `${__dirname}/${data_path} created`);
+  prepareDirectories: (dataPath) => {
+    if (!fs.existsSync(dataPath)) {
+      fs.mkdirSync(dataPath);
+      module.exports.logVerbose(logLabel, `${__dirname}/${dataPath} created`);
     }
   }
 };

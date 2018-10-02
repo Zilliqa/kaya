@@ -25,7 +25,7 @@ const yargs = require('yargs');
 const config = require('./config');
 const logic = require('./logic');
 const wallet = require('./components/wallet/wallet');
-const { prepareDirectories, logVerbose, consolePrint } = require('./utilities');
+const { prepareDirectories, logVerbose, consolePrint, getDateTimeString } = require('./utilities');
 const init = require('./argv');
 const logLabel = 'App.js';
 
@@ -48,13 +48,12 @@ let options = {
   save : argv.s,
   load : argv.l
 }
-console.log(options)
+
 consolePrint(`Running from ${options.remote ? 'remote' : 'local'} interpreter`)
 if(options.remote) { consolePrint(config.scilla.url)};
 consolePrint('='.repeat(80));
 
 prepareDirectories(options.dataPath); // prepare the directories required
-let isPersistence = false; // tmp is the default behavior
 
 if (options.save) {
   logVerbose(logLabel, 'Save enabled. Data files from this session will be saved');
@@ -168,7 +167,7 @@ const handler = async (req, res) => {
       break;
     case 'GetSmartContracts':
       try {
-        result = logic.processGetSmartContracts(body.params, options.save);
+        result = logic.processGetSmartContracts(body.params, options.dataPath);
         data = result;
       } catch (err) {
         data = err.message;
@@ -222,7 +221,24 @@ expressjs.post('/', wrapAsync(handler));
 process.on( 'SIGINT', function() {
     consolePrint( "Gracefully shutting down from SIGINT (Ctrl-C)" );
 
-    // move data files to saved files directory
+    // If `save` is enabled, store files under the saved/ directory
+    if(options.save) {
+      // move data files to saved files directory
+      const dir = config.savedFilesDir;
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+      }
+
+      const timestamp = getDateTimeString();
+      const targetFilePath = `${dir}${timestamp}_data.json`;
+
+      // Extracts Data to be exported
+      const data = logic.exportData();
+      data.accounts = wallet.getAccounts();
+      fs.writeFileSync(targetFilePath, JSON.stringify(data));
+      consolePrint(`Files will be saved at ${targetFilePath}`);
+    }
+    
 
     process.exit(0);
 })

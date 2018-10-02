@@ -25,7 +25,7 @@ const logLabel = 'Wallet'
 // @dev: As this is a kaya, private keys will be stored
 // note: Real systems do not store private key
 
-// Wallet will store three things - address, private key and balance
+// Wallet will store address, private key and balance
 let wallets = {};
 
 /*  Dummy constructor for zilliqajs */
@@ -33,8 +33,6 @@ let wallets = {};
 const zilliqa = new Zilliqa({
   nodeUrl: 'http://localhost:8888',
 });
-
-
 
 const createNewWallet = () => {
   const pk = zilliqa.util.generatePrivateKey();
@@ -93,6 +91,12 @@ module.exports = {
       `${Object.keys(accounts).length} wallets bootstrapped from file`,
     );
     wallets = accounts;
+  },
+
+  saveAccounts: (savedDir, timestamp) => {
+    const targetFilePath = `${savedDir}${timestamp}_accounts.json`;
+    logVerbose(logLabel, `Saving account details to ${targetFilePath}`);
+
   },
 
   getAccounts: () => wallets,

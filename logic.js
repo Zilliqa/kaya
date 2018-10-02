@@ -37,26 +37,6 @@ const zilliqa = new Zilliqa({
   nodeUrl: 'http://localhost:8888',
 });
 
-/* Utility functions */
-
-function pad(number, length) {
-  let str = number.toString();
-  while (str.length < length) {
-    str = `0${str}`;
-  }
-  return str;
-}
-
-Date.prototype.YYYYMMDDHHMMSS = () => {
-  const yyyy = this.getFullYear().toString();
-  const MM = pad(this.getMonth() + 1, 2);
-  const dd = pad(this.getDate(), 2);
-  const hh = pad(this.getHours(), 2);
-  const mm = pad(this.getMinutes(), 2);
-  const ss = pad(this.getSeconds(), 2);
-  return yyyy + MM + dd + hh + mm + ss;
-};
-
 // check multiplication overflow: Returns true if overflow
 const checkOverflow = (a, b) => {
   const c = a * b;
@@ -116,6 +96,13 @@ const checkTransactionJson = (data) => {
 };
 
 module.exports = {
+
+  exportData : () => {
+    const data = {};
+    data.transactions = transactions;
+    data.createdContractsByUsers = createdContractsByUsers;
+    return data;
+  },
 
   /*
   * Function that handles the create transaction requests
@@ -250,14 +237,6 @@ module.exports = {
     return txnId;
   },
 
-  bootstrapFile: (filepath) => {
-    // bootstraps state of transactions and caddr owner
-    const data = JSON.parse(fs.readFileSync(filepath, 'utf-8'));
-    logVerbose(logLabel, 'State of blockchain:');
-    transactions = data.transactions;
-    logVerbose(logLabel, transactions);
-  },
-
   processGetTransaction: (data) => {
     if (!data) {
       logVerbose(logLabel, 'Invalid params');
@@ -339,7 +318,7 @@ module.exports = {
       throw err;
     }
 
-    const addr = data[0];
+    const addr = data[0].toLowerCase();
     console.log(`Getting smart contracts created by ${addr}`);
     if (addr == null || !zilliqa.util.isAddress(addr)) {
       console.log('Invalid request');

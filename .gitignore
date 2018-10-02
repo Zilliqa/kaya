@@ -73,6 +73,7 @@ typings/
 .serverless
 
 # Custom files
+saved/
 tmp/
 data/
 *scilla-runner
