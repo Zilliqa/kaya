@@ -134,7 +134,7 @@ const handler = async (req, res) => {
       break;
     case 'GetSmartContractCode':
       try {
-        result = logic.processGetSmartContractCode(body.params, isPersistence);
+        result = logic.processGetSmartContractCode(body.params, options.data_path);
         data = result;
       } catch (err) {
         data = err.message;
@@ -145,7 +145,7 @@ const handler = async (req, res) => {
       break;
     case 'GetSmartContractState':
       try {
-        result = logic.processGetSmartContractState(body.params, isPersistence);
+        result = logic.processGetSmartContractState(body.params, options.data_path);
         data = result;
       } catch (err) {
         data = err.message;
@@ -156,7 +156,7 @@ const handler = async (req, res) => {
       break;
     case 'GetSmartContractInit':
       try {
-        result = logic.processGetSmartContractInit(body.params, isPersistence);
+        result = logic.processGetSmartContractInit(body.params, options.data_path);
         data = result;
       } catch (err) {
         data = err.message;
@@ -178,7 +178,7 @@ const handler = async (req, res) => {
       break;
     case 'CreateTransaction':
       try {
-        const txnId = await logic.processCreateTxn(body.params, options.save);
+        const txnId = await logic.processCreateTxn(body.params, options);
         data = txnId;
       } catch (err) {
         data = err.message;

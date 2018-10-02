@@ -116,21 +116,25 @@ const checkTransactionJson = (data) => {
 };
 
 module.exports = {
-  processCreateTxn: async (data, saveMode) => {
+
+  /*
+  * @params : data { Object } : Message object passed from client through server.js
+  * @params: options { Object } : List of options passed from server.js
+  * @returns: txnId { String } : Transaction hash
+  * Throws in the event of error. Caller should catch or delegate these errors
+  */
+
+  processCreateTxn: async (data, options) => {
     logVerbose(logLabel, 'Processing transaction...');
-    // todo: check for well-formness of the payload data
     logVerbose(logLabel, `Payload well-formed? ${checkTransactionJson(data)}`);
+
+    // Checks the wellformness of the transaction JSON data
     if (!checkTransactionJson(data)) {
       throw new Error('Invalid Tx Json');
     }
 
     const currentBNum = blockchain.getBlockNum();
-    let dir = 'tmp/';
-    if (saveMode) {
-      console.log('Save mode enabled.');
-      dir = 'data/';
-    }
-
+    const dir = options.data_path;
     const payload = data[0];
     const senderAddress = zilliqa.util.getAddressFromPublicKey(payload.pubKey);
 
@@ -199,6 +203,7 @@ module.exports = {
         );
         walletCtrl.increaseNonce(senderAddress); // only increase if a contract is successful
 
+        // FIXME: Support multicontract calls
         if (nextAddr !== '0'.repeat(40) && nextAddr.substring(2) !== senderAddress) {
           console.log('Multi-contract calls not supported.');
           throw new Error('Multi-contract calls are not supported yet.');
@@ -214,12 +219,12 @@ module.exports = {
             logVerbose(logLabel, 'No existing contracts. Creating new entry.');
             createdContractsByUsers[senderAddress] = [contractAddr];
           }
-          logVerbose(logLabel, 'Addr-to-Contracts: %O', createdContractsByUsers);
+          logVerbose(logLabel, `Addr-to-Contracts: ${createdContractsByUsers}`);
         }
       }
     } else {
       // payload.nonce is not valid. Deduct gas anyway
-      // FIX ME: Waiting for scilla interpreter to return a structured output
+      // FIXME: Waiting for scilla interpreter to return a structured output
       // about out of gas errors
       // https://github.com/Zilliqa/scilla/issues/214
 
@@ -280,7 +285,7 @@ module.exports = {
     return responseObj;
   },
 
-  processGetSmartContractInit: (data, saveMode) => {
+  processGetSmartContractInit: (data, data_path) => {
     logVerbose(logLabel, 'Getting SmartContract Init');
     if (!data) {
       logVerbose(logLabel, 'Invalid params');
@@ -296,8 +301,8 @@ module.exports = {
       throw new Error('Address size inappropriate');
     }
 
-    const dir = saveMode ? 'data/' : 'tmp/';
-    const initFile = `${dir}${contractAddress.toLowerCase()}_init.json`;
+    const dir = data_path;
+    const initFile = `${dir}${contractAddress.toUpperCase()}_init.json`;
     if (!fs.existsSync(initFile)) {
       consolePrint(`No init file found (Contract: ${contractAddress}`);
       throw new Error('Address does not exist');
@@ -306,7 +311,7 @@ module.exports = {
     return retMsg;
   },
 
-  processGetSmartContractCode: (data, saveMode) => {
+  processGetSmartContractCode: (data, data_path) => {
     logVerbose(logLabel, 'Getting SmartContract code');
     if (!data) {
       logVerbose(logLabel, 'Invalid params');
@@ -322,8 +327,7 @@ module.exports = {
       throw new Error('Address size inappropriate');
     }
 
-    const dir = saveMode ? 'data/' : 'tmp/';
-    const codePath = `${dir}${contractAddress.toLowerCase()}_code.scilla`;
+    const codePath = `${data_path}${contractAddress.toUpperCase()}_code.scilla`;
     if (!fs.existsSync(codePath)) {
       console.log(`No code file found (Contract: ${contractAddress}`);
       throw new Error('Address does not exist');
@@ -334,7 +338,7 @@ module.exports = {
     return res;
   },
 
-  processGetSmartContractState: (data, saveMode) => {
+  processGetSmartContractState: (data, data_path) => {
     logVerbose(logLabel, 'Getting SmartContract State');
     if (!data) {
       logVerbose(logLabel, 'Invalid params');
@@ -350,8 +354,7 @@ module.exports = {
       throw new Error('Address size inappropriate');
     }
 
-    const dir = saveMode ? 'data/' : 'tmp/';
-    const statePath = `${dir}${contractAddress.toUpperCase()}_state.json`;
+    const statePath = `${data_path}${contractAddress.toUpperCase()}_state.json`;
     if (!fs.existsSync(statePath)) {
       console.log(`No state file found (Contract: ${contractAddress}`);
       throw new Error('Address does not exist');
@@ -364,7 +367,7 @@ module.exports = {
   /*
 getSmartContracts: Returns the list of smart contracts created by an account
 */
-  processGetSmartContracts: (data, saveMode) => {
+  processGetSmartContracts: (data, data_path) => {
     if (!data) {
       logVerbose(logLabel, 'Invalid params');
       const err = new Error(
@@ -385,12 +388,10 @@ getSmartContracts: Returns the list of smart contracts created by an account
       throw new Error('Address does not exist');
     }
     // Addr found - proceed to append state to return list
-    const dir = saveMode ? 'data/' : 'tmp/';
     const contracts = createdContractsByUsers[addr];
-    console.log(contracts);
 
     contracts.forEach((contractId) => {
-      const statePath = `${dir}${contractId.toLowerCase()}_state.json`;
+      const statePath = `${data_path}${contractId.toUpperCase()}_state.json`;
       if (!fs.existsSync(statePath)) {
         console.log(`No state file found (Contract: ${contractId}`);
         throw new Error('Address does not exist');

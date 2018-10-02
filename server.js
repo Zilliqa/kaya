@@ -16,7 +16,6 @@
 */
 
 const config = require('./config');
-const { argv } = require('yargs');
 
 /* Information about Kaya RPC Server */
 
