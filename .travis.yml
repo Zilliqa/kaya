@@ -6,7 +6,7 @@ node_js:
 - stable
 before_install:
 - curl -L https://goss.rocks/install | sudo sh
-- docker build -t visibilityspots/openstackclient-kilo .
+- docker build -t visibilityspots/kaya-rpc .
 install:
 - npm install
 script:
