@@ -107,10 +107,8 @@ module.exports = {
   loadData : (txns, contractsByUsers) => {
     transactions = txns;
     createdContractsByUsers = contractsByUsers;
-    consolePrint(logLabel, `Transactions and contract data loaded.`);
+    logVerbose(logLabel, `Transactions and contract data loaded.`);
   },
-
-  
 
   /*
   * Function that handles the create transaction requests

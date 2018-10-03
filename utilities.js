@@ -46,6 +46,30 @@ module.exports = {
     return data;
   },
 
+  loadDataToDir: (dataPath, data) => {
+    const states = data.states;
+    const stateFileNames = Object.keys(states);
+    stateFileNames.forEach((file) => { 
+      fs.writeFileSync(`${dataPath}/${file}`, JSON.stringify(states[file]));
+    });
+    module.exports.logVerbose(logLabel, `State files loaded into ${dataPath}`);
+
+    const inits = data.init;
+    const initFileNames = Object.keys(inits);
+    initFileNames.forEach((file) => { 
+      fs.writeFileSync(`${dataPath}/${file}`, JSON.stringify(inits[file]));
+    });
+    module.exports.logVerbose(logLabel, `Init files loaded into ${dataPath}`);
+
+    const codes = data.codes;
+    const codeFileNames = Object.keys(codes);
+    codeFileNames.forEach((file) => { 
+      fs.writeFileSync(`${dataPath}/${file}`, JSON.stringify(codes[file]));
+    });
+    module.exports.logVerbose(logLabel, `Code files loaded into ${dataPath}`);
+
+  },
+
   // log function that logs only when verbose mode is on
   logVerbose: (src, msg) => {
     if (argv.v) {

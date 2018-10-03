@@ -112,7 +112,7 @@ module.exports = {
       const keys = [];
       accountAddresses.forEach((addr, index) => {
         consolePrint(
-          `(${index}) ${addr.toUpperCase()} (Amt: ${wallets[addr].amount}) (Nonce: ${
+          `(${index+1}) ${addr}\t(Amt: ${wallets[addr].amount})\t(Nonce: ${
             wallets[addr].nonce
           })`);
           keys.push(wallets[addr].privateKey);
@@ -121,7 +121,7 @@ module.exports = {
       consolePrint('\n Private Keys ');
       consolePrint('='.repeat(80));
       keys.forEach((key, i) => {
-        consolePrint(`(${i}) ${key.toUpperCase()}`);
+        consolePrint(`(${i+1}) ${key}`);
       });
       consolePrint('='.repeat(80));
     }

@@ -25,7 +25,8 @@ const expressjs = express();
 const config = require('./config');
 const logic = require('./logic');
 const wallet = require('./components/wallet/wallet');
-const { prepareDirectories, logVerbose, consolePrint, getDateTimeString, getDataFromDir, loadData } = require('./utilities');
+const { prepareDirectories, logVerbose, consolePrint, 
+  getDateTimeString, getDataFromDir, loadData, loadDataToDir } = require('./utilities');
 const init = require('./argv');
 const logLabel = 'App.js';
 
@@ -70,11 +71,13 @@ if (options.save) {
 
 if (options.load) {
   // loading option specified
-  logVerbose(logLabel, 'Loading option specified');
+  logVerbose(logLabel, 'Loading option specified. Loading files now...');
   // loads file into dbPath from the given bootstrap file
   const importedData = loadData(options.load);
   wallet.loadAccounts(importedData.accounts);
   logic.loadData(importedData.transactions, importedData.createdContractsByUsers);
+  loadDataToDir(options.dataPath, importedData);
+  logVerbose(logLabel, 'Load completed');
 }
 
 if (process.env.NODE_ENV === 'test') {
