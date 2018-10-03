@@ -76,7 +76,7 @@ module.exports = {
     const codes = data.codes;
     const codeFileNames = Object.keys(codes);
     codeFileNames.forEach((file) => { 
-      fs.writeFileSync(`${dataPath}/${file}`, JSON.stringify(codes[file]));
+      fs.writeFileSync(`${dataPath}/${file}`, codes[file]);
     });
     module.exports.logVerbose(logLabel, `Code files loaded into ${dataPath}`);
 
