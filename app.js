@@ -43,7 +43,7 @@ const wrapAsync = fn => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
 };
 
-if (argv.db.trim() === 'saved/') {
+if (argv.d.trim() === 'saved/') {
   throw new Error('Saved dir is reserved for saved files');
 }
 
@@ -52,7 +52,7 @@ if (argv.db.trim() === 'saved/') {
 let options = {
   fixtures: argv.f,
   numAccts: argv.n,
-  dataPath: argv.db,
+  dataPath: argv.d,
   remote: argv.r,
   verbose: argv.v,
   save: argv.s,

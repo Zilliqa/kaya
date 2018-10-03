@@ -12,7 +12,7 @@ module.exports = function() {
             default: config.port,
             describe: 'Port number to listen'
         })
-        .option('db', {
+        .option('d', {
             group: 'Blockchain',
             alias: 'data',
             type: 'string',
@@ -38,12 +38,6 @@ module.exports = function() {
             type: 'number',
             default: config.wallet.numAccounts,
             describe: 'Number of accounts to load at start up. Only used if fixtures file is not defined.'
-        })
-        .option('f', {
-            group: 'Other',
-            alias: 'fixtures',
-            type: 'string',
-            describe: 'Path to JSON file which contains the private keys to predefined set of wallets'
         })
         .option('l', {
             group: 'Other',
