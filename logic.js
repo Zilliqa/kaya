@@ -29,7 +29,7 @@ const logLabel = ('Logic.js');
 
 // non-persistent states. Initializes whenever server starts
 let transactions = {};
-const createdContractsByUsers = {}; // address => contract addresses
+let createdContractsByUsers = {}; // address => contract addresses
 
 /*  Dummy constructor for zilliqajs */
 // @dev: Will be replaced once zilliqa-js exposes utils without constructors
@@ -103,6 +103,14 @@ module.exports = {
     data.createdContractsByUsers = createdContractsByUsers;
     return data;
   },
+
+  loadData : (txns, contractsByUsers) => {
+    transactions = txns;
+    createdContractsByUsers = contractsByUsers;
+    consolePrint(logLabel, `Transactions and contract data loaded.`);
+  },
+
+  
 
   /*
   * Function that handles the create transaction requests

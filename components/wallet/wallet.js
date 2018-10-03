@@ -77,6 +77,7 @@ const validateAccounts = (accounts) => {
 };
 
 module.exports = {
+  
   createWallets: (n) => {
     assert(n > 0);
     for (let i = 0; i < n; i += 1) {
@@ -106,22 +107,23 @@ module.exports = {
       console.log('No wallets generated.');
     } else {
       consolePrint('Available Accounts');
-      consolePrint('=============================');
+      consolePrint('='.repeat(80));
+      const accountAddresses = Object.keys(wallets);
       const keys = [];
-      for (let i = 0; i < config.wallet.numAccounts; i += 1) {
-        const addr = Object.keys(wallets)[i];
+      accountAddresses.forEach((addr, index) => {
         consolePrint(
-          `(${i}) ${addr.toUpperCase()} (Amt: ${wallets[addr].amount}) (Nonce: ${
+          `(${index}) ${addr.toUpperCase()} (Amt: ${wallets[addr].amount}) (Nonce: ${
             wallets[addr].nonce
-          })`,
-        );
-        keys.push(wallets[addr].privateKey);
-      }
+          })`);
+          keys.push(wallets[addr].privateKey);
+      });
+
       consolePrint('\n Private Keys ');
-      consolePrint('=============================');
-      for (let i = 0; i < config.wallet.numAccounts; i += 1) {
-        consolePrint(`(${i}) ${keys[i].toUpperCase()}`);
-      }
+      consolePrint('='.repeat(80));
+      keys.forEach((key, i) => {
+        consolePrint(`(${i}) ${key.toUpperCase()}`);
+      });
+      consolePrint('='.repeat(80));
     }
   },
 

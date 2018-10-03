@@ -18,7 +18,6 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const express = require('express');
 const fs = require('fs');
-const glob = require('glob');
 const rimraf = require('rimraf');
 const yargs = require('yargs');
 
@@ -26,7 +25,7 @@ const expressjs = express();
 const config = require('./config');
 const logic = require('./logic');
 const wallet = require('./components/wallet/wallet');
-const { prepareDirectories, logVerbose, consolePrint, getDateTimeString, getDataFromDir } = require('./utilities');
+const { prepareDirectories, logVerbose, consolePrint, getDateTimeString, getDataFromDir, loadData } = require('./utilities');
 const init = require('./argv');
 const logLabel = 'App.js';
 
@@ -67,33 +66,38 @@ prepareDirectories(options.dataPath); // prepare the directories required
 
 if (options.save) {
   logVerbose(logLabel, 'Save enabled. Data files from this session will be saved');
-  isPersistence = true;
 }
 
 if (options.load) {
   // loading option specified
   logVerbose(logLabel, 'Loading option specified');
-  // loads file into db_path from the given bootstrap file
-  logic.bootstrapFile(options.load);
-  isPersistence = true;
+  // loads file into dbPath from the given bootstrap file
+  const importedData = loadData(options.load);
+  wallet.loadAccounts(importedData.accounts);
+  logic.loadData(importedData.transactions, importedData.createdContractsByUsers);
 }
 
 if (process.env.NODE_ENV === 'test') {
   options.fixtures = 'test/account-fixtures.json';
 }
 
-/* account creation/loading based on presets given */
-if (options.fixtures) {
-  logVerbose(logLabel, `Bootstrapping from account fixture files: ${options.fixtures}`);
-  const accountsPath = options.fixtures;
-  if (!fs.existsSync(accountsPath)) {
-    throw new Error('Account Path Invalid');
+/* 
+* Account creation/loading based on presets given 
+* @dev : Only create wallets if the user does not supply any load file
+*/
+if(!options.load) { 
+  if (options.fixtures) {
+    logVerbose(logLabel, `Bootstrapping from account fixture files: ${options.fixtures}`);
+    const accountsPath = options.fixtures;
+    if (!fs.existsSync(accountsPath)) {
+      throw new Error('Account Path Invalid');
+    }
+    const accounts = JSON.parse(fs.readFileSync(accountsPath, 'utf-8'));
+    wallet.loadAccounts(accounts);
+  } else {
+    /* Create Dummy Accounts */
+    wallet.createWallets(options.numAccts);
   }
-  const accounts = JSON.parse(fs.readFileSync(accountsPath, 'utf-8'));
-  wallet.loadAccounts(accounts);
-} else {
-  /* Create Dummy Accounts */
-  wallet.createWallets(options.numAccts);
 }
 
 wallet.printWallet();

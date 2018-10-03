@@ -1,0 +1,52 @@
+{
+    "transactions": {},
+    "createdContractsByUsers": {},
+    "accounts": {
+        "7bb3b0e8a59f3f61d9bff038f4aeb42cae2ecce8": {
+            "privateKey": "db11cfa086b92497c8ed5a4cc6edb3a5bfe3a640c43ffb9fc6aa0873c56f2ee3",
+            "amount": 100000,
+            "nonce": 0
+        },
+        "d90f2e538ce0df89c8273cad3b63ec44a3c4ed82": {
+            "privateKey": "e53d1c3edaffc7a7bab5418eb836cf75819a82872b4a1a0f1c7fcf5c3e020b89",
+            "amount": 100000,
+            "nonce": 0
+        },
+        "c2035715831ab100ec42e562ce341b834bed1f4c": {
+            "privateKey": "b8fc4e270594d87d3f728d0873a38fb0896ea83bd6f96b4f3c9ff0a29122efe4",
+            "amount": 100000,
+            "nonce": 0
+        },
+        "6cd3667ba79310837e33f0aecbe13688a6cbca32": {
+            "privateKey": "b87f4ba7dcd6e60f2cca8352c89904e3993c5b2b0b608d255002edcda6374de4",
+            "amount": 50000,
+            "nonce": 0
+        }
+    },
+    "states": {
+        "cef48d2ec4086bd5799b659261948daab02b760d_state.json": [
+            {
+                "vname": "_balance",
+                "type": "Uint128",
+                "value": "0"
+            }
+        ]
+    },
+    "init": {
+        "cef48d2ec4086bd5799b659261948daab02b760d_init.json": [
+            {
+                "vname": "owner",
+                "type": "ByStr20",
+                "value": "0x7bb3b0e8a59f3f61d9bff038f4aeb42cae2ecce8"
+            },
+            {
+                "vname": "_creation_block",
+                "type": "BNum",
+                "value": "100"
+            }
+        ]
+    },
+    "codes": {
+        "cef48d2ec4086bd5799b659261948daab02b760d_code.scilla": "      import ListUtils  library HelloWorld  let one_msg =    fun (msg : Message) =>    let nil_msg = Nil {Message} in   Cons {Message} msg nil_msg  let not_owner_code = Int32 1 let set_hello_code = Int32 2      contract HelloWorld (owner: ByStr20)  field welcome_msg : String = \"\"  transition setHello (msg : String)   is_owner = builtin eq owner _sender;   match is_owner with   | False =>     msg = {_tag : \"Main\"; _recipient : _sender; _amount : Uint128 0; code : not_owner_code};     msgs = one_msg msg;     send msgs   | True =>     welcome_msg := msg;     msg = {_tag : \"Main\"; _recipient : _sender; _amount : Uint128 0; code : set_hello_code};     msgs = one_msg msg;     send msgs   end end   transition getHello ()     r <- welcome_msg;     msg = {_tag : \"Main\"; _recipient : _sender; _amount : Uint128 0; msg : r};     msgs = one_msg msg;     send msgs end"
+    }
+}
