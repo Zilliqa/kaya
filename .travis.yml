@@ -1,8 +1,7 @@
 language: node_js
 sudo: true
 node_js:
-  - "node"
-  - "lts/carbon"
+  - "stable"
 cache:
   directories:
     - $HOME/.npm
