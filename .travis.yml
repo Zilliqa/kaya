@@ -1,11 +1,8 @@
 language: node_js
 sudo: true
-node_js: 
-  - "stable"
-install:
-  - npm install
-script:
-  - npm run test
+node_js:
+  - "node"
+  - "lts/carbon"
 cache:
   directories:
     - $HOME/.npm
