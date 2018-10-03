@@ -14,18 +14,19 @@
   You should have received a copy of the GNU General Public License along with
   kaya.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-const express = require('express');
 const bodyParser = require('body-parser');
-const expressjs = express();
-const fs = require('fs');
 const cors = require('cors');
-const yargs = require('yargs');
+const express = require('express');
+const fs = require('fs');
+const glob = require('glob');
 const rimraf = require('rimraf');
+const yargs = require('yargs');
+
+const expressjs = express();
 const config = require('./config');
 const logic = require('./logic');
 const wallet = require('./components/wallet/wallet');
-const { prepareDirectories, logVerbose, consolePrint, getDateTimeString } = require('./utilities');
+const { prepareDirectories, logVerbose, consolePrint, getDateTimeString, getDataFromDir } = require('./utilities');
 const init = require('./argv');
 const logLabel = 'App.js';
 
@@ -46,7 +47,8 @@ if (argv.db.trim() === 'saved/') {
   throw new Error('Saved dir is reserved for saved files');
 }
 
-// flags override the config files
+// Stores all the option flags and configurations
+// Console defined flag will override the config settings
 let options = {
   fixtures: argv.f,
   numAccts: argv.n,
@@ -236,16 +238,29 @@ process.on('SIGINT', function () {
     }
 
     const timestamp = getDateTimeString();
-    const targetFilePath = `${dir}${timestamp}_data.json`;
+    
+    const outputData = `${dir}${timestamp}`;
+    const targetFilePath = `${outputData}_data.json`;
     consolePrint(`Files will be saved at ${targetFilePath}`);
 
     // Extracts Data to be exported
+    consolePrint('Extracting data...');
     const data = logic.exportData();
     data.accounts = wallet.getAccounts();
-    consolePrint(`Transactions and account data extracted`);
+    consolePrint(`[1/5] Transactions and account data extracted`);
+    // Extracts State JSONs
+    data.states = getDataFromDir(options.dataPath, 'state.json');
+    consolePrint(`[2/5] Contract state data extracted`);
+    data.init = getDataFromDir(options.dataPath, 'init.json');
+    consolePrint(`[3/5] Contract init data extracted`);
+    data.codes = getDataFromDir(options.dataPath, 'code.scilla');
+    consolePrint(`[4/5] Contract code data extracted`);
+
     fs.writeFileSync(targetFilePath, JSON.stringify(data));
+    consolePrint(`[5/5] Data file written to ${targetFilePath}`);
   }
 
+  // remove files from the db_path
   rimraf.sync(`${options.dataPath}*`);
   console.log(`Files from ${options.dataPath} removed.`);
   process.exit(0);  

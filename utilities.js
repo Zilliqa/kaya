@@ -19,21 +19,36 @@ const fs = require('fs');
 const moment = require('moment');
 const yargs = require('yargs');
 const init = require('./argv');
+const glob = require('glob');
 const config = require('./config');
 const argv = init(yargs).argv;
 const logLabel = 'Utilities';
 
 module.exports = {
 
+  // Called by the app.js
+  getDataFromDir: (dataPath, fileExt) => {
+
+    files = glob.sync(`${dataPath}*_${fileExt}`);
+    const result = {};
+    const isCode = (fileExt === 'code.scilla');
+    files.forEach((file) => {
+      fileData = fs.readFileSync(file, 'utf-8');
+      result[file.slice(dataPath.length)] = isCode ? fileData : JSON.parse(fileData);
+    });
+    return result;
+
+  },
+
   // log function that logs only when verbose mode is on
-  logVerbose : (src, msg) => {
-    if(argv.v) {
+  logVerbose: (src, msg) => {
+    if (argv.v) {
       console.log(`[${src}]\t : ${msg}`);
     }
   },
 
   // wrapper: print only when not in test mode
-  consolePrint : (text) => {
+  consolePrint: (text) => {
     if (process.env.NODE_ENV !== 'test') {
       console.log(text);
     }
@@ -42,7 +57,7 @@ module.exports = {
   /*
   * @returns : { string } : Datetime format (e.g. 20181001T154832 )
   */
-  getDateTimeString : () => {
+  getDateTimeString: () => {
     return moment().format('YYYYMMDD_hhmmss');
   },
 
