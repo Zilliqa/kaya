@@ -9,7 +9,7 @@
     "start": "node server.js",
     "start:fixtures": "node server.js --f test/account-fixtures.json",
     "debug": "node server.js",
-    "debug:fixtures": "node server.js -f test/account-fixtures.json -v"
+    "debug:fixtures": "node server.js -f test/account-fixtures.json -v -s"
   },
   "author": "Edison Lim",
   "license": "GPL-3.0-or-later",
@@ -38,8 +38,10 @@
     "cors": "^2.8.4",
     "es6-promise": "^4.2.4",
     "express": "^4.16.3",
+    "glob": "^7.1.3",
     "hash.js": "^1.1.5",
     "isomorphic-fetch": "^2.2.1",
+    "moment": "^2.22.2",
     "node-fs": "^0.1.7",
     "request": "^2.88.0",
     "request-promise": "^4.2.2",

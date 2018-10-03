@@ -16,8 +16,10 @@
 */
 
 const fs = require('fs');
+const moment = require('moment');
 const yargs = require('yargs');
 const init = require('./argv');
+const config = require('./config');
 const argv = init(yargs).argv;
 const logLabel = 'Utilities';
 
@@ -41,9 +43,7 @@ module.exports = {
   * @returns : { string } : Datetime format (e.g. 20181001T154832 )
   */
   getDateTimeString : () => {
-    let d = new Date();
-    let d_str = d.toISOString().slice(0, -5); // truncates milliseconds
-    return d_str.replace( /:|-/g, "" );
+    return moment().format('YYYYMMDD_hhmmss');
   },
 
   /*
