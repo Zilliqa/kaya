@@ -232,30 +232,32 @@ const handler = async (req, res) => {
 
 expressjs.post('/', wrapAsync(handler));
 
+// Function below handles the end of the session due to SIGINT. It will save
+// data files if the `-s` flag is toggled and will remove all files from the data directory
 process.on('SIGINT', function () {
   consolePrint("Gracefully shutting down from SIGINT (Ctrl-C)");
 
   // If `save` is enabled, store files under the saved/ directory
   if (options.save) {
     console.log(`Save mode enabled. Extracting data now..`);
-    // move data files to saved files directory
+    
     const dir = config.savedFilesDir;
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir);
     }
 
+    // Saved files will be prefixed with the timestamp when the user decides to end the session
     const timestamp = getDateTimeString();
     
     const outputData = `${dir}${timestamp}`;
     const targetFilePath = `${outputData}_data.json`;
     consolePrint(`Files will be saved at ${targetFilePath}`);
 
-    // Extracts Data to be exported
+    // Prepares Data to be exported
     consolePrint('Extracting data...');
     const data = logic.exportData();
     data.accounts = wallet.getAccounts();
     consolePrint(`[1/5] Transactions and account data extracted`);
-    // Extracts State JSONs
     data.states = getDataFromDir(options.dataPath, 'state.json');
     consolePrint(`[2/5] Contract state data extracted`);
     data.init = getDataFromDir(options.dataPath, 'init.json');
@@ -263,13 +265,16 @@ process.on('SIGINT', function () {
     data.codes = getDataFromDir(options.dataPath, 'code.scilla');
     consolePrint(`[4/5] Contract code data extracted`);
 
+    // Writing to the final exported data file in JSON format
     fs.writeFileSync(targetFilePath, JSON.stringify(data));
     consolePrint(`[5/5] Data file written to ${targetFilePath}`);
+
+    consolePrint(`Save successful`)
   }
 
   // remove files from the db_path
   rimraf.sync(`${options.dataPath}*`);
-  console.log(`Files from ${options.dataPath} removed.`);
+  console.log(`Files from ${options.dataPath} removed. Shutting down now.`);
   process.exit(0);  
 })
 

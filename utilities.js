@@ -25,7 +25,14 @@ const logLabel = 'Utilities';
 
 module.exports = {
 
-  // Called by the app.js
+  /*
+  * Utility function to extract data from the working directory
+  * according to file extension (called from app.js)
+  * @params: { String } dataPath - Path to the working directory
+  * @params : { String } fileExtension - One of the following:
+  *           { code.scilla, state.json, init.json}
+  * @returns : { Object } - Data object for the specified file extension
+  */
   getDataFromDir: (dataPath, fileExt) => {
     files = glob.sync(`${dataPath}*_${fileExt}`);
     const result = {};
@@ -46,6 +53,11 @@ module.exports = {
     return data;
   },
 
+  /*
+  * Writes the data files from the saved session into the working directory 
+  * @params : { String } dataPath - Path to the working data directory
+  * @params : { Object } data - Object that includes the init, code and state files
+  */
   loadDataToDir: (dataPath, data) => {
     const states = data.states;
     const stateFileNames = Object.keys(states);
@@ -123,6 +135,10 @@ module.exports = {
     return str;
   },
 
+  /*
+  * Clean up the code received from POST requests. Converts raw code from editor
+  * into format that can be read by the interpreter
+  */
   codeCleanup: str => {
     let cleanedCode = module.exports.removeComments(str);
     cleanedCode = cleanedCode.replace(/\\n|\\t/g, ' ').replace(/\\"/g, '"');
@@ -130,6 +146,9 @@ module.exports = {
     return cleanedCode;
   },
 
+  /*
+  * Clean up the incoming message from POST requests
+  */
   paramsCleanup: initParams => {
     let cleanedParams = initParams.trim();
     cleanedParams = cleanedParams

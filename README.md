@@ -58,7 +58,7 @@ $ node server.js
 Options:
 * `-d` or `--data`: Relative path where state data will be stored. Creates directory if path does not exists
 * `-f` or `--fixtures`: Load fixed account addresses and keys (fixtures) from a JSON-file
-* `-l` or `--load`: Load state files from a path
+* `-l` or `--load`: Load data files from a JSON file
 * `-n` or `--numAccounts`: Number of accounts to load at start up. Only used if fixtures file is not defined.
 * `-p` or `--port`: Port number to listen to (Default: `4200`)
 * `-r` or `--remote`: Option to use remote interpreter or local interpreter. Remote if True
@@ -70,7 +70,7 @@ Options:
 ```
 node server.js -v -f test/account-fixtures.json  
 ```
-* Load data files from a previous session and save the states at the end of the session
+* Load data files from a previous session and save the data at the end of the session
 ```
 node server.js -v -s --load test/sample-export.json
 ```
