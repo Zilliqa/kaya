@@ -8,8 +8,8 @@
     "dev": "cross-env NODE_ENV=dev node server.js",
     "start": "node server.js",
     "start:fixtures": "node server.js --f test/account-fixtures.json",
-    "debug": "node server.js",
-    "debug:fixtures": "node server.js -f test/account-fixtures.json -v -s"
+    "debug": "node server.js -v",
+    "debug:fixtures": "node server.js -f test/account-fixtures.json -v"
   },
   "author": "Edison Lim",
   "license": "GPL-3.0-or-later",

@@ -75,6 +75,14 @@ node server.js -v -f test/account-fixtures.json
 node server.js -v -s --load test/sample-export.json
 ```
 
+#### Presents
+
+KayaRPC comes with a few preset configurations for lazy programmers:
+
+* `npm run debug`: Use server with random account keypairs
+* `npm run debug:fixtures`: Use server with fixed account keypairs loaded from `test/account-fixtures.json`
+* `npm start`: The same as `node server.js` - random account keypair generations with no verbosity
+
 ## Testing
 
 Some of the functions in Kaya RPC are covered under automated testing using `jest`. However, scilla related transactions are not covered through automated testing. To test the `CreateTransaction` functionalities, you will have to test it manually.
