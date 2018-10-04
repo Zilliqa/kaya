@@ -43,13 +43,13 @@ module.exports = function() {
             group: 'Other',
             alias: 'load',
             type: 'string',
-            describe: 'Load state files from a path'
+            describe: 'Load data files from a path'
         })
         .option('s', {
             group: 'Other',
             alias: 'save',
             type: 'boolean',
-            describe: 'Save file to a permanent directory'
+            describe: 'Saves data by the end of the session'
         })
         .option('v', {
             group: 'Other',
