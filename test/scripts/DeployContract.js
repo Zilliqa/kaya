@@ -42,6 +42,13 @@ if (argv.test) {
   }
 }
 
+let nonceVal = 1;
+if (argv.n) {
+  if(Number.isInteger(argv.n)) { 
+    nonceVal = argv.n;
+  }
+}
+
 const address = zilliqa.util.getAddressFromPrivateKey(privateKey);
 const node = zilliqa.getNode();
 
@@ -82,7 +89,7 @@ const initParams = [
 // transaction details
 const txnDetails = {
   version: 0,
-  nonce: 1,
+  nonce: nonceVal,
   to: '0000000000000000000000000000000000000000',
   amount: new BN(0),
   gasPrice: 1,

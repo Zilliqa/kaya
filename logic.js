@@ -19,42 +19,23 @@
 const hashjs = require('hash.js');
 const fs = require('fs');
 const { Zilliqa } = require('zilliqa-js');
-const LOG_LOGIC = require('debug')('kaya:logic');
-
 const scillaCtrl = require('./components/scilla/scilla');
 const walletCtrl = require('./components/wallet/wallet');
 const blockchain = require('./components/blockchain');
+const { logVerbose, consolePrint } = require('./utilities');
 const config = require('./config');
+
+const logLabel = ('Logic.js');
 
 // non-persistent states. Initializes whenever server starts
 let transactions = {};
-const createdContractsByUsers = {}; // address => contract addresses
+let createdContractsByUsers = {}; // address => contract addresses
 
 /*  Dummy constructor for zilliqajs */
 // @dev: Will be replaced once zilliqa-js exposes utils without constructors
 const zilliqa = new Zilliqa({
   nodeUrl: 'http://localhost:8888',
 });
-
-/* Utility functions */
-
-function pad(number, length) {
-  let str = number.toString();
-  while (str.length < length) {
-    str = `0${str}`;
-  }
-  return str;
-}
-
-Date.prototype.YYYYMMDDHHMMSS = () => {
-  const yyyy = this.getFullYear().toString();
-  const MM = pad(this.getMonth() + 1, 2);
-  const dd = pad(this.getDate(), 2);
-  const hh = pad(this.getHours(), 2);
-  const mm = pad(this.getMinutes(), 2);
-  const ss = pad(this.getSeconds(), 2);
-  return yyyy + MM + dd + hh + mm + ss;
-};
 
 // check multiplication overflow: Returns true if overflow
 const checkOverflow = (a, b) => {
@@ -115,35 +96,52 @@ const checkTransactionJson = (data) => {
 };
 
 module.exports = {
-  processCreateTxn: async (data, saveMode) => {
-    LOG_LOGIC('Processing transaction...');
-    // todo: check for well-formness of the payload data
-    LOG_LOGIC(`Payload well-formed? ${checkTransactionJson(data)}`);
+
+  exportData : () => {
+    const data = {};
+    data.transactions = transactions;
+    data.createdContractsByUsers = createdContractsByUsers;
+    return data;
+  },
+
+  loadData : (txns, contractsByUsers) => {
+    transactions = txns;
+    createdContractsByUsers = contractsByUsers;
+    logVerbose(logLabel, `Transactions and contract data loaded.`);
+  },
+
+  /*
+  * Function that handles the create transaction requests
+  * @params : data { Object } : Message object passed from client through server.js
+  * @params: options { Object } : List of options passed from server.js
+  * @returns: txnId { String } : Transaction hash
+  * Throws in the event of error. Caller should catch or delegate these errors
+  */
+  processCreateTxn: async (data, options) => {
+    logVerbose(logLabel, 'Processing transaction...');
+    logVerbose(logLabel, `Payload well-formed? ${checkTransactionJson(data)}`);
+
+    // Checks the wellformness of the transaction JSON data
     if (!checkTransactionJson(data)) {
       throw new Error('Invalid Tx Json');
     }
 
     const currentBNum = blockchain.getBlockNum();
-    let dir = 'tmp/';
-    if (saveMode) {
-      console.log('Save mode enabled.');
-      dir = 'data/';
-    }
-
+    const dir = options.dataPath;
     const payload = data[0];
     const senderAddress = zilliqa.util.getAddressFromPublicKey(payload.pubKey);
 
-    LOG_LOGIC(`Sender: ${senderAddress}`);
+    logVerbose(logLabel, `Sender: ${senderAddress}`);
     const userNonce = walletCtrl.getBalance(senderAddress).nonce;
-    LOG_LOGIC(`User Nonce: ${userNonce}`);
-    LOG_LOGIC(`Payload Nonce: ${payload.nonce}`);
+    logVerbose(logLabel, `User Nonce: ${userNonce}`);
+    logVerbose(logLabel, `Payload Nonce: ${payload.nonce}`);
 
     // check if payload gasPrice is sufficient
     const blockchainGasPrice = config.blockchain.gasPrice;
     if (payload.gasPrice < blockchainGasPrice) {
       throw new Error(
         `Payload gas price is insufficient. Current gas price is ${
-          config.blockchain.gasPrice
+        config.blockchain.gasPrice
         }`,
       );
     }
@@ -152,7 +150,7 @@ module.exports = {
     if (payload.nonce === userNonce + 1) {
       // p2p token transfer
       if (!payload.code && !payload.data) {
-        LOG_LOGIC('p2p token tranfer');
+        logVerbose(logLabel, 'p2p token tranfer');
         walletCtrl.deductFunds(
           senderAddress,
           payload.amount + payload.gasLimit,
@@ -161,7 +159,7 @@ module.exports = {
         walletCtrl.addFunds(payload.to, payload.amount);
       } else {
         /* contract generation */
-        LOG_LOGIC('Task: Contract Deployment / Create Transaction');
+        logVerbose(logLabel, 'Task: Contract Deployment / Create Transaction');
         // take the sha256 hash of address+nonce, then extract the rightmost 20 bytes
         const contractAddr = computeContractAddr(senderAddress);
 
@@ -172,10 +170,10 @@ module.exports = {
         const gasAndAmount = payload.amount + gasLimitToZil;
 
         if (!walletCtrl.sufficientFunds(senderAddress, gasAndAmount)) {
-          LOG_LOGIC('Insufficient funds. Returning error to client.');
+          logVerbose(logLabel, 'Insufficient funds. Returning error to client.');
           throw new Error('Insufficient funds');
         }
-        LOG_LOGIC(`Contract will be deployed at: ${contractAddr}`);
+        logVerbose(logLabel, `Contract will be deployed at: ${contractAddr}`);
 
         const responseData = await scillaCtrl.executeScillaRun(
           payload,
@@ -198,6 +196,7 @@ module.exports = {
         );
         walletCtrl.increaseNonce(senderAddress); // only increase if a contract is successful
 
+        // FIXME: Support multicontract calls
         if (nextAddr !== '0'.repeat(40) && nextAddr.substring(2) !== senderAddress) {
           console.log('Multi-contract calls not supported.');
           throw new Error('Multi-contract calls are not supported yet.');
@@ -207,29 +206,29 @@ module.exports = {
         if (payload.code && payload.to === '0'.repeat(40)) {
           // Update address_to_contracts
           if (senderAddress in createdContractsByUsers) {
-            LOG_LOGIC('User has contracts. Appending to list');
+            logVerbose(logLabel, 'User has contracts. Appending to list');
             createdContractsByUsers[senderAddress].push(contractAddr);
           } else {
-            LOG_LOGIC('No existing contracts. Creating new entry.');
+            logVerbose(logLabel, 'No existing contracts. Creating new entry.');
             createdContractsByUsers[senderAddress] = [contractAddr];
           }
-          LOG_LOGIC('Addr-to-Contracts: %O', createdContractsByUsers);
+          logVerbose(logLabel, `Addr-to-Contracts: ${createdContractsByUsers}`);
         }
       }
     } else {
       // payload.nonce is not valid. Deduct gas anyway
-      // FIX ME: Waiting for scilla interpreter to return a structured output
+      // FIXME: Waiting for scilla interpreter to return a structured output
       // about out of gas errors
       // https://github.com/Zilliqa/scilla/issues/214
 
       walletCtrl.deductFunds(senderAddress, payload.gasLimit);
-      LOG_LOGIC('Invalid Nonce');
+      logVerbose(logLabel, 'Invalid Nonce');
       throw new Error('Invalid Tx Json');
     }
 
     /*  Update Transactions */
     const txnId = computeTransactionHash(payload);
-    LOG_LOGIC(`Transaction will be logged as ${txnId}`);
+    logVerbose(logLabel, `Transaction will be logged as ${txnId}`);
     const txnDetails = {
       ID: txnId,
       amount: payload.amount,
@@ -244,24 +243,16 @@ module.exports = {
     return txnId;
   },
 
-  bootstrapFile: (filepath) => {
-    // bootstraps state of transactions and caddr owner
-    const data = JSON.parse(fs.readFileSync(filepath, 'utf-8'));
-    LOG_LOGIC('State of blockchain:');
-    transactions = data.transactions;
-    LOG_LOGIC(transactions);
-  },
-
   processGetTransaction: (data) => {
     if (!data) {
-      LOG_LOGIC('Invalid params');
+      logVerbose(logLabel, 'Invalid params');
       const err = new Error(
         'INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised',
       );
       throw err;
     }
 
-    LOG_LOGIC(`TxnID: ${data[0]}`);
+    logVerbose(logLabel, `TxnID: ${data[0]}`);
     const res = transactions[data[0]];
     if (res) {
       return res;
@@ -270,7 +261,7 @@ module.exports = {
   },
 
   processGetRecentTransactions: () => {
-    LOG_LOGIC('Getting Recent Transactions');
+    logVerbose(logLabel, 'Getting Recent Transactions');
 
     const txnhashes = Object.keys(transactions);
     const responseObj = {};
@@ -279,100 +270,61 @@ module.exports = {
     return responseObj;
   },
 
-  processGetSmartContractInit: (data, saveMode) => {
-    LOG_LOGIC('Getting SmartContract Init');
+  /*
+  * Function to process GetSmartContract's state, init or code
+  * @params : { String } : enum of either data, init or state
+  */
+  processGetDataFromContract: (data, dataPath, type) => {
+
+    const fileType = type.trim().toLowerCase();
+    if (!['init', 'state', 'code'].includes(fileType)) {
+      throw new Error('Invalid option flag');
+    }
+    const ext = fileType === 'code' ? 'scilla' : 'json';
+    logVerbose(logLabel, `Getting SmartContract ${fileType}`);
+
     if (!data) {
-      LOG_LOGIC('Invalid params');
-      const err = new Error(
+      logVerbose(logLabel, 'Invalid params');
+      throw new Error(
         'INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised',
       );
-      throw err;
     }
 
+    // checking contract address's validity
     const contractAddress = data[0];
     if (contractAddress == null || !zilliqa.util.isAddress(contractAddress)) {
-      console.log('Invalid request');
+      consolePrint('Invalid request');
       throw new Error('Address size inappropriate');
     }
+    const filePath = `${dataPath}${contractAddress.toUpperCase()}_${fileType}.${ext}`;
+    logVerbose(logLabel, `Retrieving data from ${filePath}`);
 
-    const dir = saveMode ? 'data/' : 'tmp/';
-    const initFile = `${dir}${contractAddress.toLowerCase()}_init.json`;
-    if (!fs.existsSync(initFile)) {
-      console.log(`No init file found (Contract: ${contractAddress}`);
+    if (!fs.existsSync(filePath)) {
+      consolePrint(`No ${type} file found (Contract: ${contractAddress}`);
       throw new Error('Address does not exist');
     }
-    const retMsg = JSON.parse(fs.readFileSync(initFile, 'utf-8'));
-    return retMsg;
-  },
 
-  processGetSmartContractCode: (data, saveMode) => {
-    LOG_LOGIC('Getting SmartContract code');
-    if (!data) {
-      LOG_LOGIC('Invalid params');
-      const err = new Error(
-        'INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised',
-      );
-      throw err;
+    const responseData = fs.readFileSync(filePath, 'utf-8');
+    if (fileType === 'code') {
+      return { code: responseData };
     }
-
-    const contractAddress = data[0];
-    if (contractAddress == null || !zilliqa.util.isAddress(contractAddress)) {
-      console.log('Invalid request');
-      throw new Error('Address size inappropriate');
-    }
-
-    const dir = saveMode ? 'data/' : 'tmp/';
-    const codePath = `${dir}${contractAddress.toLowerCase()}_code.scilla`;
-    if (!fs.existsSync(codePath)) {
-      console.log(`No code file found (Contract: ${contractAddress}`);
-      throw new Error('Address does not exist');
-    }
-    LOG_LOGIC('Returning smart contract code to caller.');
-    const res = {};
-    res.code = fs.readFileSync(codePath, 'utf-8');
-    return res;
-  },
-
-  processGetSmartContractState: (data, saveMode) => {
-    LOG_LOGIC('Getting SmartContract State');
-    if (!data) {
-      LOG_LOGIC('Invalid params');
-      const err = new Error(
-        'INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised',
-      );
-      throw err;
-    }
-
-    const contractAddress = data[0];
-    if (contractAddress == null || !zilliqa.util.isAddress(contractAddress)) {
-      console.log('Invalid request');
-      throw new Error('Address size inappropriate');
-    }
-
-    const dir = saveMode ? 'data/' : 'tmp/';
-    const statePath = `${dir}${contractAddress.toLowerCase()}_state.json`;
-    if (!fs.existsSync(statePath)) {
-      console.log(`No state file found (Contract: ${contractAddress}`);
-      throw new Error('Address does not exist');
-    }
-    const retMsg = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
-    LOG_LOGIC(retMsg);
-    return retMsg;
+    // handles init and state json after parsing
+    return JSON.parse(responseData);
   },
 
   /*
-getSmartContracts: Returns the list of smart contracts created by an account
-*/
-  processGetSmartContracts: (data, saveMode) => {
+    Function returns the list of smart contracts created by an account
+  */
+  processGetSmartContracts: (data, dataPath) => {
     if (!data) {
-      LOG_LOGIC('Invalid params');
+      logVerbose(logLabel, 'Invalid params');
       const err = new Error(
         'INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised',
       );
       throw err;
     }
 
-    const addr = data[0];
+    const addr = data[0].toLowerCase();
     console.log(`Getting smart contracts created by ${addr}`);
     if (addr == null || !zilliqa.util.isAddress(addr)) {
       console.log('Invalid request');
@@ -384,12 +336,10 @@ getSmartContracts: Returns the list of smart contracts created by an account
       throw new Error('Address does not exist');
     }
     // Addr found - proceed to append state to return list
-    const dir = saveMode ? 'data/' : 'tmp/';
     const contracts = createdContractsByUsers[addr];
-    console.log(contracts);
 
     contracts.forEach((contractId) => {
-      const statePath = `${dir}${contractId.toLowerCase()}_state.json`;
+      const statePath = `${dataPath}${contractId.toUpperCase()}_state.json`;
       if (!fs.existsSync(statePath)) {
         console.log(`No state file found (Contract: ${contractId}`);
         throw new Error('Address does not exist');

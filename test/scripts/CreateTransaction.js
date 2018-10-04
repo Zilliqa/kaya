@@ -51,6 +51,11 @@ if (argv.test) {
   recipient = argv.to;
 }
 
+let nonceVal = 2;
+if(argv.n) { 
+  nonceVal = argv.n;
+}
+
 
 const address = zilliqa.util.getAddressFromPrivateKey(privateKey);
 
@@ -87,7 +92,7 @@ const msg = {
 // transaction details
 const txnDetails = {
   version: 0,
-  nonce: 2,
+  nonce: nonceVal,
   to: recipient,
   amount: new BN(0),
   gasPrice: 1,

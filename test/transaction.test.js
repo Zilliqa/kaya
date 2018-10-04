@@ -44,8 +44,6 @@ var pastTxn;
 /*  Start */
 
 describe('Testing (Alice ----100-----> Bob)', () => {
-    console.log();
-
     test('Alice should have some balance', async (done) => {
         request(app.expressjs).post('/')
         .send(makeQuery("GetBalance", alice))
