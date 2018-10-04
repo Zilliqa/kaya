@@ -1,21 +1,24 @@
 {
   "name": "kaya",
-  "version": "0.0.1",
+  "version": "0.2.0",
   "description": "Zilliqa's RPC Server",
   "main": "server.js",
   "scripts": {
     "test": "jest -c jest.config.js",
     "dev": "cross-env NODE_ENV=dev node server.js",
     "start": "node server.js",
-    "start:fixtures": "node server.js --accounts test/account-fixtures.json",
-    "debug": "DEBUG=kaya* node server.js",
-    "debug:fixtures": "DEBUG=kaya* node server.js --accounts test/account-fixtures.json"
+    "start:fixtures": "node server.js --f test/account-fixtures.json",
+    "debug": "node server.js -v",
+    "debug:fixtures": "node server.js -f test/account-fixtures.json -v"
   },
   "author": "Edison Lim",
   "license": "GPL-3.0-or-later",
   "repository": {
     "type": "git",
     "url": "https://github.com/Zilliqa/kaya"
+  },
+  "bin": {
+    "kaya": "./server.js"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
@@ -36,16 +39,17 @@
     "body-parser": "^1.18.3",
     "colors": "^1.3.0",
     "cors": "^2.8.4",
-    "debug": "^3.1.0",
     "es6-promise": "^4.2.4",
     "express": "^4.16.3",
+    "glob": "^7.1.3",
     "hash.js": "^1.1.5",
     "isomorphic-fetch": "^2.2.1",
+    "moment": "^2.22.2",
     "node-fs": "^0.1.7",
     "request": "^2.88.0",
     "request-promise": "^4.2.2",
     "rimraf": "^2.6.2",
-    "yargs": "^12.0.1",
-    "zilliqa-js": "^0.1.8"
+    "yargs": "^11.0.0",
+    "zilliqa-js": "^0.1.19"
   }
 }

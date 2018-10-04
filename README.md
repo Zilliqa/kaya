@@ -41,40 +41,47 @@ Scilla files must be processed using the `scilla-interpreter`. The [Scilla inter
 By default, Kaya RPC uses the remote scilla interpreter to process `.scilla` files. You do not have to change any configurations.
 
 #### Using Local Scilla Interpreter
-You can choose to use your own scilla interpreter locally. To do it, you will have to compile the binary yourself from the [scilla repository](https://github.com/Zilliqa/scilla) and transfer it to the correct directory within Kaya RPC.
+You can choose to use your own scilla interpreter locally. To do it, you will have to compile the binaries yourself from the [scilla repository](https://github.com/Zilliqa/scilla) and transfer it to the correct directory within Kaya RPC.
 
 Instructions:
 1. Ensure that you have installed the related dependencies: [INSTALL.md](https://github.com/Zilliqa/scilla/blob/master/INSTALL.md)
 2. Then, run `make clean; make`
 3. Copy the `scilla-runner` from `[SCILLA_DIR]/bin` into `[Kaya_DIR]/components/scilla/`
-4. Open `config.js` file and set the `config.scilla.remote` to `false`
+4. Open `config.js` file and set the `config.scilla.remote` to `false`. Alternative, use `-r false` at startup.
 
 ### Usage
-Kaya RPC two modes: normal and debug. The server listens on port `4200` by default. You can change the port through the `config.js` file.
-- `npm start` : Normal mode
-- `npm run debug`: Enables verbosity mode. Display logs about activities. Useful for debugging
 
-Developers can also start Kaya RPC with accounts from a `fixtures` file. The fixture file is configurable through `config.js`. If you wish to change this file, you will have to follow the format just like `account-fixtures.json`.
-
-To start Kaya RPC with accounts from a file, run one of the following commands:
-- `npm run start:fixtures`: Normal mode
-- `npm run debug:fixtures`: Greater verbosity. Shows log trail about server activities.
-
-__Recommendation__: We recommend running `npm run debug:fixtures`. Without account fixtures, accounts will be randomly generated at every run. It can be time consuming to change the private keys and addresses each time.
-
-### Advanced: Persistent Storage using Kaya RPC
-By default, the data states are non-persistent. Once you shut down the node server, state files and transactions will be deleted.
-
-To enable persistence data, use:
+#### Command Line
 ```
-node server.js --save
+$ node server.js
 ```
-The file containing the state will be stored in the `/data` folder. Blockchain-specific information such as transaction logs are stored in `data/save/YYYYMMDDhhmmss_blockchain_states.json`.
+Options:
+* `-d` or `--data`: Relative path where state data will be stored. Creates directory if path does not exists
+* `-f` or `--fixtures`: Load fixed account addresses and keys (fixtures) from a JSON-file
+* `-l` or `--load`: Load data files from a JSON file
+* `-n` or `--numAccounts`: Number of accounts to load at start up. Only used if fixtures file is not defined.
+* `-p` or `--port`: Port number to listen to (Default: `4200`)
+* `-r` or `--remote`: Option to use remote interpreter or local interpreter. Remote if True
+* `-s` or `--save`: Saves data files to `saved/` directory by the end of the session
+* `-v` or `--verbose`: Log all requests and responses to stdout
 
-You can load the files using:
+#### Example Usage
+* Starts server based on predefined wallet files with verbose mode.
 ```
-node server.js --load data/save/YYYYMMDDhhmmss_blockchain_states.json
+node server.js -v -f test/account-fixtures.json
 ```
+* Load data files from a previous session and save the data at the end of the session
+```
+node server.js -v -s --load test/sample-export.json
+```
+
+#### Presents
+
+KayaRPC comes with a few preset configurations for lazy programmers:
+
+* `npm run debug`: Use server with random account keypairs
+* `npm run debug:fixtures`: Use server with fixed account keypairs loaded from `test/account-fixtures.json`
+* `npm start`: The same as `node server.js` - random account keypair generations with no verbosity
 
 ## Testing
 
