@@ -22,11 +22,10 @@ const { exec } = require('child_process');
 const { paramsCleanup, codeCleanup, logVerbose } = require('../../utilities');
 const config = require('../../config');
 const logLabel = 'Scilla';
-const blockchainPath = 'tmp/blockchain.json';
 
 const execAsync = promisify(exec);
 
-const makeBlockchainJson = (val) => {
+const makeBlockchainJson = (val, blockchainPath) => {
   const blockchainData = [
     {
       vname: 'BLOCKNUMBER',
@@ -123,14 +122,16 @@ const runLocalInterpreterAsync = async (command, outputPath) => {
 module.exports = {
   executeScillaRun: async (payload, address, dir, currentBnum, gasLimit) => {
     // Get the blocknumber into a json file
-    makeBlockchainJson(currentBnum);
+    const blockchainPath = `${dir}/blockchain.json`;
+    makeBlockchainJson(currentBnum, blockchainPath);
 
     let isCodeDeployment = payload.code && payload.to === '0'.repeat(40);
     const contractAddr = isCodeDeployment ? address : payload.to;
 
+    
     const initPath = `${dir}${contractAddr}_init.json`;
     const codePath = `${dir}${contractAddr}_code.scilla`;
-    const outputPath = `tmp/${contractAddr}_out.json`;
+    const outputPath = `${dir}/${contractAddr}_out.json`;
     const statePath = `${dir}${contractAddr}_state.json`;
 
     let cmd = `${
