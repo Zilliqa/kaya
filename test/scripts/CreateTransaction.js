@@ -99,6 +99,7 @@ const msg = {
 // Get user's nonce and increment it by one before sending transaction
 getNonceAsync(senderAddr)
   .then(nonce => {
+    console.log(`User's current nonce: ${nonce}`);
     const nonceVal = nonce + 1;
     console.log(`Payload's Nonce is ${nonceVal}`);
     const xnDetails = makeTxnDetails(nonceVal);

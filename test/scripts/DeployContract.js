@@ -63,8 +63,8 @@ getNonceAsync(address)
   .then(currentNonce => {
     nonceVal = currentNonce + 1;
 
-    console.log(`Address: ${address} Current Nonce:${currentNonce} `);
-    console.log(`Deploying contract. Payload nonce: ${nonceVal}`);
+    console.log(`Address: ${address} User's current nonce: ${currentNonce}`);
+    console.log(`Deploying contract. Nonce of payload: ${nonceVal}`);
 
     /* Contract specific Parameters */
 
