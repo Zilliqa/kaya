@@ -9,8 +9,8 @@ before_install:
 - docker build -t visibilityspots/kaya-rpc .
 install:
 - npm install
-script:
-- npm run test
+#script:
+#- npm run test
 after_success:
 - if [ "$TRAVIS_BRANCH" == "master" ]; then docker login -u=visibilityspots -p="$DOCKER_PASSWORD";
   docker push visibilityspots/kaya-rpc; fi
