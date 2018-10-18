@@ -15,40 +15,38 @@
   kaya.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-const fs = require('fs');
-const { promisify } = require('util');
-const rp = require('request-promise');
-const { exec } = require('child_process');
-const { paramsCleanup, codeCleanup, logVerbose } = require('../../utilities');
-const config = require('../../config');
-const logLabel = 'Scilla';
-const blockchainPath = 'tmp/blockchain.json';
+const fs = require("fs");
+const { promisify } = require("util");
+const rp = require("request-promise");
+const { exec } = require("child_process");
+const { paramsCleanup, codeCleanup, logVerbose } = require("../../utilities");
+const config = require("../../config");
+const logLabel = "Scilla";
 
 const execAsync = promisify(exec);
 
-const makeBlockchainJson = (val) => {
+const makeBlockchainJson = (val, blockchainPath) => {
   const blockchainData = [
     {
-      vname: 'BLOCKNUMBER',
-      type: 'BNum',
+      vname: "BLOCKNUMBER",
+      type: "BNum",
       value: val.toString(),
     },
   ];
   fs.writeFileSync(blockchainPath, JSON.stringify(blockchainData));
-  logVerbose(logLabel,`blockchain.json file prepared for blocknumber: ${val}`);
+  logVerbose(logLabel, `blockchain.json file prepared for blocknumber: ${val}`);
 };
 
-const initializeContractState = (amt) => {
+const initializeContractState = amt => {
   const initState = [
     {
-      vname: '_balance',
-      type: 'Uint128',
+      vname: "_balance",
+      type: "Uint128",
       value: amt.toString(),
     },
   ];
   return initState;
 };
-
 
 /*
   Runs the remote interpreter (currently hosted by zilliqa)
@@ -56,24 +54,24 @@ const initializeContractState = (amt) => {
   @params: data object containing the code, state, init, message and blockchain filepath
   @returns: Output message received from the remote scilla interpreter
 */
-const runRemoteInterpreterAsync = async (data) => {
-  logVerbose(logLabel,'Running Remote Interpreter');
+const runRemoteInterpreterAsync = async data => {
+  logVerbose(logLabel, "Running Remote Interpreter");
 
   const reqData = {
-    code: fs.readFileSync(data.code, 'utf-8'),
-    init: fs.readFileSync(data.init, 'utf-8'),
-    blockchain: fs.readFileSync(data.blockchain, 'utf-8'),
+    code: fs.readFileSync(data.code, "utf-8"),
+    init: fs.readFileSync(data.init, "utf-8"),
+    blockchain: fs.readFileSync(data.blockchain, "utf-8"),
     gaslimit: data.gas,
   };
 
   if (!data.isDeployment) {
     // contract invoke requires state and message
-    reqData.state = fs.readFileSync(data.state, 'utf-8');
+    reqData.state = fs.readFileSync(data.state, "utf-8");
     reqData.message = data.msg;
   }
 
   const options = {
-    method: 'POST',
+    method: "POST",
     url: config.scilla.url,
     json: true,
     body: reqData,
@@ -85,63 +83,59 @@ const runRemoteInterpreterAsync = async (data) => {
   } catch (err) {
     console.log(`Interpreter failed to process code. Error message received:`);
     console.log(`${err.message}`);
-    console.log('Possible fix: Have your code passed type checking?');
-    throw new Error('KayaRPC-specific: Interpreter error');
+    console.log("Possible fix: Have your code passed type checking?");
+    throw new Error("KayaRPC-specific: Interpreter error");
   }
-  
 
   if (!response.message.gas_remaining) {
-    console.log('WARNING: You are using an outdated scilla interpreter. Please upgrade to the latest version');
-    throw new Error('Outdated scilla binaries');
+    console.log(
+      "WARNING: You are using an outdated scilla interpreter. Please upgrade to the latest version"
+    );
+    throw new Error("Outdated scilla binaries");
   }
 
   return response.message;
 };
 
-
 const runLocalInterpreterAsync = async (command, outputPath) => {
-  logVerbose(logLabel,'Running local scilla interpreter');
+  logVerbose(logLabel, "Running local scilla interpreter");
   // Run Scilla Interpreter
   if (!fs.existsSync(config.scilla.runnerPath)) {
-    logVerbose(logLabel,
-      'Scilla runner not found. Hint: Have you compiled the scilla binaries?',
-    );
-    throw new Error('Kaya RPC Runtime Error: Scilla-runner not found');
+    logVerbose(logLabel, "Scilla runner not found. Hint: Have you compiled the scilla binaries?");
+    throw new Error("Kaya RPC Runtime Error: Scilla-runner not found");
   }
 
   const result = await execAsync(command);
-  if (result.stderr !== '') {
+  if (result.stderr !== "") {
     throw new Error(`Interpreter error: ${result.stderr}`);
   }
 
-  logVerbose(logLabel,'Scilla execution completed');
+  logVerbose(logLabel, "Scilla execution completed");
 
-  const retMsg = JSON.parse(fs.readFileSync(outputPath, 'utf-8'));
+  const retMsg = JSON.parse(fs.readFileSync(outputPath, "utf-8"));
   return retMsg;
 };
 
 module.exports = {
   executeScillaRun: async (payload, address, dir, currentBnum, gasLimit) => {
     // Get the blocknumber into a json file
-    makeBlockchainJson(currentBnum);
+    const blockchainPath = `${dir}/blockchain.json`;
+    makeBlockchainJson(currentBnum, blockchainPath);
 
-    let isCodeDeployment = payload.code && payload.to === '0'.repeat(40);
+    let isCodeDeployment = payload.code && payload.to === "0".repeat(40);
     const contractAddr = isCodeDeployment ? address : payload.to;
 
     const initPath = `${dir}${contractAddr}_init.json`;
     const codePath = `${dir}${contractAddr}_code.scilla`;
-    const outputPath = `tmp/${contractAddr}_out.json`;
+    const outputPath = `${dir}/${contractAddr}_out.json`;
     const statePath = `${dir}${contractAddr}_state.json`;
-
-    let cmd = `${
-      config.scilla.runnerPath
-    } -iblockchain ${blockchainPath} -o ${outputPath} -init ${initPath} -i ${codePath} -gaslimit ${gasLimit} -libdir ${config.scilla.localLibDir}`;
-
+    let cmd;
     if (isCodeDeployment) {
-      logVerbose(logLabel,'Code Deployment');
-
+      logVerbose(logLabel, "Code Deployment");
       // initialized with standard message template
       isCodeDeployment = true;
+      cmd = `${config.scilla.runnerPath} -iblockchain ${blockchainPath} -o ${outputPath} -init ${initPath} -i ${codePath} -gaslimit ${gasLimit} -libdir ${
+        config.scilla.localLibDir}`;
 
       // get init data from payload
       const initParams = JSON.stringify(payload.data);
@@ -152,18 +146,19 @@ module.exports = {
       const cleanedCode = codeCleanup(rawCode);
       fs.writeFileSync(codePath, cleanedCode);
     } else {
-      logVerbose(logLabel,`Calling transition within contract ${payload.to}`);
+      // Invoke transition
+      logVerbose(logLabel, `Calling transition within contract ${payload.to}`);
 
-      logVerbose(logLabel,`Code Path: ${codePath}`);
-      logVerbose(logLabel,`Init Path: ${initPath}`);
+      logVerbose(logLabel, `Code Path: ${codePath}`);
+      logVerbose(logLabel, `Init Path: ${initPath}`);
       if (!fs.existsSync(codePath) || !fs.existsSync(initPath)) {
-        logVerbose(logLabel,'Error, contract has not been created.');
-        throw new Error('Address does not exist');
+        logVerbose(logLabel, "Error, contract has not been created.");
+        throw new Error("Address does not exist");
       }
 
       // get message from payload information
       const msgPath = `${dir}${payload.to}_message.json`;
-      logVerbose(logLabel,'Payload Received %O', payload.data);
+
       const incomingMessage = JSON.stringify(payload.data);
       const cleanedMsg = paramsCleanup(incomingMessage);
       fs.writeFileSync(msgPath, cleanedMsg);
@@ -173,12 +168,14 @@ module.exports = {
     }
 
     if (!fs.existsSync(codePath) || !fs.existsSync(initPath)) {
-      logVerbose(logLabel,'Error, contract has not been created.');
-      throw new Error('Address does not exist');
+      logVerbose(logLabel, "Error, contract has not been created.");
+      throw new Error("Address does not exist");
     }
 
     let retMsg;
+
     if (!config.scilla.remote) {
+      // local scilla interpreter
       retMsg = await runLocalInterpreterAsync(cmd, outputPath);
     } else {
       const apiReqParams = {
@@ -201,7 +198,7 @@ module.exports = {
     }
 
     fs.writeFileSync(statePath, newState);
-    logVerbose(logLabel,`State logged down in ${statePath}`);
+    logVerbose(logLabel, `State logged down in ${statePath}`);
     console.log(`Contract Address Deployed: ${contractAddr}`);
 
     const responseData = {};
@@ -209,11 +206,11 @@ module.exports = {
 
     // Obtains the next address based on the message
     if (retMsg.message != null) {
-      logVerbose(logLabel,`Next address: ${retMsg.message._recipient}`);
+      logVerbose(logLabel, `Next address: ${retMsg.message._recipient}`);
       responseData.nextAddress = retMsg.message._recipient;
     }
     // Contract deployment runs do not have returned message
-    responseData.nextAddress = '0'.repeat(40);
+    responseData.nextAddress = "0".repeat(40);
 
     return responseData;
   },

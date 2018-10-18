@@ -22,6 +22,7 @@
 
 require('isomorphic-fetch');
 const { Zilliqa } = require('zilliqa-js');
+const { argv } = require('yargs');
 
 const zilliqa = new Zilliqa({
   nodeUrl: 'http://localhost:4200',
@@ -30,7 +31,12 @@ const zilliqa = new Zilliqa({
 console.log('Zilliqa Testing Script');
 const node = zilliqa.getNode();
 
-node.getSmartContractState({ address: 'dac620855671af9dd39fc62c4631d97280ccbf29' }, (err, data) => {
+let contractAddr;
+if (argv.contract) {
+    contractAddr = argv.contract;
+}
+console.log(`Getting state for ${contractAddr}`);
+node.getSmartContractState({ address: contractAddr }, (err, data) => {
   if (err || (data.result && data.result.Error)) {
     console.log(err);
   } else {
