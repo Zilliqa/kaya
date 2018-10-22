@@ -129,6 +129,7 @@ module.exports = {
     const currentBNum = blockchain.getBlockNum();
     const dir = options.dataPath;
     const payload = data[0];
+    console.log(payload);
     const senderAddress = zilliqa.util.getAddressFromPublicKey(payload.pubKey);
 
     logVerbose(logLabel, `Sender: ${senderAddress}`);

@@ -27,11 +27,11 @@ const logic = require('./logic');
 const wallet = require('./components/wallet/wallet');
 const { prepareDirectories, logVerbose, consolePrint, 
   getDateTimeString, getDataFromDir, loadData, loadDataToDir } = require('./utilities');
-const init = require('./argv');
+const initArgv = require('./argv');
 const logLabel = 'App.js';
 
 expressjs.use(bodyParser.json({ extended: false }));
-const argv = init(yargs).argv;
+const argv = initArgv(yargs).argv;
 
 const makeResponse = (id, jsonrpc, data, isErr) => {
   const responseObj = { id, jsonrpc };

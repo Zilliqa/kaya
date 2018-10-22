@@ -48,7 +48,6 @@ if (argv.help) {
   process.exit(0);
 }
 
-
 let privateKey, recipientAddress, amount;
 if (argv.test) {
   // Use test values

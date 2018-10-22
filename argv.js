@@ -1,7 +1,7 @@
 const config = require('./config');
 
-module.exports = function() {
-    return argv = require('yargs')
+module.exports = exports = function(yargs) {
+    return yargs
         .strict()
         .usage('Usage: node $0 <cmd> [options]')
         .example('node server.js -f -v', 'Starts server based on predefined wallet files with verbose mode')
