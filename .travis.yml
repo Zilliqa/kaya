@@ -6,6 +6,9 @@ install:
   - npm install
 script:
   - npm run test
+branches:
+  only:
+  - /.*/
 cache:
   directories:
     - $HOME/.npm
