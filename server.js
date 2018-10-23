@@ -18,9 +18,6 @@
 
 const config = require('./config');
 
-/* Commander options
-
-
 /* Information about Kaya RPC Server */
 
 console.log(`ZILLIQA KAYA RPC SERVER (ver: ${config.version})`);

@@ -17,19 +17,22 @@
 
 const fs = require('fs');
 const moment = require('moment');
-const yargs = require('yargs');
-const init = require('./argv');
 const glob = require('glob');
-const argv = init(yargs).argv;
+let opts;
 const logLabel = 'Utilities';
 
 module.exports = {
 
-  /*
+  initArgs: (options) => {
+    opts = options;
+    module.exports.logVerbose(logLabel, `Option initialized`);
+  },
+
+  /**
   * Utility function to extract data from the working directory
   * according to file extension (called from app.js)
-  * @params: { String } dataPath - Path to the working directory
-  * @params : { String } fileExtension - One of the following:
+  * @param: { String } dataPath - Path to the working directory
+  * @param : { String } fileExtension - One of the following:
   *           { code.scilla, state.json, init.json}
   * @returns : { Object } - Data object for the specified file extension
   */
@@ -44,8 +47,9 @@ module.exports = {
     return result;
   },
 
-  /*
+  /**
   * Called when the user chooses to load from an existing file 
+  * @param: { string } filepath to directory
   */
   loadData: (filePath) => {
     // FIXME : Validate the file
@@ -84,9 +88,7 @@ module.exports = {
 
   // log function that logs only when verbose mode is on
   logVerbose: (src, msg) => {
-    if (argv.v) {
-      console.log(`[${src}]\t : ${msg}`);
-    }
+    console.log(`[${src}]\t : ${msg}`);
   },
 
   // wrapper: print only when not in test mode
@@ -103,7 +105,7 @@ module.exports = {
     return moment().format('YYYYMMDD_hhmmss');
   },
 
-  /*
+  /**
   * Given a piece of scilla code, removes comments
   * @param : { string } : scilla code
   * @returns : { string } : scilla code without comments
