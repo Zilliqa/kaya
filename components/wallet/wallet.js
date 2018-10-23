@@ -21,7 +21,7 @@ const { Zilliqa } = require('zilliqa-js');
 const BN = require('bn.js');
 const { logVerbose, consolePrint } = require('../../utilities');
 const config = require('../../config');
-const logLabel = 'Wallet'
+const logLabel = 'Wallet';
 
 // @dev: As this is a kaya, private keys will be stored
 // note: Real systems do not store private key

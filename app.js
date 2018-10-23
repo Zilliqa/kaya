@@ -29,8 +29,17 @@ const utils = require('./utilities');
 const initArgv = require('./argv');
 
 expressjs.use(bodyParser.json({ extended: false }));
-const argv = initArgv(yargs).argv;
+let argv;
+if (process.env.NODE_ENV !== 'test') {
+  argv = initArgv(yargs).argv;
+} else {
+  console.log('-------- TEST MODE -------------');
+  argv = config.testconfigs.args;
+}
+
 utils.initArgs(argv); // init options in utils
+
+
 const logLabel = 'App.js';
 
 const makeResponse = (id, jsonrpc, data, isErr) => {
