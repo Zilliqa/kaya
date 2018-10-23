@@ -135,7 +135,6 @@ const handler = async (req, res) => {
   utils.logVerbose(logLabel, `Method specified ${body.method}`);
   switch (body.method) {
     case 'GetBalance':
-      // [addr, ... ] = body.params;
       addr = body.params[0];
       if (typeof addr === 'object') {
         addr = JSON.stringify(addr);

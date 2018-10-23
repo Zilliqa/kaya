@@ -219,11 +219,12 @@ module.exports = {
     }
   },
 
-  getBalance: (address) => {
-    if (!zilliqa.util.isAddress(address)) {
+  getBalance: (value) => {
+    if (!zilliqa.util.isAddress(value)) {
       throw new Error('Address size not appropriate');
     }
-    logVerbose(logLabel, `Getting balance for ${address}`);
+    logVerbose(logLabel, `Getting balance for ${value}`);
+    address = value.toLowerCase();
 
     if (!wallets[address]) {
       return {

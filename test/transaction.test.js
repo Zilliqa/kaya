@@ -44,9 +44,19 @@ var pastTxn;
 /*  Start */
 
 describe('Testing (Alice ----100-----> Bob)', () => {
-    test('Alice should have some balance', async (done) => {
+    test('Alice should have some balance (Address in Small Case)', async (done) => {
         request(app.expressjs).post('/')
         .send(makeQuery("GetBalance", alice))
+        .then((response) => {
+            expect(response.statusCode).toBe(200);
+            expect(response.body).toEqual({"id": "1", "jsonrpc": "2.0", "result": {"balance": originalAmt, "nonce": config.wallet.defaultNonce}});
+            done();
+        });
+    });
+
+    test('Alice should have some balance (Address in UpperCase)', async (done) => {
+        request(app.expressjs).post('/')
+        .send(makeQuery("GetBalance", alice.toUpperCase()))
         .then((response) => {
             expect(response.statusCode).toBe(200);
             expect(response.body).toEqual({"id": "1", "jsonrpc": "2.0", "result": {"balance": originalAmt, "nonce": config.wallet.defaultNonce}});

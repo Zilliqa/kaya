@@ -176,7 +176,7 @@ module.exports = {
       const totalSum = bnAmount.add(bnTxFee).toNumber();
       walletCtrl.deductFunds(senderAddress, totalSum);
       walletCtrl.increaseNonce(senderAddress);
-      walletCtrl.addFunds(payload.to, payload.amount);
+      walletCtrl.addFunds(payload.to.toLowerCase(), payload.amount);
     } else {
       /* contract generation */
       logVerbose(logLabel, 'Task: Contract Deployment / Create Transaction');

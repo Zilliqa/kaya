@@ -43,8 +43,8 @@ const getNonceAsync = addr => {
   usage: node TransferToken.js --from [private_key] --to [wallet_address]
 */
 if (argv.help) {
-  console.log(`Usage: node TransferValue --from [private_key] --to
-  [address] --amt [0] --nonce [0]`);
+  console.log(`Usage: node TransferValue --key [private_key] --to
+  [address] --amt [0]`);
   process.exit(0);
 }
 
