@@ -18,6 +18,7 @@
 /* Wallet Component */
 const assert = require('assert');
 const { Zilliqa } = require('zilliqa-js');
+const BN = require('bn.js');
 const { logVerbose, consolePrint } = require('../../utilities');
 const config = require('../../config');
 const logLabel = 'Wallet'
@@ -139,11 +140,20 @@ module.exports = {
     return true;
   },
 
+  /** 
+   * Deduct funds from an account
+   * @param: {string}: Address of an account
+   * @param: {Number} amount: amount to be deducted
+   * Does not return any value
+   */
+
   deductFunds: (address, amount) => {
+
     logVerbose(logLabel, `Deducting ${amount} from ${address}`);
     if (!zilliqa.util.isAddress(address)) {
       throw new Error('Address size not appropriate');
     }
+
     if (!wallets[address] || !module.exports.sufficientFunds(address, amount)) {
       throw new Error('Insufficient Funds');
     }
@@ -177,8 +187,11 @@ module.exports = {
     logVerbose(logLabel, `Recipient's previous Balance: ${currentBalance}`);
 
     // add amount
-    currentBalance += amount;
-    wallets[address].amount = currentBalance;
+    const bnCurrentBalance = new BN(currentBalance);
+    const bnAmount = new BN(amount);
+    const resultBalance = bnCurrentBalance.add(bnAmount);
+
+    wallets[address].amount = resultBalance.toString();
     logVerbose(logLabel, 
       `Adding funds complete. Recipient's new Balance: ${
         wallets[address].amount
