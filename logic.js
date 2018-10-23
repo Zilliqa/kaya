@@ -92,7 +92,11 @@ const checkTransactionJson = (data) => {
   const actual = Object.keys(expectedFields).length;
 
   // `amount` must be a string after zilliqa-js 0.2.0
-  console.log(`Payload amount type: ${typeof (payload['amount'])}`);
+  // FIXME: Enable checks after release of zilliqa-js 0.2.0
+  // if(typeof(payload['amount']) === 'number') {
+  //   console.log(`[DEPRECATION NOTICE] Please upgrade your zilliqa-js`);
+  //   return false;
+  // }
 
   // number of overlap keys must be the same as the expected keys
   if (expected !== actual) return false;
@@ -135,7 +139,6 @@ module.exports = {
     const currentBNum = blockchain.getBlockNum();
     const dir = options.dataPath;
     const payload = data[0];
-    console.log(payload);
     const senderAddress = zilliqa.util.getAddressFromPublicKey(payload.pubKey);
 
     logVerbose(logLabel, `Sender: ${senderAddress}`);

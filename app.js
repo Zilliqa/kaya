@@ -37,7 +37,7 @@ if (process.env.NODE_ENV !== 'test') {
   argv = config.testconfigs.args;
 }
 
-utils.initArgs(argv); // init options in utils
+// utils.initArgs(argv); // init options in utils
 
 
 const logLabel = 'App.js';

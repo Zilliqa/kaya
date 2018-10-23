@@ -18,15 +18,22 @@
 const fs = require('fs');
 const moment = require('moment');
 const glob = require('glob');
-let opts;
+const yargs = require('yargs');
+const initArgv = require('./argv');
+const config = require('./config');
+
+
+// Configure the argument flags based on test environment
+let argv;
+if (process.env.NODE_ENV !== 'test') {
+  argv = initArgv(yargs).argv;
+} else {
+  argv = config.testconfigs.args;
+}
+
 const logLabel = 'Utilities';
 
 module.exports = {
-
-  initArgs: (options) => {
-    opts = options;
-    module.exports.logVerbose(logLabel, `Option initialized`);
-  },
 
   /**
   * Utility function to extract data from the working directory
@@ -88,7 +95,9 @@ module.exports = {
 
   // log function that logs only when verbose mode is on
   logVerbose: (src, msg) => {
-    console.log(`[${src}]\t : ${msg}`);
+    if(argv.v && process.env.NODE_ENV !== 'test') {
+      console.log(`[${src}]\t : ${msg}`);
+    }
   },
 
   // wrapper: print only when not in test mode
@@ -98,7 +107,7 @@ module.exports = {
     }
   },
 
-  /*
+  /**
   * @returns : { string } : Datetime format (e.g. 20181001T154832 )
   */
   getDateTimeString: () => {
@@ -159,7 +168,10 @@ module.exports = {
     return cleanedParams;
   },
 
-  /* prepareDirectories : Called by app.js */
+  /** 
+   * prepareDirectories: Prepare the directories required
+   * @param: { String } dataPath : Full path to file
+   */
   prepareDirectories: (dataPath) => {
     if (!fs.existsSync(dataPath)) {
       fs.mkdirSync(dataPath);
