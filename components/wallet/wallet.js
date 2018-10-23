@@ -153,7 +153,6 @@ module.exports = {
     if (!zilliqa.util.isAddress(address)) {
       throw new Error('Address size not appropriate');
     }
-
     if (!wallets[address] || !module.exports.sufficientFunds(address, amount)) {
       throw new Error('Insufficient Funds');
     }
@@ -171,6 +170,12 @@ module.exports = {
     );
   },
 
+  /** 
+   * Add funds to an account address
+   * @param: { string } address - Address of recipient
+   * @param: { Number } amount - amount of zils to transfer
+   * Does not return any value
+   */
   addFunds: (address, amount) => {
     logVerbose(logLabel, `Adding ${amount} to ${address}`);
     if (!zilliqa.util.isAddress(address)) {
@@ -191,7 +196,8 @@ module.exports = {
     const bnAmount = new BN(amount);
     const resultBalance = bnCurrentBalance.add(bnAmount);
 
-    wallets[address].amount = resultBalance.toString();
+    // FIXME: Change wallet address amount to BN objects
+    wallets[address].amount = resultBalance.toNumber();
     logVerbose(logLabel, 
       `Adding funds complete. Recipient's new Balance: ${
         wallets[address].amount

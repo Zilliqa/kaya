@@ -89,7 +89,8 @@ describe('Testing (Alice ----100-----> Bob)', () => {
 
     // Check Alice account
     test('Alice should have correct funds deducted from her account', async (done) => {
-        const expected_bal = originalAmt - config.testconfigs.transferAmt - config.testconfigs.gasLimit;
+        const transferFee = config.blockchain.gasPrice * config.blockchain.transferGasCost;
+        const expected_bal = originalAmt - config.testconfigs.transferAmt - transferFee;
        
         request(app.expressjs).post('/')
         .send(makeQuery("GetBalance", alice))
@@ -158,7 +159,7 @@ describe('Testing (Charlie ----100-----> Ranon)', () => {
             expect(response.body.result).toHaveProperty('amount');
             expect(response.body.result).toHaveProperty('senderPubKey');
             expect(response.body.result).toHaveProperty('nonce');
-            expect(response.body.result).toHaveProperty('signature');
+            expect(response.body.result).toHaveProperty('signature');  
             expect(response.body.result).toHaveProperty('toAddr');
             expect(response.body.result).toHaveProperty('version');
             done();
@@ -169,7 +170,8 @@ describe('Testing (Charlie ----100-----> Ranon)', () => {
 
     // Check Alice account
     test('Charlie should have correct funds deducted from his account', async (done) => {
-        const expected_bal = originalAmt - config.testconfigs.transferAmt - config.testconfigs.gasLimit;
+        const transferFee = config.blockchain.gasPrice * config.blockchain.transferGasCost;
+        const expected_bal = originalAmt - config.testconfigs.transferAmt - transferFee;
        
         request(app.expressjs).post('/')
         .send(makeQuery("GetBalance", charlie))

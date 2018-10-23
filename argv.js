@@ -30,6 +30,7 @@ module.exports = exports = function(yargs) {
             group: 'Other',
             alias: 'fixtures',
             type: 'string',
+            default: null,
             describe: 'Path to JSON file which contains the private keys to predefined set of wallets'
         })
         .option('n', {
@@ -43,12 +44,14 @@ module.exports = exports = function(yargs) {
             group: 'Other',
             alias: 'load',
             type: 'string',
+            default: null,
             describe: 'Load data files from a path'
         })
         .option('s', {
             group: 'Other',
             alias: 'save',
             type: 'boolean',
+            default: null,
             describe: 'Saves data by the end of the session'
         })
         .option('v', {
@@ -58,7 +61,7 @@ module.exports = exports = function(yargs) {
             default: false,
             describe: 'Log messages to console to stdout'
         })
-        .showHelpOnFail(false, 'uh-oh, something went wrong! run with -?')
+        .showHelpOnFail(false, 'Specify -? or --help for available options')
         .help('help')
         .alias('help', '?')
         .version(config.version)

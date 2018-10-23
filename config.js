@@ -30,6 +30,7 @@ module.exports = {
     blockInterval: 10000, // 10000 : 10 seconds for one block
     blockStart: 0,
     gasPrice: 1, // ratio of gas to zil (dummy value of 1:1)
+    transferGasCost: 1 // Amount of gas consumed for each transfer
   },
 
   wallet: {

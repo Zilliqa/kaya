@@ -153,12 +153,14 @@ module.exports = {
       );
     }
 
+    const transferTransactionCost = config.blockchain.transferGasCost * config.blockchain.gasPrice;
+
     if (payload.nonce !== userNonce + 1) {
       // payload.nonce is not valid. Deduct gas anyway
       // FIXME: Waiting for scilla interpreter to return a structured output
       // about out of gas errors
       // https://github.com/Zilliqa/scilla/issues/214
-      walletCtrl.deductFunds(senderAddress, payload.gasLimit);
+      walletCtrl.deductFunds(senderAddress, transferTransactionCost);
       logVerbose(logLabel, 'Invalid Nonce');
       throw new Error('Invalid Tx Json');
     }
@@ -167,8 +169,8 @@ module.exports = {
        // p2p token transfer
       logVerbose(logLabel, 'p2p token tranfer');
       const bnAmount = new BN(payload.amount); 
-      const bnGasLimit = new BN(payload.gasLimit);
-      const totalSum = bnAmount.add(bnGasLimit).toNumber();
+      const bnTxFee = new BN(transferTransactionCost);
+      const totalSum = bnAmount.add(bnTxFee).toNumber();
       walletCtrl.deductFunds(senderAddress, totalSum);
       walletCtrl.increaseNonce(senderAddress);
       walletCtrl.addFunds(payload.to, payload.amount);
