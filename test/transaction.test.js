@@ -7,7 +7,7 @@ const app = require('../app');
 const config = require('../config');
 require('isomorphic-fetch');
 
-const makeQuery = (method, params) => { 
+const makeQuery = (method, params) => {
     return {
         "id": "1",
         "jsonrpc": "2.0",
@@ -101,7 +101,7 @@ describe('Testing (Alice ----100-----> Bob)', () => {
     test('Alice should have correct funds deducted from her account', async (done) => {
         const transferFee = config.blockchain.gasPrice * config.blockchain.transferGasCost;
         const expected_bal = originalAmt - config.testconfigs.transferAmt - transferFee;
-       
+
         request(app.expressjs).post('/')
         .send(makeQuery("GetBalance", alice))
         .then((response) => {
@@ -114,7 +114,7 @@ describe('Testing (Alice ----100-----> Bob)', () => {
     // Check Bob account
     test('Bob should have the correct funds added to his account', async (done) => {
         const expected_bal = originalAmt + config.testconfigs.transferAmt;
-       
+
         request(app.expressjs).post('/')
         .send(makeQuery("GetBalance", bob))
         .then((response) => {
@@ -126,12 +126,12 @@ describe('Testing (Alice ----100-----> Bob)', () => {
 
 });
 
-/* 
-    Test - Charlie sends zils to some random dude, Ranon, 
+/*
+    Test - Charlie sends zils to some random dude, Ranon,
     who was not created through the server
 */
 describe('Testing (Charlie ----100-----> Ranon)', () => {
-    const ranon_addr = '7A8AC37E0BFD6D67E8908569814D724AC1C90DAE'; 
+    const ranon_addr = '7A8AC37E0BFD6D67E8908569814D724AC1C90DAE';
 
     test('Charlie should have some balance', async (done) => {
         request(app.expressjs).post('/')
@@ -144,7 +144,7 @@ describe('Testing (Charlie ----100-----> Ranon)', () => {
     });
 
     // call is successful if a txn hash is returned
-   
+
     test('Transaction should return a txn hash', async (done) => {
         let pk_charlie = accounts[charlie]['privateKey'];
         let txnDetails = makeTxnDetailsP2P(ranon_addr, config.testconfigs.transferAmt, 1);
@@ -169,20 +169,18 @@ describe('Testing (Charlie ----100-----> Ranon)', () => {
             expect(response.body.result).toHaveProperty('amount');
             expect(response.body.result).toHaveProperty('senderPubKey');
             expect(response.body.result).toHaveProperty('nonce');
-            expect(response.body.result).toHaveProperty('signature');  
+            expect(response.body.result).toHaveProperty('signature');
             expect(response.body.result).toHaveProperty('toAddr');
             expect(response.body.result).toHaveProperty('version');
             done();
         });
     });
 
-
-
     // Check Alice account
     test('Charlie should have correct funds deducted from his account', async (done) => {
         const transferFee = config.blockchain.gasPrice * config.blockchain.transferGasCost;
         const expected_bal = originalAmt - config.testconfigs.transferAmt - transferFee;
-       
+
         request(app.expressjs).post('/')
         .send(makeQuery("GetBalance", charlie))
         .then((response) => {
@@ -195,7 +193,7 @@ describe('Testing (Charlie ----100-----> Ranon)', () => {
     // Check Ranon account
     test('Ranon should have account initialized and amount transferred', async (done) => {
         const expected_bal = config.testconfigs.transferAmt;
-       
+
         request(app.expressjs).post('/')
         .send(makeQuery("GetBalance", ranon_addr))
         .then((response) => {
@@ -205,4 +203,15 @@ describe('Testing (Charlie ----100-----> Ranon)', () => {
         });
     });
 
+    test('Ranon should have account initialized and amount transferred (Small Case)', async (done) => {
+        const expected_bal = config.testconfigs.transferAmt;
+
+        request(app.expressjs).post('/')
+        .send(makeQuery("GetBalance", ranon_addr.toLowerCase()))
+        .then((response) => {
+            expect(response.statusCode).toBe(200);
+            expect(response.body).toEqual({"id": "1", "jsonrpc": "2.0", "result": {"balance": expected_bal, "nonce": config.wallet.defaultNonce}});
+            done();
+        });
+    });
 });
