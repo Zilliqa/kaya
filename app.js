@@ -25,13 +25,22 @@ const expressjs = express();
 const config = require('./config');
 const logic = require('./logic');
 const wallet = require('./components/wallet/wallet');
-const { prepareDirectories, logVerbose, consolePrint, 
-  getDateTimeString, getDataFromDir, loadData, loadDataToDir } = require('./utilities');
-const init = require('./argv');
-const logLabel = 'App.js';
+const utils = require('./utilities');
+const initArgv = require('./argv');
 
 expressjs.use(bodyParser.json({ extended: false }));
-const argv = init(yargs).argv;
+let argv;
+if (process.env.NODE_ENV !== 'test') {
+  argv = initArgv(yargs).argv;
+} else {
+  console.log('-------- TEST MODE -------------');
+  argv = config.testconfigs.args;
+}
+
+// utils.initArgs(argv); // init options in utils
+
+
+const logLabel = 'App.js';
 
 const makeResponse = (id, jsonrpc, data, isErr) => {
   const responseObj = { id, jsonrpc };
@@ -59,25 +68,25 @@ let options = {
   load: argv.l
 }
 
-consolePrint(`Running from ${options.remote ? 'remote' : 'local'} interpreter`)
-if (options.remote) { consolePrint(config.scilla.url) };
-consolePrint('='.repeat(80));
+utils.consolePrint(`Running from ${options.remote ? 'remote' : 'local'} interpreter`)
+if (options.remote) { utils.consolePrint(config.scilla.url) };
+utils.consolePrint('='.repeat(80));
 
-prepareDirectories(options.dataPath); // prepare the directories required
+utils.prepareDirectories(options.dataPath); // prepare the directories required
 
 if (options.save) {
-  logVerbose(logLabel, 'Save enabled. Data files from this session will be saved');
+  utils.logVerbose(logLabel, 'Save enabled. Data files from this session will be saved');
 }
 
 if (options.load) {
   // loading option specified
-  logVerbose(logLabel, 'Loading option specified. Loading files now...');
+  utils.logVerbose(logLabel, 'Loading option specified. Loading files now...');
   // loads file into dbPath from the given bootstrap file
-  const importedData = loadData(options.load);
+  const importedData = utils.loadData(options.load);
   wallet.loadAccounts(importedData.accounts);
-  logic.loadData(importedData.transactions, importedData.createdContractsByUsers);
-  loadDataToDir(options.dataPath, importedData);
-  logVerbose(logLabel, 'Load completed');
+  logic.utils.loadData(importedData.transactions, importedData.createdContractsByUsers);
+  utils.loadDataToDir(options.dataPath, importedData);
+  utils.logVerbose(logLabel, 'Load completed');
 }
 
 if (process.env.NODE_ENV === 'test') {
@@ -90,7 +99,7 @@ if (process.env.NODE_ENV === 'test') {
 */
 if(!options.load) { 
   if (options.fixtures) {
-    logVerbose(logLabel, `Bootstrapping from account fixture files: ${options.fixtures}`);
+    utils.logVerbose(logLabel, `Bootstrapping from account fixture files: ${options.fixtures}`);
     const accountsPath = options.fixtures;
     if (!fs.existsSync(accountsPath)) {
       throw new Error('Account Path Invalid');
@@ -109,7 +118,7 @@ wallet.printWallet();
 // cross region settings with Env
 if (process.env.NODE_ENV === 'dev') {
   expressjs.use(cors());
-  logVerbose(logLabel, 'CORS Enabled');
+  utils.logVerbose(logLabel, 'CORS Enabled');
 }
 
 expressjs.get('/', (req, res) => {
@@ -123,15 +132,14 @@ const handler = async (req, res) => {
   let data = {};
   let result;
   let addr;
-  logVerbose(logLabel, `Method specified ${body.method}`);
+  utils.logVerbose(logLabel, `Method specified ${body.method}`);
   switch (body.method) {
     case 'GetBalance':
-      // [addr, ... ] = body.params;
       addr = body.params[0];
       if (typeof addr === 'object') {
         addr = JSON.stringify(addr);
       }
-      logVerbose(logLabel, `Getting balance for ${addr}`);
+      utils.logVerbose(logLabel, `Getting balance for ${addr}`);
 
       try {
         data = wallet.getBalance(addr);
@@ -227,7 +235,7 @@ const handler = async (req, res) => {
       data = { Error: 'Unsupported Method' };
       res.status(404).send(data);
   }
-  logVerbose(logLabel, 'Sending response back to client');
+  utils.logVerbose(logLabel, 'Sending response back to client');
 };
 
 expressjs.post('/', wrapAsync(handler));
@@ -235,7 +243,7 @@ expressjs.post('/', wrapAsync(handler));
 // Function below handles the end of the session due to SIGINT. It will save
 // data files if the `-s` flag is toggled and will remove all files from the data directory
 process.on('SIGINT', function () {
-  consolePrint("Gracefully shutting down from SIGINT (Ctrl-C)");
+  utils.consolePrint("Gracefully shutting down from SIGINT (Ctrl-C)");
 
   // If `save` is enabled, store files under the saved/ directory
   if (options.save) {
@@ -247,29 +255,29 @@ process.on('SIGINT', function () {
     }
 
     // Saved files will be prefixed with the timestamp when the user decides to end the session
-    const timestamp = getDateTimeString();
+    const timestamp = utils.getDateTimeString();
     
     const outputData = `${dir}${timestamp}`;
     const targetFilePath = `${outputData}_data.json`;
-    consolePrint(`Files will be saved at ${targetFilePath}`);
+    utils.consolePrint(`Files will be saved at ${targetFilePath}`);
 
     // Prepares Data to be exported
-    consolePrint('Extracting data...');
+    utils.consolePrint('Extracting data...');
     const data = logic.exportData();
     data.accounts = wallet.getAccounts();
-    consolePrint(`[1/5] Transactions and account data extracted`);
-    data.states = getDataFromDir(options.dataPath, 'state.json');
-    consolePrint(`[2/5] Contract state data extracted`);
-    data.init = getDataFromDir(options.dataPath, 'init.json');
-    consolePrint(`[3/5] Contract init data extracted`);
-    data.codes = getDataFromDir(options.dataPath, 'code.scilla');
-    consolePrint(`[4/5] Contract code data extracted`);
+    utils.consolePrint(`[1/5] Transactions and account data extracted`);
+    data.states = utils.getDataFromDir(options.dataPath, 'state.json');
+    utils.consolePrint(`[2/5] Contract state data extracted`);
+    data.init = utils.getDataFromDir(options.dataPath, 'init.json');
+    utils.consolePrint(`[3/5] Contract init data extracted`);
+    data.codes = utils.getDataFromDir(options.dataPath, 'code.scilla');
+    utils.consolePrint(`[4/5] Contract code data extracted`);
 
     // Writing to the final exported data file in JSON format
     fs.writeFileSync(targetFilePath, JSON.stringify(data));
-    consolePrint(`[5/5] Data file written to ${targetFilePath}`);
+    utils.consolePrint(`[5/5] Data file written to ${targetFilePath}`);
 
-    consolePrint(`Save successful`)
+    utils.consolePrint(`Save successful`)
   }
 
   // remove files from the db_path

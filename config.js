@@ -30,6 +30,7 @@ module.exports = {
     blockInterval: 10000, // 10000 : 10 seconds for one block
     blockStart: 0,
     gasPrice: 1, // ratio of gas to zil (dummy value of 1:1)
+    transferGasCost: 1 // Amount of gas consumed for each transfer
   },
 
   wallet: {
@@ -55,5 +56,24 @@ Settings for the scilla interpreter
     gasPrice: 1,
     gasLimit: 10,
     transferAmt: 100,
+    args: {
+      r: true,
+      remote: true,
+      s: null,
+      save: null,
+      v: true,
+      verbose: true,
+      version: false,
+      f: 'test/account-fixtures.json',
+      fixtures: 'test/account-fixtures.json',
+      p: 4200,
+      port: 4200,
+      d: 'data/',
+      data: 'data/',
+      n: 10,
+      numAccounts: 10,
+      l: null,
+      load: null,
+      '$0': 'server.js' }
   },
 };

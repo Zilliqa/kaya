@@ -1,11 +1,15 @@
 language: node_js
 sudo: true
-node_js: 
-  - "stable"
+dist: trusty
+node_js:
+  - 10
 install:
   - npm install
 script:
   - npm run test
+branches:
+  only:
+  - /.*/
 cache:
   directories:
     - $HOME/.npm

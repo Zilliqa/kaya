@@ -18,9 +18,10 @@
 /* Wallet Component */
 const assert = require('assert');
 const { Zilliqa } = require('zilliqa-js');
+const BN = require('bn.js');
 const { logVerbose, consolePrint } = require('../../utilities');
 const config = require('../../config');
-const logLabel = 'Wallet'
+const logLabel = 'Wallet';
 
 // @dev: As this is a kaya, private keys will be stored
 // note: Real systems do not store private key
@@ -139,7 +140,15 @@ module.exports = {
     return true;
   },
 
+  /** 
+   * Deduct funds from an account
+   * @param: {string}: Address of an account
+   * @param: {Number} amount: amount to be deducted
+   * Does not return any value
+   */
+
   deductFunds: (address, amount) => {
+
     logVerbose(logLabel, `Deducting ${amount} from ${address}`);
     if (!zilliqa.util.isAddress(address)) {
       throw new Error('Address size not appropriate');
@@ -161,6 +170,12 @@ module.exports = {
     );
   },
 
+  /** 
+   * Add funds to an account address
+   * @param: { string } address - Address of recipient
+   * @param: { Number } amount - amount of zils to transfer
+   * Does not return any value
+   */
   addFunds: (address, amount) => {
     logVerbose(logLabel, `Adding ${amount} to ${address}`);
     if (!zilliqa.util.isAddress(address)) {
@@ -177,8 +192,12 @@ module.exports = {
     logVerbose(logLabel, `Recipient's previous Balance: ${currentBalance}`);
 
     // add amount
-    currentBalance += amount;
-    wallets[address].amount = currentBalance;
+    const bnCurrentBalance = new BN(currentBalance);
+    const bnAmount = new BN(amount);
+    const resultBalance = bnCurrentBalance.add(bnAmount);
+
+    // FIXME: Change wallet address amount to BN objects
+    wallets[address].amount = resultBalance.toNumber();
     logVerbose(logLabel, 
       `Adding funds complete. Recipient's new Balance: ${
         wallets[address].amount
@@ -200,11 +219,12 @@ module.exports = {
     }
   },
 
-  getBalance: (address) => {
-    if (!zilliqa.util.isAddress(address)) {
+  getBalance: (value) => {
+    if (!zilliqa.util.isAddress(value)) {
       throw new Error('Address size not appropriate');
     }
-    logVerbose(logLabel, `Getting balance for ${address}`);
+    logVerbose(logLabel, `Getting balance for ${value}`);
+    address = value.toLowerCase();
 
     if (!wallets[address]) {
       return {

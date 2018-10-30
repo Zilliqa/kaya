@@ -18,6 +18,7 @@
 // logic.js : Logic Script
 const hashjs = require('hash.js');
 const fs = require('fs');
+const BN = require('bn.js');
 const { Zilliqa } = require('zilliqa-js');
 const scillaCtrl = require('./components/scilla/scilla');
 const walletCtrl = require('./components/wallet/wallet');
@@ -71,6 +72,7 @@ const intersect = (a, b) => [...new Set(a)].filter(x => new Set(b).has(x));
 const checkTransactionJson = (data) => {
   if (data !== null && typeof data !== 'object') return false;
   const payload = data[0];
+
   const expectedFields = [
     'version',
     'nonce',
@@ -88,6 +90,14 @@ const checkTransactionJson = (data) => {
   const payloadKeys = Object.keys(payload);
   const expected = intersect(payloadKeys, expectedFields).length;
   const actual = Object.keys(expectedFields).length;
+
+  // `amount` must be a string after zilliqa-js 0.2.0
+  // FIXME: Enable checks after release of zilliqa-js 0.2.0
+  // if(typeof(payload['amount']) === 'number') {
+  //   console.log(`[DEPRECATION NOTICE] Please upgrade your zilliqa-js`);
+  //   return false;
+  // }
+
   // number of overlap keys must be the same as the expected keys
   if (expected !== actual) return false;
   // validate signature - TODO
@@ -97,23 +107,23 @@ const checkTransactionJson = (data) => {
 
 module.exports = {
 
-  exportData : () => {
+  exportData: () => {
     const data = {};
     data.transactions = transactions;
     data.createdContractsByUsers = createdContractsByUsers;
     return data;
   },
 
-  loadData : (txns, contractsByUsers) => {
+  loadData: (txns, contractsByUsers) => {
     transactions = txns;
     createdContractsByUsers = contractsByUsers;
     logVerbose(logLabel, `Transactions and contract data loaded.`);
   },
 
-  /*
+  /**
   * Function that handles the create transaction requests
-  * @params : data { Object } : Message object passed from client through server.js
-  * @params: options { Object } : List of options passed from server.js
+  * @param : data { Object } : Message object passed from client through server.js
+  * @param: options { Object } : List of options passed from server.js
   * @returns: txnId { String } : Transaction hash
   * Throws in the event of error. Caller should catch or delegate these errors
   */
@@ -146,85 +156,86 @@ module.exports = {
       );
     }
 
-    // check if the payload.nonce is valid
-    if (payload.nonce === userNonce + 1) {
-      // p2p token transfer
-      if (!payload.code && !payload.data) {
-        logVerbose(logLabel, 'p2p token tranfer');
-        walletCtrl.deductFunds(
-          senderAddress,
-          payload.amount + payload.gasLimit,
-        );
-        walletCtrl.increaseNonce(senderAddress);
-        walletCtrl.addFunds(payload.to, payload.amount);
-      } else {
-        /* contract generation */
-        logVerbose(logLabel, 'Task: Contract Deployment / Create Transaction');
-        // take the sha256 hash of address+nonce, then extract the rightmost 20 bytes
-        const contractAddr = computeContractAddr(senderAddress);
+    const transferTransactionCost = config.blockchain.transferGasCost * config.blockchain.gasPrice;
 
-        if (checkOverflow(payload.gasLimit, payload.gasPrice)) {
-          throw new Error('Overflow detected: Invalid gas limit or gas price');
-        }
-        const gasLimitToZil = payload.gasLimit * payload.gasPrice;
-        const gasAndAmount = payload.amount + gasLimitToZil;
-
-        if (!walletCtrl.sufficientFunds(senderAddress, gasAndAmount)) {
-          logVerbose(logLabel, 'Insufficient funds. Returning error to client.');
-          throw new Error('Insufficient funds');
-        }
-        logVerbose(logLabel, `Contract will be deployed at: ${contractAddr}`);
-
-        const responseData = await scillaCtrl.executeScillaRun(
-          payload,
-          contractAddr,
-          dir,
-          currentBNum,
-          payload.gasLimit,
-        );
-        // Deduct funds
-        const nextAddr = responseData.nextAddress;
-        const gasConsumed = payload.gasLimit - responseData.gasRemaining;
-        if (checkOverflow(gasConsumed, payload.gasPrice)) {
-          throw new Error('Overflow detected: Invalid gas limit or gas price');
-        }
-        const gasConsumedInZil = gasConsumed * payload.gasPrice;
-
-        walletCtrl.deductFunds(
-          senderAddress,
-          payload.amount + gasConsumedInZil,
-        );
-        walletCtrl.increaseNonce(senderAddress); // only increase if a contract is successful
-
-        // FIXME: Support multicontract calls
-        if (nextAddr !== '0'.repeat(40) && nextAddr.substring(2) !== senderAddress) {
-          console.log('Multi-contract calls not supported.');
-          throw new Error('Multi-contract calls are not supported yet.');
-        }
-
-        // Only update if it is a deployment call
-        if (payload.code && payload.to === '0'.repeat(40)) {
-          // Update address_to_contracts
-          if (senderAddress in createdContractsByUsers) {
-            logVerbose(logLabel, 'User has contracts. Appending to list');
-            createdContractsByUsers[senderAddress].push(contractAddr);
-          } else {
-            logVerbose(logLabel, 'No existing contracts. Creating new entry.');
-            createdContractsByUsers[senderAddress] = [contractAddr];
-          }
-          logVerbose(logLabel, `Addr-to-Contracts: ${createdContractsByUsers}`);
-        }
-      }
-    } else {
+    if (payload.nonce !== userNonce + 1) {
       // payload.nonce is not valid. Deduct gas anyway
       // FIXME: Waiting for scilla interpreter to return a structured output
       // about out of gas errors
       // https://github.com/Zilliqa/scilla/issues/214
-
-      walletCtrl.deductFunds(senderAddress, payload.gasLimit);
+      walletCtrl.deductFunds(senderAddress, transferTransactionCost);
       logVerbose(logLabel, 'Invalid Nonce');
       throw new Error('Invalid Tx Json');
     }
+
+    if (!payload.code && !payload.data) {
+       // p2p token transfer
+      logVerbose(logLabel, 'p2p token tranfer');
+      const bnAmount = new BN(payload.amount); 
+      const bnTxFee = new BN(transferTransactionCost);
+      const totalSum = bnAmount.add(bnTxFee).toNumber();
+      walletCtrl.deductFunds(senderAddress, totalSum);
+      walletCtrl.increaseNonce(senderAddress);
+      walletCtrl.addFunds(payload.to.toLowerCase(), payload.amount);
+    } else {
+      /* contract generation */
+      logVerbose(logLabel, 'Task: Contract Deployment / Create Transaction');
+      // take the sha256 hash of address+nonce, then extract the rightmost 20 bytes
+      const contractAddr = computeContractAddr(senderAddress);
+
+      if (checkOverflow(payload.gasLimit, payload.gasPrice)) {
+        throw new Error('Overflow detected: Invalid gas limit or gas price');
+      }
+      const gasLimitToZil = payload.gasLimit * payload.gasPrice;
+      const gasAndAmount = payload.amount + gasLimitToZil;
+
+      if (!walletCtrl.sufficientFunds(senderAddress, gasAndAmount)) {
+        logVerbose(logLabel, 'Insufficient funds. Returning error to client.');
+        throw new Error('Insufficient funds');
+      }
+      logVerbose(logLabel, `Contract will be deployed at: ${contractAddr}`);
+
+      const responseData = await scillaCtrl.executeScillaRun(
+        payload,
+        contractAddr,
+        dir,
+        currentBNum,
+        payload.gasLimit,
+      );
+      // Deduct funds
+      const nextAddr = responseData.nextAddress;
+      const gasConsumed = payload.gasLimit - responseData.gasRemaining;
+      if (checkOverflow(gasConsumed, payload.gasPrice)) {
+        throw new Error('Overflow detected: Invalid gas limit or gas price');
+      }
+      const gasConsumedInZil = gasConsumed * payload.gasPrice;
+
+      walletCtrl.deductFunds(
+        senderAddress,
+        payload.amount + gasConsumedInZil,
+      );
+      walletCtrl.increaseNonce(senderAddress); // only increase if a contract is successful
+
+      // FIXME: Support multicontract calls
+      if (nextAddr !== '0'.repeat(40) && nextAddr.substring(2) !== senderAddress) {
+        console.log('Multi-contract calls not supported.');
+        throw new Error('Multi-contract calls are not supported yet.');
+      }
+
+      // Only update if it is a deployment call
+      if (payload.code && payload.to === '0'.repeat(40)) {
+        // Update address_to_contracts
+        if (senderAddress in createdContractsByUsers) {
+          logVerbose(logLabel, 'User has contracts. Appending to list');
+          createdContractsByUsers[senderAddress].push(contractAddr);
+        } else {
+          logVerbose(logLabel, 'No existing contracts. Creating new entry.');
+          createdContractsByUsers[senderAddress] = [contractAddr];
+        }
+        logVerbose(logLabel, `Addr-to-Contracts: ${createdContractsByUsers}`);
+      }
+    }
+
 
     /*  Update Transactions */
     const txnId = computeTransactionHash(payload);

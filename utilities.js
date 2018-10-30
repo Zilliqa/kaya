@@ -17,19 +17,29 @@
 
 const fs = require('fs');
 const moment = require('moment');
-const yargs = require('yargs');
-const init = require('./argv');
 const glob = require('glob');
-const argv = init(yargs).argv;
+const yargs = require('yargs');
+const initArgv = require('./argv');
+const config = require('./config');
+
+
+// Configure the argument flags based on test environment
+let argv;
+if (process.env.NODE_ENV !== 'test') {
+  argv = initArgv(yargs).argv;
+} else {
+  argv = config.testconfigs.args;
+}
+
 const logLabel = 'Utilities';
 
 module.exports = {
 
-  /*
+  /**
   * Utility function to extract data from the working directory
   * according to file extension (called from app.js)
-  * @params: { String } dataPath - Path to the working directory
-  * @params : { String } fileExtension - One of the following:
+  * @param: { String } dataPath - Path to the working directory
+  * @param : { String } fileExtension - One of the following:
   *           { code.scilla, state.json, init.json}
   * @returns : { Object } - Data object for the specified file extension
   */
@@ -44,8 +54,9 @@ module.exports = {
     return result;
   },
 
-  /*
+  /**
   * Called when the user chooses to load from an existing file 
+  * @param: { string } filepath to directory
   */
   loadData: (filePath) => {
     // FIXME : Validate the file
@@ -84,7 +95,7 @@ module.exports = {
 
   // log function that logs only when verbose mode is on
   logVerbose: (src, msg) => {
-    if (argv.v) {
+    if(argv.v && process.env.NODE_ENV !== 'test') {
       console.log(`[${src}]\t : ${msg}`);
     }
   },
@@ -96,14 +107,14 @@ module.exports = {
     }
   },
 
-  /*
+  /**
   * @returns : { string } : Datetime format (e.g. 20181001T154832 )
   */
   getDateTimeString: () => {
     return moment().format('YYYYMMDD_hhmmss');
   },
 
-  /*
+  /**
   * Given a piece of scilla code, removes comments
   * @param : { string } : scilla code
   * @returns : { string } : scilla code without comments
@@ -157,7 +168,10 @@ module.exports = {
     return cleanedParams;
   },
 
-  /* prepareDirectories : Called by app.js */
+  /** 
+   * prepareDirectories: Prepare the directories required
+   * @param: { String } dataPath : Full path to file
+   */
   prepareDirectories: (dataPath) => {
     if (!fs.existsSync(dataPath)) {
       fs.mkdirSync(dataPath);

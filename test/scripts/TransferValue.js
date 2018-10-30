@@ -25,52 +25,96 @@ const url = 'http://localhost:4200';
 const zilliqa = new Zilliqa({
   nodeUrl: url
 });
+const node = zilliqa.getNode();
+
+const getNonceAsync = addr => {
+  return new Promise((resolve, reject) => {
+    zilliqa.node.getBalance({ address: addr }, (err, data) => {
+      if (err || data.error) {
+        reject(err);
+      } else {
+        resolve(data.result.nonce);
+      }
+    });
+  });
+};
 
 /*
   usage: node TransferToken.js --from [private_key] --to [wallet_address]
 */
 if (argv.help) {
-  console.log(`Usage: node TransferValue --from [private_key] --to
-  [address] --amt [0] --nonce [0]`);
+  console.log(`Usage: node TransferValue --key [private_key] --to
+  [address] --amt [0]`);
   process.exit(0);
 }
 
+let privateKey, recipientAddress, amount;
+if (argv.test) {
+  // Use test values
+  privateKey = 'db11cfa086b92497c8ed5a4cc6edb3a5bfe3a640c43ffb9fc6aa0873c56f2ee3';
+  recipientAddress = 'd90f2e538ce0df89c8273cad3b63ec44a3c4ed82';
+  amount = 100;
+} else {
 
-// User supplies the private key through `--key`
-if (!argv.from) {
-  console.log('Private key must be given');
-  process.exit(1);
+  // User supplies the private key through `--key`
+  if (!argv.key) {
+    console.log('Private key must be given');
+    process.exit(1);
+  }
+
+  if (!argv.to) {
+    console.log('Recipient wallet address required');
+    process.exit(1);
+  }
+
+  if (argv.amt && !Number.isNaN(argv.amt)) {
+    if (argv.amt < 0) {
+      console.log('Amount cannot be negative');
+      process.exit(1);
+    }
+    amount = Number(argv.amt);
+  } else {
+    console.log('Invalid amount');
+    process.exit(1);
+  }
+
+  recipientAddress = argv.to;
+  privateKey = argv.key;
 }
-
-if (!argv.to) {
-  console.log('Recipient wallet address required');
-  process.exit(0);
-}
-
-const recipientAddress = argv.to;
-const privateKey = argv.from;
 const senderAddress = zilliqa.util.getAddressFromPrivateKey(privateKey);
-let currNonce = 0;
-let amount = 100;
 
-if (argv.amt && !Number.isNaN(argv.amt)) {
-  if (argv.amt < 0) {
-    console.log('Amount cannot be negative');
-    process.exit(1);
-  }
-  amount = Number(argv.amt);
-}
-if (argv.nonce && !Number.isNaN(argv.nonce)) {
-  if (argv.nonce < 0) {
-    console.log('Nonce cannot be negative');
-    process.exit(1);
-  }
-  currNonce = Number(argv.nonce);
-}
+getNonceAsync(senderAddress)
+  .then(nonceVal => {
+    console.log('Zilliqa Testing Script');
+    console.log(`Connected to ${url}`);
 
-const node = zilliqa.getNode();
-console.log(`From:  ${senderAddress}`);
-console.log(`Recipient: ${recipientAddress}`);
+    let currNonce = nonceVal + 1;
+    console.log(`From:  ${senderAddress}`);
+    console.log(`Recipient: ${recipientAddress}`);
+
+    // transaction details - update the nonce yourself.
+    const txnDetails = {
+      version: 0,
+      nonce: currNonce,
+      to: recipientAddress,
+      amount: new BN(amount),
+      gasPrice: 1,
+      gasLimit: 10
+    };
+
+    // sign the transaction using util methods
+    const txn = zilliqa.util.createTransactionJson(privateKey, txnDetails);
+    console.log(txn);
+
+    // send the transaction to the node
+    node.createTransaction(txn, callback);
+
+
+
+  })
+
+
+
 
 function callback(err, data) {
   if (err || data.error) {
@@ -80,25 +124,6 @@ function callback(err, data) {
   }
 }
 
-/*
-        MAIN LOGIC
-*/
-console.log('Zilliqa Testing Script');
-console.log(`Connected to ${url}`);
 
-// transaction details - update the nonce yourself.
-const txnDetails = {
-  version: 0,
-  nonce: currNonce,
-  to: argv.to,
-  amount: new BN(amount),
-  gasPrice: 1,
-  gasLimit: 10,
-};
 
-// sign the transaction using util methods
-const txn = zilliqa.util.createTransactionJson(privateKey, txnDetails);
-console.log(txn);
 
-// send the transaction to the node
-node.createTransaction(txn, callback);
