@@ -1,0 +1,7 @@
+.npmignore
+.vscode
+.travis.yml
+.eslintrc.js
+*.log
+data
+ROADMAP

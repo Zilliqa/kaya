@@ -32,7 +32,13 @@ In addition, the following features are not supported yet:
 
 ## Getting Started
 ### Installation
-Install the node packages and dependencies: `npm install`
+
+Kaya RPC server is distributed as a Node package via `npm`. Ensure that you have [Node.js](https://nodejs.org/en/) (>= 10.13.0).
+
+```
+npm install -g kaya-cli
+```
+
 
 Scilla files must be processed using the `scilla-interpreter`. The [Scilla interpreter](https://scilla.readthedocs.io/en/latest/interface.html) executable provides a calling interface that enables users to invoke transitions with specified inputs and obtain outputs. 
 
@@ -53,7 +59,7 @@ Instructions:
 
 #### Command Line
 ```
-$ node server.js
+$ kaya-cli <options>
 ```
 Options:
 * `-d` or `--data`: Relative path where state data will be stored. Creates directory if path does not exists
