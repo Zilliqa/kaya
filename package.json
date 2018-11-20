@@ -1,5 +1,5 @@
 {
-  "name": "kaya",
+  "name": "kaya-cli",
   "version": "0.2.0",
   "description": "Zilliqa's RPC Server",
   "main": "server.js",
@@ -18,7 +18,7 @@
     "url": "https://github.com/Zilliqa/kaya"
   },
   "bin": {
-    "kaya": "./server.js"
+    "kaya-cli": "./server.js"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",

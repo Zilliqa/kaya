@@ -61,7 +61,7 @@ module.exports = exports = function(yargs) {
             default: false,
             describe: 'Log messages to console to stdout'
         })
-        .showHelpOnFail(false, 'Specify -? or --help for available options')
+        .showHelpOnFail(false, 'Specify --help for available options')
         .help('help')
         .alias('help', '?')
         .version(config.version)
