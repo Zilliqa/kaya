@@ -48,7 +48,7 @@ Settings for the scilla interpreter
   scilla: {
     runnerPath: "./components/scilla/scilla-runner",
     localLibDir: "./components/scilla/stdlib",
-    remote: true,
+    remote: false,
     url: "https://scilla-runner.zilliqa.com/contract/call",
   },
 

@@ -122,8 +122,8 @@ module.exports = {
     const blockchainPath = `${dir}/blockchain.json`;
     makeBlockchainJson(currentBnum, blockchainPath);
 
-    let isCodeDeployment = payload.code && payload.to === "0".repeat(40);
-    const contractAddr = isCodeDeployment ? address : payload.to;
+    let isCodeDeployment = payload.code && payload.toAddr === "0".repeat(40);
+    const contractAddr = isCodeDeployment ? address : payload.toAddr;
 
     const initPath = `${dir}${contractAddr}_init.json`;
     const codePath = `${dir}${contractAddr}_code.scilla`;

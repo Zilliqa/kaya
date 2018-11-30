@@ -40,8 +40,8 @@ const zilliqa = new Zilliqa({
 
 // check multiplication overflow: Returns true if overflow
 const checkOverflow = (a, b) => {
-  const c = a * b;
-  return a !== c / b || b !== c / a;
+  // @FIXME: Add check multiplication overflow logic
+  return false;
 };
 
 // compute contract address from the sender's current nonce
@@ -168,6 +168,8 @@ module.exports = {
       throw new Error('Invalid Tx Json');
     }
 
+    responseObj = {};
+
     if (!payload.code && !payload.data) {
        // p2p token transfer
       logVerbose(logLabel, 'p2p token tranfer');
@@ -177,23 +179,29 @@ module.exports = {
       walletCtrl.deductFunds(senderAddress, totalSum);
       walletCtrl.increaseNonce(senderAddress);
       walletCtrl.addFunds(payload.toAddr.toLowerCase(), payload.amount);
+      responseObj.Info = 'Non-contract txn, sent to shard';
     } else {
       /* contract generation */
       logVerbose(logLabel, 'Task: Contract Deployment / Create Transaction');
       // take the sha256 hash of address+nonce, then extract the rightmost 20 bytes
       const contractAddr = computeContractAddr(senderAddress);
+      console.log(payload.gasLimit);
+      console.log(payload.gasPrice);
 
       if (checkOverflow(payload.gasLimit, payload.gasPrice)) {
+        console.log('overflow detected')
         throw new Error('Overflow detected: Invalid gas limit or gas price');
       }
+    
       const gasLimitToZil = payload.gasLimit * payload.gasPrice;
       const gasAndAmount = payload.amount + gasLimitToZil;
+      console.log('Checking funds');
 
       if (!walletCtrl.sufficientFunds(senderAddress, gasAndAmount)) {
         logVerbose(logLabel, 'Insufficient funds. Returning error to client.');
         throw new Error('Insufficient funds');
       }
-      logVerbose(logLabel, `Contract will be deployed at: ${contractAddr}`);
+      logVerbose(logLabel, 'Running scilla interpreter now')
 
       const responseData = await scillaCtrl.executeScillaRun(
         payload,
@@ -202,8 +210,10 @@ module.exports = {
         currentBNum,
         payload.gasLimit,
       );
+      logVerbose(logLabel, 'Scilla interpreter completed');
       // Deduct funds
       const nextAddr = responseData.nextAddress;
+      console.log(responseData);
       const gasConsumed = payload.gasLimit - responseData.gasRemaining;
       if (checkOverflow(gasConsumed, payload.gasPrice)) {
         throw new Error('Overflow detected: Invalid gas limit or gas price');
@@ -218,12 +228,18 @@ module.exports = {
 
       // FIXME: Support multicontract calls
       if (nextAddr !== '0'.repeat(40) && nextAddr.substring(2) !== senderAddress) {
+        // Msg: Contract Txn, Sent To Ds
         console.log('Multi-contract calls not supported.');
         throw new Error('Multi-contract calls are not supported yet.');
       }
 
       // Only update if it is a deployment call
       if (payload.code && payload.to === '0'.repeat(40)) {
+        logVerbose(logLabel, `Contract deployed at: ${contractAddr}`);
+        responseObj.Info = 'Contract Creation txn, sent to shard';
+        responseObj.ContractAddress = contractAddr;
+
+
         // Update address_to_contracts
         if (senderAddress in createdContractsByUsers) {
           logVerbose(logLabel, 'User has contracts. Appending to list');
@@ -233,6 +249,9 @@ module.exports = {
           createdContractsByUsers[senderAddress] = [contractAddr];
         }
         logVerbose(logLabel, `Addr-to-Contracts: ${createdContractsByUsers}`);
+      } else {
+        // Placeholder msg - since there's no shards in Kaya RPC
+        responseObj.Info = 'Contract Txn, Shards Match of the sender and receiver';
       }
     }
 
@@ -246,13 +265,11 @@ module.exports = {
       nonce: payload.nonce,
       senderPubKey: payload.pubKey,
       signature: payload.signature,
-      toAddr: payload.to,
+      toAddr: payload.toAddr,
       version: payload.version,
     };
     transactions[txnId] = txnDetails;
-    responseObj = {}
     responseObj.TranID = txnId;
-    responseObj.Info = "Non-contract txn, sent to shard";
     return responseObj;
   },
 

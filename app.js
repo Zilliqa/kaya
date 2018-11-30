@@ -237,6 +237,7 @@ const handler = async (req, res) => {
       res.status(404).send(data);
   }
   utils.logVerbose(logLabel, 'Sending response back to client');
+  console.log(data);
 };
 
 expressjs.post('/', wrapAsync(handler));

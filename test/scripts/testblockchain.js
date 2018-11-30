@@ -15,7 +15,7 @@ async function testBlockchain() {
     const tx = await zilliqa.blockchain.createTransaction(
       zilliqa.transactions.new({
         version: 1,
-        toAddr: 'affc3236b726660ed9b99dff11451e4e8c107dea',
+        toAddr: 'd90f2e538ce0df89c8273cad3b63ec44a3c4ed82',
         amount: new BN(888),
         gasPrice: new BN(1),
         // can be `number` if size is <= 2^53 (i.e., window.MAX_SAFE_INTEGER)
@@ -24,7 +24,7 @@ async function testBlockchain() {
     );
     console.log(tx);
 
-    /*
+/*
 
     // Deploy a contract
     const code = `(* HelloWorld contract *)
@@ -84,12 +84,21 @@ end`;
         // rejecting the transaction while consuming gas!
         value: '0x8254b2c9acdf181d5d6796d63320fbb20d4edd12',
       },
+      // Necessary for local Kaya testing
+      {
+        vname: '_creation_block',
+        type: 'BNum',
+        value: '100'
+      }
     ];
 
     // instance of class Contract
     const contract = zilliqa.contracts.new(code, init);
 
     const hello = await contract.deploy(new BN(1), Long.fromNumber(5000));
+    console.log(hello);
+
+
     const callTx = await hello.call('setHello', [
       {
         vname: 'msg',
