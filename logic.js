@@ -76,7 +76,7 @@ const checkTransactionJson = (data) => {
   const expectedFields = [
     'version',
     'nonce',
-    'to',
+    'toAddr',
     'amount',
     'pubKey',
     'gasPrice',
@@ -176,7 +176,7 @@ module.exports = {
       const totalSum = bnAmount.add(bnTxFee).toNumber();
       walletCtrl.deductFunds(senderAddress, totalSum);
       walletCtrl.increaseNonce(senderAddress);
-      walletCtrl.addFunds(payload.to.toLowerCase(), payload.amount);
+      walletCtrl.addFunds(payload.toAddr.toLowerCase(), payload.amount);
     } else {
       /* contract generation */
       logVerbose(logLabel, 'Task: Contract Deployment / Create Transaction');
@@ -250,8 +250,10 @@ module.exports = {
       version: payload.version,
     };
     transactions[txnId] = txnDetails;
-
-    return txnId;
+    responseObj = {}
+    responseObj.TranID = txnId;
+    responseObj.Info = "Non-contract txn, sent to shard";
+    return responseObj;
   },
 
   processGetTransaction: (data) => {

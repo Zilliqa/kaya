@@ -211,6 +211,7 @@ const handler = async (req, res) => {
       break;
     case 'GetTransaction':
       try {
+        console.log(body.params);
         const obj = logic.processGetTransaction(body.params);
         data = obj;
       } catch (err) {
