@@ -23,9 +23,7 @@ async function testBlockchain() {
       }),
     );
     console.log(tx);
-
-/*
-
+    console.log('Deploying a contract now');
     // Deploy a contract
     const code = `(* HelloWorld contract *)
 
@@ -107,7 +105,7 @@ end`;
       },
     ]);
     const state = await hello.getState();
-    console.log(state);*/
+    console.log(state);
   } catch (err) {
     console.log('Blockchain Error');
     console.log(err);

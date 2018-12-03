@@ -20,6 +20,7 @@ const hashjs = require('hash.js');
 const fs = require('fs');
 const BN = require('bn.js');
 const { Zilliqa } = require('zilliqa-js');
+const { bytes } = require('@zilliqa-js/util');
 const scillaCtrl = require('./components/scilla/scilla');
 const walletCtrl = require('./components/wallet/wallet');
 const blockchain = require('./components/blockchain');
@@ -46,10 +47,13 @@ const checkOverflow = (a, b) => {
 
 // compute contract address from the sender's current nonce
 const computeContractAddr = (sender) => {
+
   const userNonce = walletCtrl.getBalance(sender).nonce;
-  const nonceStr = zilliqa.util.intToByteArray(userNonce, 64).join('');
-  const digest = hashjs.sha256().update(sender).update(nonceStr).digest('hex');
-  return digest.slice(24);
+  return hashjs.sha256().
+    update(sender, 'hex').
+    update(bytes.intToHexArray(userNonce, 16).join(''), 'hex')
+    .digest('hex')
+    .slice(24);
 };
 
 // compute transactionHash from the payload
@@ -171,9 +175,9 @@ module.exports = {
     responseObj = {};
 
     if (!payload.code && !payload.data) {
-       // p2p token transfer
+      // p2p token transfer
       logVerbose(logLabel, 'p2p token tranfer');
-      const bnAmount = new BN(payload.amount); 
+      const bnAmount = new BN(payload.amount);
       const bnTxFee = new BN(transferTransactionCost);
       const totalSum = bnAmount.add(bnTxFee).toNumber();
       walletCtrl.deductFunds(senderAddress, totalSum);
@@ -192,7 +196,7 @@ module.exports = {
         console.log('overflow detected')
         throw new Error('Overflow detected: Invalid gas limit or gas price');
       }
-    
+
       const gasLimitToZil = payload.gasLimit * payload.gasPrice;
       const gasAndAmount = payload.amount + gasLimitToZil;
       console.log('Checking funds');
@@ -234,7 +238,7 @@ module.exports = {
       }
 
       // Only update if it is a deployment call
-      if (payload.code && payload.to === '0'.repeat(40)) {
+      if (payload.code && payload.toAddr === '0'.repeat(40)) {
         logVerbose(logLabel, `Contract deployed at: ${contractAddr}`);
         responseObj.Info = 'Contract Creation txn, sent to shard';
         responseObj.ContractAddress = contractAddr;
@@ -259,10 +263,15 @@ module.exports = {
     /*  Update Transactions */
     const txnId = computeTransactionHash(payload);
     logVerbose(logLabel, `Transaction will be logged as ${txnId}`);
+    recInfo = {};
+    recInfo.cumulative_gas = 1;
+    recInfo.success = true;
+
     const txnDetails = {
       ID: txnId,
       amount: payload.amount,
       nonce: payload.nonce,
+      receipt: recInfo,
       senderPubKey: payload.pubKey,
       signature: payload.signature,
       toAddr: payload.toAddr,
