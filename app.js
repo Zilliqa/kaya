@@ -211,7 +211,6 @@ const handler = async (req, res) => {
       break;
     case 'GetTransaction':
       try {
-        console.log(body.params);
         const obj = logic.processGetTransaction(body.params);
         data = obj;
       } catch (err) {
@@ -237,7 +236,6 @@ const handler = async (req, res) => {
       res.status(404).send(data);
   }
   utils.logVerbose(logLabel, 'Sending response back to client');
-  console.log(data);
 };
 
 expressjs.post('/', wrapAsync(handler));

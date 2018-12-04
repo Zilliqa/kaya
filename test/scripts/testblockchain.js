@@ -23,6 +23,7 @@ async function testBlockchain() {
       }),
     );
     console.log(tx);
+    
     console.log('Deploying a contract now');
     // Deploy a contract
     const code = `(* HelloWorld contract *)

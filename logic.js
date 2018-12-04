@@ -19,7 +19,9 @@
 const hashjs = require('hash.js');
 const fs = require('fs');
 const BN = require('bn.js');
-const { Zilliqa } = require('zilliqa-js');
+const zCrypto = require('@zilliqa-js/crypto');
+const zUtils = require('@zilliqa-js/util')
+
 const { bytes } = require('@zilliqa-js/util');
 const scillaCtrl = require('./components/scilla/scilla');
 const walletCtrl = require('./components/wallet/wallet');
@@ -32,12 +34,6 @@ const logLabel = ('Logic.js');
 // non-persistent states. Initializes whenever server starts
 let transactions = {};
 let createdContractsByUsers = {}; // address => contract addresses
-
-/*  Dummy constructor for zilliqajs */
-// @dev: Will be replaced once zilliqa-js exposes utils without constructors
-const zilliqa = new Zilliqa({
-  nodeUrl: 'http://localhost:8888',
-});
 
 // check multiplication overflow: Returns true if overflow
 const checkOverflow = (a, b) => {
@@ -143,7 +139,7 @@ module.exports = {
     const currentBNum = blockchain.getBlockNum();
     const dir = options.dataPath;
     const payload = data[0];
-    const senderAddress = zilliqa.util.getAddressFromPublicKey(payload.pubKey);
+    const senderAddress = zCrypto.getAddressFromPublicKey(payload.pubKey);
 
     logVerbose(logLabel, `Sender: ${senderAddress}`);
     const userNonce = walletCtrl.getBalance(senderAddress).nonce;
@@ -189,9 +185,6 @@ module.exports = {
       logVerbose(logLabel, 'Task: Contract Deployment / Create Transaction');
       // take the sha256 hash of address+nonce, then extract the rightmost 20 bytes
       const contractAddr = computeContractAddr(senderAddress);
-      console.log(payload.gasLimit);
-      console.log(payload.gasPrice);
-
       if (checkOverflow(payload.gasLimit, payload.gasPrice)) {
         console.log('overflow detected')
         throw new Error('Overflow detected: Invalid gas limit or gas price');
@@ -331,7 +324,7 @@ module.exports = {
 
     // checking contract address's validity
     const contractAddress = data[0];
-    if (contractAddress == null || !zilliqa.util.isAddress(contractAddress)) {
+    if (contractAddress == null || !zUtils.validation.isAddress(contractAddress)) {
       consolePrint('Invalid request');
       throw new Error('Address size inappropriate');
     }
@@ -364,8 +357,8 @@ module.exports = {
     }
 
     const addr = data[0].toLowerCase();
-    console.log(`Getting smart contracts created by ${addr}`);
-    if (addr == null || !zilliqa.util.isAddress(addr)) {
+    logVerbose(`Getting smart contracts created by ${addr}`);
+    if (addr == null || !zUtils.validation.isAddress(addr)) {
       console.log('Invalid request');
       throw new Error('Address size inappropriate');
     }

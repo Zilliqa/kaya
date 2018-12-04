@@ -17,7 +17,6 @@
 
 /* Wallet Component */
 const assert = require('assert');
-const { Zilliqa } = require('zilliqa-js');
 const zCrypto = require('@zilliqa-js/crypto');
 const zUtils = require('@zilliqa-js/util')
 const BN = require('bn.js');
@@ -30,12 +29,6 @@ const logLabel = 'Wallet';
 
 // Wallet will store address, private key and balance
 let wallets = {};
-
-/*  Dummy constructor for zilliqajs */
-// @dev: Will be replaced once zilliqa-js exposes utils without constructors
-const zilliqa = new Zilliqa({
-  nodeUrl: 'http://localhost:8888',
-});
 
 const createNewWallet = () => {
   const pk = zCrypto.generatePrivateKey();
@@ -90,8 +83,6 @@ module.exports = {
 
   // load accounts object into wallets
   loadAccounts: (accounts) => {
-    console.log(zUtils);
-
     validateAccounts(accounts);
     logVerbose(logLabel, 
       `${Object.keys(accounts).length} wallets bootstrapped from file`,
