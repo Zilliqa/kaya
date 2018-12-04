@@ -99,6 +99,7 @@ const runRemoteInterpreterAsync = async data => {
 
 const runLocalInterpreterAsync = async (command, outputPath) => {
   logVerbose(logLabel, "Running local scilla interpreter");
+  console.log(command);
   // Run Scilla Interpreter
   if (!fs.existsSync(config.scilla.runnerPath)) {
     logVerbose(logLabel, "Scilla runner not found. Hint: Have you compiled the scilla binaries?");
@@ -107,6 +108,7 @@ const runLocalInterpreterAsync = async (command, outputPath) => {
 
   const result = await execAsync(command);
   if (result.stderr !== "") {
+    console.log(result);
     throw new Error(`Interpreter error: ${result.stderr}`);
   }
 
@@ -127,7 +129,7 @@ module.exports = {
 
     const initPath = `${dir}${contractAddr}_init.json`;
     const codePath = `${dir}${contractAddr}_code.scilla`;
-    const outputPath = `${dir}/${contractAddr}_out.json`;
+    const outputPath = `${dir}${contractAddr}_out.json`;
     const statePath = `${dir}${contractAddr}_state.json`;
     let cmd;
     if (isCodeDeployment) {
@@ -157,14 +159,15 @@ module.exports = {
       }
 
       // get message from payload information
-      const msgPath = `${dir}${payload.to}_message.json`;
-
-      const incomingMessage = JSON.stringify(payload.data);
-      const cleanedMsg = paramsCleanup(incomingMessage);
-      fs.writeFileSync(msgPath, cleanedMsg);
+      const msgPath = `${dir}${payload.toAddr}_message.json`;
+      msgObj = JSON.parse(payload.data);
+      msgObj._amount = '0'
+      msgObj._sender = '0x7bb3b0e8a59f3f61d9bff038f4aeb42cae2ecce8';
+      console.log(msgObj);
+      fs.writeFileSync(msgPath, JSON.stringify(msgObj));
 
       // Invoke contract requires additional message and state paths
-      cmd = `${cmd} -imessage ${msgPath} -istate ${statePath}`;
+      cmd = `${config.scilla.runnerPath} -iblockchain ${blockchainPath} -imessage ${msgPath} -i ${codePath} -imessage ${msgPath} -istate ${statePath} -gaslimit ${gasLimit} -libdir ${config.scilla.localLibDir} -o ${outputPath} -init ${initPath}`;
     }
 
     if (!fs.existsSync(codePath) || !fs.existsSync(initPath)) {

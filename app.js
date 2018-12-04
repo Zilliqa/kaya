@@ -199,10 +199,12 @@ const handler = async (req, res) => {
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
       break;
     case 'CreateTransaction':
+    console.log(body.params);
       try {
         const txnId = await logic.processCreateTxn(body.params, options);
         data = txnId;
       } catch (err) {
+        console.log(err);
         data = err.message;
         res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
         break;

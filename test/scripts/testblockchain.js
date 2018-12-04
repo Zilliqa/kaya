@@ -105,6 +105,7 @@ end`;
         value: 'Hello World',
       },
     ]);
+    console.log(callTx);
     const state = await hello.getState();
     console.log(state);
   } catch (err) {

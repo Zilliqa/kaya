@@ -169,11 +169,15 @@ module.exports = {
     }
 
     responseObj = {};
+    const bnAmount = new BN(payload.amount);
+    console.log(payload.gasLimit);
+    const bnGasLimit = new BN(payload.gasLimit);
+    const bnGasPrice = new BN(payload.gasPrice)
 
     if (!payload.code && !payload.data) {
       // p2p token transfer
       logVerbose(logLabel, 'p2p token tranfer');
-      const bnAmount = new BN(payload.amount);
+      ;
       const bnTxFee = new BN(transferTransactionCost);
       const totalSum = bnAmount.add(bnTxFee).toNumber();
       walletCtrl.deductFunds(senderAddress, totalSum);
@@ -181,7 +185,7 @@ module.exports = {
       walletCtrl.addFunds(payload.toAddr.toLowerCase(), payload.amount);
       responseObj.Info = 'Non-contract txn, sent to shard';
     } else {
-      /* contract generation */
+      /* contract creation / invoke transition */
       logVerbose(logLabel, 'Task: Contract Deployment / Create Transaction');
       // take the sha256 hash of address+nonce, then extract the rightmost 20 bytes
       const contractAddr = computeContractAddr(senderAddress);
@@ -190,11 +194,16 @@ module.exports = {
         throw new Error('Overflow detected: Invalid gas limit or gas price');
       }
 
-      const gasLimitToZil = payload.gasLimit * payload.gasPrice;
-      const gasAndAmount = payload.amount + gasLimitToZil;
-      console.log('Checking funds');
+      console.log('Checking types');
+      console.log(bnGasPrice.toNumber());
+      console.log(bnGasLimit.toNumber());
 
-      if (!walletCtrl.sufficientFunds(senderAddress, gasAndAmount)) {
+      // User should have sufficient zils to pay for the gas
+      const gasLimitToZil = bnGasLimit.mul(bnGasPrice);
+      const gasAndAmount = bnAmount.add(gasLimitToZil);
+      console.log(`Checking funds: ${gasAndAmount.toNumber()}`);
+
+      if (!walletCtrl.sufficientFunds(senderAddress, gasAndAmount.toNumber())) {
         logVerbose(logLabel, 'Insufficient funds. Returning error to client.');
         throw new Error('Insufficient funds');
       }
@@ -205,17 +214,18 @@ module.exports = {
         contractAddr,
         dir,
         currentBNum,
-        payload.gasLimit,
+        bnGasLimit.toNumber()
       );
       logVerbose(logLabel, 'Scilla interpreter completed');
       // Deduct funds
       const nextAddr = responseData.nextAddress;
       console.log(responseData);
-      const gasConsumed = payload.gasLimit - responseData.gasRemaining;
-      if (checkOverflow(gasConsumed, payload.gasPrice)) {
+      const bnGasRemaining = new BN(responseData.gasRemaining);
+      const bnGasConsumed = bnGasLimit.sub(bnGasRemaining);
+      if (checkOverflow(bnGasConsumed.toNumber(), payload.gasPrice)) {
         throw new Error('Overflow detected: Invalid gas limit or gas price');
       }
-      const gasConsumedInZil = gasConsumed * payload.gasPrice;
+      const gasConsumedInZil = bnGasPrice.mul(bnGasConsumed).toNumber();
 
       walletCtrl.deductFunds(
         senderAddress,
