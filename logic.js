@@ -46,11 +46,11 @@ const checkOverflow = (a, b) => {
 };
 
 // compute contract address from the sender's current nonce
-const computeContractAddr = (sender) => {
+const computeContractAddr = (senderAddr) => {
 
-  const userNonce = walletCtrl.getBalance(sender).nonce;
+  const userNonce = walletCtrl.getBalance(senderAddr).nonce;
   return hashjs.sha256().
-    update(sender, 'hex').
+    update(senderAddr, 'hex').
     update(bytes.intToHexArray(userNonce, 16).join(''), 'hex')
     .digest('hex')
     .slice(24);

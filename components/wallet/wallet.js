@@ -18,6 +18,8 @@
 /* Wallet Component */
 const assert = require('assert');
 const { Zilliqa } = require('zilliqa-js');
+const zCrypto = require('@zilliqa-js/crypto');
+const zUtils = require('@zilliqa-js/util')
 const BN = require('bn.js');
 const { logVerbose, consolePrint } = require('../../utilities');
 const config = require('../../config');
@@ -36,8 +38,8 @@ const zilliqa = new Zilliqa({
 });
 
 const createNewWallet = () => {
-  const pk = zilliqa.util.generatePrivateKey();
-  const address = zilliqa.util.getAddressFromPrivateKey(pk);
+  const pk = zCrypto.generatePrivateKey();
+  const address = zCrypto.getAddressFromPrivateKey(pk);
   const newWallet = {
     privateKey: pk,
     amount: config.wallet.defaultAmt,
@@ -49,7 +51,7 @@ const createNewWallet = () => {
 // validate an accounts object to check validity
 const validateAccounts = (accounts) => {
   Object.keys(accounts).forEach((key) => {
-    if (!zilliqa.util.isAddress(key)) {
+    if (!zUtils.validation.isAddress(key)) {
       throw new Error(`Invalid address ${key}`);
     }
     const account = accounts[key];
@@ -58,7 +60,7 @@ const validateAccounts = (accounts) => {
       throw new Error('Invalid fields');
     }
 
-    const addressFromPK = zilliqa.util.getAddressFromPrivateKey(
+    const addressFromPK = zCrypto.getAddressFromPrivateKey(
       account.privateKey,
     );
     if (addressFromPK !== key) {
@@ -88,6 +90,8 @@ module.exports = {
 
   // load accounts object into wallets
   loadAccounts: (accounts) => {
+    console.log(zUtils);
+
     validateAccounts(accounts);
     logVerbose(logLabel, 
       `${Object.keys(accounts).length} wallets bootstrapped from file`,
@@ -150,7 +154,7 @@ module.exports = {
   deductFunds: (address, amount) => {
 
     logVerbose(logLabel, `Deducting ${amount} from ${address}`);
-    if (!zilliqa.util.isAddress(address)) {
+    if (!zUtils.validation.isAddress(address)) {
       throw new Error('Address size not appropriate');
     }
     if (!wallets[address] || !module.exports.sufficientFunds(address, amount)) {
@@ -178,7 +182,7 @@ module.exports = {
    */
   addFunds: (address, amount) => {
     logVerbose(logLabel, `Adding ${amount} to ${address}`);
-    if (!zilliqa.util.isAddress(address)) {
+    if (!zUtils.validation.isAddress(address)) {
       throw new Error('Address size not appropriate');
     }
     if (!wallets[address]) {
@@ -207,7 +211,7 @@ module.exports = {
 
   increaseNonce: (address) => {
     logVerbose(logLabel, `Increasing nonce for ${address}`);
-    if (!zilliqa.util.isAddress(address)) {
+    if (!zUtils.validation.isAddress(address)) {
       throw new Error('Address size not appropriate');
     }
     if (!wallets[address]) {
@@ -220,7 +224,7 @@ module.exports = {
   },
 
   getBalance: (value) => {
-    if (!zilliqa.util.isAddress(value)) {
+    if (!zUtils.validation.isAddress(value)) {
       throw new Error('Address size not appropriate');
     }
     logVerbose(logLabel, `Getting balance for ${value}`);
