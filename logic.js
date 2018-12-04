@@ -212,6 +212,7 @@ module.exports = {
       const responseData = await scillaCtrl.executeScillaRun(
         payload,
         contractAddr,
+        senderAddress,
         dir,
         currentBNum,
         bnGasLimit.toNumber()

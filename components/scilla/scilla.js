@@ -119,25 +119,36 @@ const runLocalInterpreterAsync = async (command, outputPath) => {
 };
 
 module.exports = {
-  executeScillaRun: async (payload, address, dir, currentBnum, gasLimit) => {
+
+  /**
+   * executeScillaRun : Takes arguments from `logic.js` and runs the scilla interpreter
+   * @param : { Object } payload - payload object from the message
+   * @param : { String } contractAddr - Contract address, only applicable if it is a deployment call
+   * @param : { String } senderAddress - message sender address
+   * @param : { String } directory of the data files
+   * @param : { String } current block number
+   * @param : { Number } gasLimit - gasLimit specified by the caller
+   * @returns : { Object } consisting of `gasRemaining and nextAddress`
+   */
+
+
+  executeScillaRun: async (payload, contractAddr, senderAddr, dir, currentBnum, gasLimit) => {
     // Get the blocknumber into a json file
     const blockchainPath = `${dir}/blockchain.json`;
     makeBlockchainJson(currentBnum, blockchainPath);
 
     let isCodeDeployment = payload.code && payload.toAddr === "0".repeat(40);
-    const contractAddr = isCodeDeployment ? address : payload.toAddr;
+    contractAddr = (isCodeDeployment) ? contractAddr : payload.toAddr;
 
     const initPath = `${dir}${contractAddr}_init.json`;
     const codePath = `${dir}${contractAddr}_code.scilla`;
     const outputPath = `${dir}${contractAddr}_out.json`;
     const statePath = `${dir}${contractAddr}_state.json`;
-    let cmd;
+    let cmd = `${config.scilla.runnerPath} -iblockchain ${blockchainPath} -o ${outputPath} -init ${initPath} -i ${codePath} -gaslimit ${gasLimit} -libdir ${
+      config.scilla.localLibDir}`;
+
     if (isCodeDeployment) {
       logVerbose(logLabel, "Code Deployment");
-      // initialized with standard message template
-      isCodeDeployment = true;
-      cmd = `${config.scilla.runnerPath} -iblockchain ${blockchainPath} -o ${outputPath} -init ${initPath} -i ${codePath} -gaslimit ${gasLimit} -libdir ${
-        config.scilla.localLibDir}`;
 
       // get init data from payload
       const initParams = JSON.stringify(payload.data);
@@ -158,16 +169,16 @@ module.exports = {
         throw new Error("Address does not exist");
       }
 
-      // get message from payload information
+      // Create message object from payload
       const msgPath = `${dir}${payload.toAddr}_message.json`;
       msgObj = JSON.parse(payload.data);
-      msgObj._amount = '0'
-      msgObj._sender = '0x7bb3b0e8a59f3f61d9bff038f4aeb42cae2ecce8';
+      msgObj._amount = payload.amount;
+      msgObj._sender = `0x${senderAddr}`;
       console.log(msgObj);
       fs.writeFileSync(msgPath, JSON.stringify(msgObj));
 
       // Invoke contract requires additional message and state paths
-      cmd = `${config.scilla.runnerPath} -iblockchain ${blockchainPath} -imessage ${msgPath} -i ${codePath} -imessage ${msgPath} -istate ${statePath} -gaslimit ${gasLimit} -libdir ${config.scilla.localLibDir} -o ${outputPath} -init ${initPath}`;
+      cmd = `${cmd} -imessage ${msgPath} -istate ${statePath} `
     }
 
     if (!fs.existsSync(codePath) || !fs.existsSync(initPath)) {
@@ -212,7 +223,7 @@ module.exports = {
       logVerbose(logLabel, `Next address: ${retMsg.message._recipient}`);
       responseData.nextAddress = retMsg.message._recipient;
     }
-    // Contract deployment runs do not have returned message
+    // Contract deployment do not have the next address
     responseData.nextAddress = "0".repeat(40);
 
     return responseData;
