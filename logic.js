@@ -90,16 +90,24 @@ const checkTransactionJson = (data) => {
   const payloadKeys = Object.keys(payload);
   const expected = intersect(payloadKeys, expectedFields).length;
   const actual = Object.keys(expectedFields).length;
-
-  // `amount` must be a string after zilliqa-js 0.2.0
-  // FIXME: Enable checks after release of zilliqa-js 0.2.0
-  // if(typeof(payload['amount']) === 'number') {
-  //   console.log(`[DEPRECATION NOTICE] Please upgrade your zilliqa-js`);
-  //   return false;
-  // }
-
   // number of overlap keys must be the same as the expected keys
   if (expected !== actual) return false;
+
+  // Type checking for the payload
+  Object.keys(payload).map(e => {
+    // Only version and nonce are number
+    if (e === 'version' || e === 'nonce') {
+      if(!Number.isInteger(payload[e])) {
+        return false;
+      }
+    } else {
+      if(typeof(payload[e] !== 'string')) {
+        return false;
+      }
+    }
+  })
+
+  
   // validate signature - TODO
 
   return true;
