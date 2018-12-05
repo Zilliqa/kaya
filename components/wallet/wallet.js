@@ -60,8 +60,8 @@ const validateAccounts = (accounts) => {
       logVerbose(logLabel, 'Validation failure: Invalid Address and Private key-pair');
       throw new Error(`Invalid address for ${key}`);
     }
-    if (Number.isInteger(account.nonce) && Number.isInteger(account.amount)) {
-      if (account.nonce < 0 || account.amount < 0) {
+    if (Number.isInteger(account.nonce)) {
+      if (account.nonce < 0) {
         throw new Error('Invalid nonce or amount');
       }
     } else {

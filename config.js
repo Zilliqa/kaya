@@ -35,7 +35,7 @@ module.exports = {
 
   wallet: {
     numAccounts: 10, // number of default accounts
-    defaultAmt: 1000000, // default amount of zils assigned to each wallet
+    defaultAmt: "1000000", // default amount of zils assigned to each wallet
     defaultNonce: 0,
   },
 
