@@ -164,21 +164,21 @@ module.exports = {
       );
     }
 
-    const transferTransactionCost = config.blockchain.transferGasCost * config.blockchain.gasPrice;
+    const bnTransferTransactionCost = new BN(config.blockchain.transferGasCost * config.blockchain.gasPrice);
+
 
     if (payload.nonce !== userNonce + 1) {
       // payload.nonce is not valid. Deduct gas anyway
       // FIXME: Waiting for scilla interpreter to return a structured output
       // about out of gas errors
       // https://github.com/Zilliqa/scilla/issues/214
-      walletCtrl.deductFunds(senderAddress, transferTransactionCost);
+      walletCtrl.deductFunds(senderAddress, bnTransferTransactionCost);
       logVerbose(logLabel, 'Invalid Nonce');
       throw new Error('Invalid Tx Json');
     }
 
     responseObj = {};
     const bnAmount = new BN(payload.amount);
-    console.log(payload.gasLimit);
     const bnGasLimit = new BN(payload.gasLimit);
     const bnGasPrice = new BN(payload.gasPrice)
 
@@ -186,32 +186,28 @@ module.exports = {
       // p2p token transfer
       logVerbose(logLabel, 'p2p token tranfer');
       ;
-      const bnTxFee = new BN(transferTransactionCost);
-      const totalSum = bnAmount.add(bnTxFee).toNumber();
+      const totalSum = bnAmount.add(bnTransferTransactionCost);
       walletCtrl.deductFunds(senderAddress, totalSum);
       walletCtrl.increaseNonce(senderAddress);
-      walletCtrl.addFunds(payload.toAddr.toLowerCase(), payload.amount);
+      walletCtrl.addFunds(payload.toAddr.toLowerCase(), bnAmount);
       responseObj.Info = 'Non-contract txn, sent to shard';
     } else {
       /* contract creation / invoke transition */
       logVerbose(logLabel, 'Task: Contract Deployment / Create Transaction');
       // take the sha256 hash of address+nonce, then extract the rightmost 20 bytes
       const contractAddr = computeContractAddr(senderAddress);
-      if (checkOverflow(payload.gasLimit, payload.gasPrice)) {
-        console.log('overflow detected')
-        throw new Error('Overflow detected: Invalid gas limit or gas price');
-      }
+
 
       console.log('Checking types');
       console.log(bnGasPrice.toNumber());
       console.log(bnGasLimit.toNumber());
 
-      // User should have sufficient zils to pay for the gas
-      const gasLimitToZil = bnGasLimit.mul(bnGasPrice);
-      const gasAndAmount = bnAmount.add(gasLimitToZil);
-      console.log(`Checking funds: ${gasAndAmount.toNumber()}`);
+      // Before the scilla interpreter runs, address should have sufficient zils to pay for gasLimit + amount
+      const bnGasLimitInZils = bnGasLimit.mul(bnGasPrice);
+      const bnAmountRequiredForTx = bnAmount.add(bnGasLimitInZils);
+      console.log(`Checking funds: ${bnAmountRequiredForTx.toNumber()}`);
 
-      if (!walletCtrl.sufficientFunds(senderAddress, gasAndAmount.toNumber())) {
+      if (!walletCtrl.sufficientFunds(senderAddress, bnAmountRequiredForTx)) {
         logVerbose(logLabel, 'Insufficient funds. Returning error to client.');
         throw new Error('Insufficient funds');
       }
@@ -228,18 +224,12 @@ module.exports = {
       logVerbose(logLabel, 'Scilla interpreter completed');
       // Deduct funds
       const nextAddr = responseData.nextAddress;
-      console.log(responseData);
       const bnGasRemaining = new BN(responseData.gasRemaining);
       const bnGasConsumed = bnGasLimit.sub(bnGasRemaining);
-      if (checkOverflow(bnGasConsumed.toNumber(), payload.gasPrice)) {
-        throw new Error('Overflow detected: Invalid gas limit or gas price');
-      }
-      const gasConsumedInZil = bnGasPrice.mul(bnGasConsumed).toNumber();
+      const gasConsumedInZil = bnGasPrice.mul(bnGasConsumed);
+      const deductableAmount = gasConsumedInZil.add(bnAmount);
 
-      walletCtrl.deductFunds(
-        senderAddress,
-        payload.amount + gasConsumedInZil,
-      );
+      walletCtrl.deductFunds(senderAddress,deductableAmount);
       walletCtrl.increaseNonce(senderAddress); // only increase if a contract is successful
 
       // FIXME: Support multicontract calls
@@ -254,7 +244,6 @@ module.exports = {
         logVerbose(logLabel, `Contract deployed at: ${contractAddr}`);
         responseObj.Info = 'Contract Creation txn, sent to shard';
         responseObj.ContractAddress = contractAddr;
-
 
         // Update address_to_contracts
         if (senderAddress in createdContractsByUsers) {
