@@ -35,13 +35,11 @@ const logLabel = ('Logic.js');
 let transactions = {};
 let createdContractsByUsers = {}; // address => contract addresses
 
-// check multiplication overflow: Returns true if overflow
-const checkOverflow = (a, b) => {
-  // @FIXME: Add check multiplication overflow logic
-  return false;
-};
-
-// compute contract address from the sender's current nonce
+/**
+ * computes the contract address from the sender's address and nonce
+ * @param { String } senderAddr 
+ * @returns { String } contract address to be deployed
+ */
 const computeContractAddr = (senderAddr) => {
 
   const userNonce = walletCtrl.getBalance(senderAddr).nonce;
@@ -51,8 +49,10 @@ const computeContractAddr = (senderAddr) => {
     .digest('hex')
     .slice(24);
 };
-
-// compute transactionHash from the payload
+/**
+ * Computes the transaction hash from a given paylaod
+ * @param { Object } payload : Payload of the message
+ */
 const computeTransactionHash = (payload) => {
   // transactionID is a sha256 digest of txndetails
   const copyPayload = JSON.parse(JSON.stringify(payload));
@@ -68,7 +68,11 @@ const computeTransactionHash = (payload) => {
 // check for common elements within the list
 const intersect = (a, b) => [...new Set(a)].filter(x => new Set(b).has(x));
 
-// checks if the transactionJson is well-formed
+/**
+ * Checks the transaction payload to make sure that it is well-formed
+ * @param { Object} data : Payload retrieved from message
+ * @returns { Boolean } : True if the payload is valid, false if it is not
+ */
 const checkTransactionJson = (data) => {
   if (data !== null && typeof data !== 'object') return false;
   const payload = data[0];
@@ -106,10 +110,7 @@ const checkTransactionJson = (data) => {
       }
     }
   })
-
-  
-  // validate signature - TODO
-
+  //FIXME: Add signature verification
   return true;
 };
 
@@ -130,9 +131,9 @@ module.exports = {
 
   /**
   * Function that handles the create transaction requests
-  * @param : data { Object } : Message object passed from client through server.js
-  * @param: options { Object } : List of options passed from server.js
-  * @returns: txnId { String } : Transaction hash
+  * @param { Object } data : Message object passed from client through server.js
+  * @param { Object } options : List of options passed from server.js
+  * @returns { String } : Transaction hash 
   * Throws in the event of error. Caller should catch or delegate these errors
   */
   processCreateTxn: async (data, options) => {
@@ -163,15 +164,10 @@ module.exports = {
         }`,
       );
     }
-
     const bnTransferTransactionCost = new BN(config.blockchain.transferGasCost * config.blockchain.gasPrice);
-
 
     if (payload.nonce !== userNonce + 1) {
       // payload.nonce is not valid. Deduct gas anyway
-      // FIXME: Waiting for scilla interpreter to return a structured output
-      // about out of gas errors
-      // https://github.com/Zilliqa/scilla/issues/214
       walletCtrl.deductFunds(senderAddress, bnTransferTransactionCost);
       logVerbose(logLabel, 'Invalid Nonce');
       throw new Error('Invalid Tx Json');
@@ -197,15 +193,9 @@ module.exports = {
       // take the sha256 hash of address+nonce, then extract the rightmost 20 bytes
       const contractAddr = computeContractAddr(senderAddress);
 
-
-      console.log('Checking types');
-      console.log(bnGasPrice.toNumber());
-      console.log(bnGasLimit.toNumber());
-
       // Before the scilla interpreter runs, address should have sufficient zils to pay for gasLimit + amount
       const bnGasLimitInZils = bnGasLimit.mul(bnGasPrice);
       const bnAmountRequiredForTx = bnAmount.add(bnGasLimitInZils);
-      console.log(`Checking funds: ${bnAmountRequiredForTx.toNumber()}`);
 
       if (!walletCtrl.sufficientFunds(senderAddress, bnAmountRequiredForTx)) {
         logVerbose(logLabel, 'Insufficient funds. Returning error to client.');
@@ -218,8 +208,7 @@ module.exports = {
         contractAddr,
         senderAddress,
         dir,
-        currentBNum,
-        bnGasLimit.toNumber()
+        currentBNum
       );
       logVerbose(logLabel, 'Scilla interpreter completed');
       // Deduct funds
@@ -228,7 +217,8 @@ module.exports = {
       const bnGasConsumed = bnGasLimit.sub(bnGasRemaining);
       const gasConsumedInZil = bnGasPrice.mul(bnGasConsumed);
       const deductableAmount = gasConsumedInZil.add(bnAmount);
-
+      logVerbose(logLabel, `Gas Consumed in Zils ${gasConsumedInZil.toString()}`);
+      logVerbose(logLabel, `Gas Consumed: ${bnGasConsumed.toString()}`);
       walletCtrl.deductFunds(senderAddress,deductableAmount);
       walletCtrl.increaseNonce(senderAddress); // only increase if a contract is successful
 
@@ -253,7 +243,6 @@ module.exports = {
           logVerbose(logLabel, 'No existing contracts. Creating new entry.');
           createdContractsByUsers[senderAddress] = [contractAddr];
         }
-        logVerbose(logLabel, `Addr-to-Contracts: ${createdContractsByUsers}`);
       } else {
         // Placeholder msg - since there's no shards in Kaya RPC
         responseObj.Info = 'Contract Txn, Shards Match of the sender and receiver';
@@ -310,10 +299,10 @@ module.exports = {
     return responseObj;
   },
 
-  /*
-  * Function to process GetSmartContract's state, init or code
-  * @params : { String } : enum of either data, init or state
-  */
+  /**
+   * Function to process GetSmartContract's state, init or code
+   * @param { String } : enum of either data, init or state
+   */
   processGetDataFromContract: (data, dataPath, type) => {
 
     const fileType = type.trim().toLowerCase();
@@ -336,7 +325,7 @@ module.exports = {
       consolePrint('Invalid request');
       throw new Error('Address size inappropriate');
     }
-    const filePath = `${dataPath}${contractAddress.toUpperCase()}_${fileType}.${ext}`;
+    const filePath = `${dataPath}${contractAddress.toLowerCase()}_${fileType}.${ext}`;
     logVerbose(logLabel, `Retrieving data from ${filePath}`);
 
     if (!fs.existsSync(filePath)) {
@@ -352,9 +341,13 @@ module.exports = {
     return JSON.parse(responseData);
   },
 
-  /*
-    Function returns the list of smart contracts created by an account
-  */
+/**
+ * Retrieves the smart contracts for a given address
+ * @param { Object } data : data retrieved from payload
+ * @param { String } dataPath : datapath where the state file is stored
+ * @returns { Object } : All the state for contracts deployed by the address
+ */
+
   processGetSmartContracts: (data, dataPath) => {
     if (!data) {
       logVerbose(logLabel, 'Invalid params');
@@ -365,8 +358,8 @@ module.exports = {
     }
 
     const addr = data[0].toLowerCase();
-    logVerbose(`Getting smart contracts created by ${addr}`);
-    if (addr == null || !zUtils.validation.isAddress(addr)) {
+    logVerbose(logLabel, `Getting smart contracts created by ${addr}`);
+    if (addr === null || !zUtils.validation.isAddress(addr)) {
       console.log('Invalid request');
       throw new Error('Address size inappropriate');
     }
@@ -379,7 +372,7 @@ module.exports = {
     const contracts = createdContractsByUsers[addr];
 
     contracts.forEach((contractId) => {
-      const statePath = `${dataPath}${contractId.toUpperCase()}_state.json`;
+      const statePath = `${dataPath}${contractId.toLowerCase()}_state.json`;
       if (!fs.existsSync(statePath)) {
         console.log(`No state file found (Contract: ${contractId}`);
         throw new Error('Address does not exist');

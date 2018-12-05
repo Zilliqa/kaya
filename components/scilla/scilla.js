@@ -47,13 +47,12 @@ const initializeContractState = amt => {
   ];
   return initState;
 };
+/**
+ * Runs the remote interpreter (currently hosted by zilliqa)
+ * @param: data object containing the code, state, init, message and blockchain filepath
+ * @returns: Output message received from the remote scilla interpreter
+ */
 
-/*
-  Runs the remote interpreter (currently hosted by zilliqa)
-  [DEFAULT] - configurable through the config file
-  @params: data object containing the code, state, init, message and blockchain filepath
-  @returns: Output message received from the remote scilla interpreter
-*/
 const runRemoteInterpreterAsync = async data => {
   logVerbose(logLabel, "Running Remote Interpreter");
 
@@ -99,7 +98,6 @@ const runRemoteInterpreterAsync = async data => {
 
 const runLocalInterpreterAsync = async (command, outputPath) => {
   logVerbose(logLabel, "Running local scilla interpreter");
-  console.log(command);
   // Run Scilla Interpreter
   if (!fs.existsSync(config.scilla.runnerPath)) {
     logVerbose(logLabel, "Scilla runner not found. Hint: Have you compiled the scilla binaries?");
@@ -108,7 +106,6 @@ const runLocalInterpreterAsync = async (command, outputPath) => {
 
   const result = await execAsync(command);
   if (result.stderr !== "") {
-    console.log(result);
     throw new Error(`Interpreter error: ${result.stderr}`);
   }
 
@@ -122,17 +119,17 @@ module.exports = {
 
   /**
    * executeScillaRun : Takes arguments from `logic.js` and runs the scilla interpreter
-   * @param : { Object } payload - payload object from the message
-   * @param : { String } contractAddr - Contract address, only applicable if it is a deployment call
-   * @param : { String } senderAddress - message sender address
-   * @param : { String } directory of the data files
-   * @param : { String } current block number
-   * @param : { Number } gasLimit - gasLimit specified by the caller
-   * @returns : { Object } consisting of `gasRemaining and nextAddress`
+   * @param { Object } payload - payload object from the message
+   * @param { String } contractAddr - Contract address, only applicable if it is a deployment call
+   * @param { String } senderAddress - message sender address
+   * @param { String } directory of the data files
+   * @param { String } current block number
+   * @param { String } gasLimit - gasLimit specified by the caller
+   * @returns { Object } consisting of `gasRemaining and nextAddress`
    */
 
 
-  executeScillaRun: async (payload, contractAddr, senderAddr, dir, currentBnum, gasLimit) => {
+  executeScillaRun: async (payload, contractAddr, senderAddr, dir, currentBnum) => {
     // Get the blocknumber into a json file
     const blockchainPath = `${dir}/blockchain.json`;
     makeBlockchainJson(currentBnum, blockchainPath);
@@ -144,8 +141,7 @@ module.exports = {
     const codePath = `${dir}${contractAddr}_code.scilla`;
     const outputPath = `${dir}${contractAddr}_out.json`;
     const statePath = `${dir}${contractAddr}_state.json`;
-    let cmd = `${config.scilla.runnerPath} -iblockchain ${blockchainPath} -o ${outputPath} -init ${initPath} -i ${codePath} -gaslimit ${gasLimit} -libdir ${
-      config.scilla.localLibDir}`;
+    let cmd = `${config.scilla.runnerPath} -iblockchain ${blockchainPath} -o ${outputPath} -init ${initPath} -i ${codePath} -gaslimit ${payload.gasLimit} -libdir ${config.scilla.localLibDir}`;
 
     if (isCodeDeployment) {
       logVerbose(logLabel, "Code Deployment");
@@ -160,7 +156,7 @@ module.exports = {
       fs.writeFileSync(codePath, cleanedCode);
     } else {
       // Invoke transition
-      logVerbose(logLabel, `Calling transition within contract ${payload.to}`);
+      logVerbose(logLabel, `Calling transition within contract ${payload.toAddr}`);
 
       logVerbose(logLabel, `Code Path: ${codePath}`);
       logVerbose(logLabel, `Init Path: ${initPath}`);
@@ -174,7 +170,6 @@ module.exports = {
       msgObj = JSON.parse(payload.data);
       msgObj._amount = payload.amount;
       msgObj._sender = `0x${senderAddr}`;
-      console.log(msgObj);
       fs.writeFileSync(msgPath, JSON.stringify(msgObj));
 
       // Invoke contract requires additional message and state paths

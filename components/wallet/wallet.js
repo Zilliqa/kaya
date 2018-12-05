@@ -215,6 +215,11 @@ module.exports = {
     );
   },
 
+  /**
+   * Increases nonce for a given address
+   * @param { String } address 
+   */
+
   increaseNonce: (address) => {
     logVerbose(logLabel, `Increasing nonce for ${address}`);
     if (!zUtils.validation.isAddress(address)) {
@@ -233,7 +238,7 @@ module.exports = {
    * GetBalance: Returns the balance for a given address
    * Throws if the address is not well-formed
    * @param { String } : value - address
-   * @returns {Object} 
+   * @returns {Object} { balance: {String}, nonce; Number}
    */
 
   getBalance: (value) => {
