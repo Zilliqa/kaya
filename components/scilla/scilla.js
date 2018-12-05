@@ -20,10 +20,12 @@ const { promisify } = require("util");
 const rp = require("request-promise");
 const { exec } = require("child_process");
 const { paramsCleanup, codeCleanup, logVerbose } = require("../../utilities");
+const { InterpreterError } = require('../CustomErrors');
 const config = require("../../config");
 const logLabel = "Scilla";
 
 const execAsync = promisify(exec);
+
 
 const makeBlockchainJson = (val, blockchainPath) => {
   const blockchainData = [
@@ -49,12 +51,16 @@ const initializeContractState = amt => {
 };
 /**
  * Runs the remote interpreter (currently hosted by zilliqa)
- * @param: data object containing the code, state, init, message and blockchain filepath
+ * @async
+ * @method runRemoteInterpreterAsync
+ * @param {Object} data object containing the code, state, init, message and blockchain filepath
  * @returns: Output message received from the remote scilla interpreter
  */
 
 const runRemoteInterpreterAsync = async data => {
   logVerbose(logLabel, "Running Remote Interpreter");
+
+  throw new InterpreterError('Test');
 
   const reqData = {
     code: fs.readFileSync(data.code, "utf-8"),
@@ -118,7 +124,10 @@ const runLocalInterpreterAsync = async (command, outputPath) => {
 module.exports = {
 
   /**
-   * executeScillaRun : Takes arguments from `logic.js` and runs the scilla interpreter
+   * Takes arguments from `logic.js` and runs the scilla interpreter
+   * 
+   * @method executeScillaRun 
+   * @async
    * @param { Object } payload - payload object from the message
    * @param { String } contractAddr - Contract address, only applicable if it is a deployment call
    * @param { String } senderAddress - message sender address
@@ -127,8 +136,6 @@ module.exports = {
    * @param { String } gasLimit - gasLimit specified by the caller
    * @returns { Object } consisting of `gasRemaining and nextAddress`
    */
-
-
   executeScillaRun: async (payload, contractAddr, senderAddr, dir, currentBnum) => {
     // Get the blocknumber into a json file
     const blockchainPath = `${dir}/blockchain.json`;
