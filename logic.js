@@ -162,6 +162,8 @@ module.exports = {
     const bnAmount = new BN(payload.amount);
     const bnGasLimit = new BN(payload.gasLimit);
     const bnGasPrice = new BN(payload.gasPrice);
+    const bnInvokeGas = new BN(config.constants.gas.CONTRACT_INVOKE_GAS)
+    const deductableZils = bnInvokeGas.mul(bnGasPrice);
     const senderAddress = zCrypto.getAddressFromPublicKey(payload.pubKey);
 
     logVerbose(logLabel, `Sender: ${senderAddress}`);
@@ -256,15 +258,13 @@ module.exports = {
       // Incorrect Balance (Amt, Nonce) does NOT increase the nonce value
       if (err instanceof BalanceError) {
         console.log(`Balance Error: ${err.message}`);
-        // Deducts gas required for transaction
+        walletCtrl.deductFunds(senderAddress, deductableZils);
       }
 
       if (err instanceof InterpreterError) {
         // Note: Core zilliqa current deducts based on the CONSTANT.XML file config
         console.log('Scilla run is not successful.');
         // Deducts the amount of gas as specified in the config.constants settings
-        const bnInvokeGas = new BN(config.constants.gas.CONTRACT_INVOKE_GAS)
-        const deductableZils = bnInvokeGas.mul(bnGasPrice);
         walletCtrl.deductFunds(senderAddress, deductableZils);
       }
 
@@ -272,7 +272,7 @@ module.exports = {
         // Msg: Contract Txn, Sent To Ds
         console.log('Multi-contract calls not supported.');
         responseObj.Info = 'Contract Txn, Sent To Ds';
-        // Deducts the gas used for contract calls
+        // Do not deduct gas for the time being
       }
 
     } finally {
