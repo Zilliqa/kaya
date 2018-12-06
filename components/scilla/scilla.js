@@ -18,13 +18,13 @@
 const fs = require("fs");
 const { promisify } = require("util");
 const rp = require("request-promise");
-const { exec } = require("child_process");
+const { execFile } = require("child_process");
 const { paramsCleanup, codeCleanup, logVerbose } = require("../../utilities");
 const { InterpreterError } = require('../CustomErrors');
 const config = require("../../config");
 const logLabel = "Scilla";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 
 const makeBlockchainJson = (val, blockchainPath) => {
@@ -105,15 +105,26 @@ const runRemoteInterpreterAsync = async data => {
   return response.message;
 };
 
-const runLocalInterpreterAsync = async (command, outputPath) => {
+/**
+ * Executes the local interpreter
+ * @async
+ * @method runLocalInterpreterAsync
+ * @param { Object } cmdOptions: Command options required to run the scilla interpreter
+ * @param { String } outputPath : File path to the output file
+ * @returns { Object } - response object
+ */
+
+const runLocalInterpreterAsync = async (cmdOptions, outputPath) => {
   logVerbose(logLabel, "Running local scilla interpreter");
+
+  const SCILLA_BIN_PATH = config.constants.smart_contract.SCILLA_BINARY;
   // Run Scilla Interpreter
-  if (!fs.existsSync(config.constants.smart_contract.SCILLA_BINARY)) {
+  if (!fs.existsSync(SCILLA_BIN_PATH)) {
     logVerbose(logLabel, "Scilla runner not found. Hint: Have you compiled the scilla binaries?");
     throw new InterpreterError("Kaya RPC Runtime Error: Scilla-runner not found");
   }
 
-  const result = await execAsync(command);
+  const result = await execFileAsync(SCILLA_BIN_PATH, cmdOptions);
   if (result.stderr !== "") {
     throw new InterpreterError(`Interpreter error: ${result.stderr}`);
   }
@@ -141,7 +152,7 @@ module.exports = {
    */
   executeScillaRun: async (payload, contractAddr, senderAddr, dir, currentBnum) => {
     // Get the blocknumber into a json file
-    const blockchainPath = `${dir}/blockchain.json`;
+    const blockchainPath = `${dir}blockchain.json`;
     makeBlockchainJson(currentBnum, blockchainPath);
 
     let isCodeDeployment = payload.code && payload.toAddr === "0".repeat(40);
@@ -151,7 +162,14 @@ module.exports = {
     const codePath = `${dir}${contractAddr}_code.scilla`;
     const outputPath = `${dir}${contractAddr}_out.json`;
     const statePath = `${dir}${contractAddr}_state.json`;
-    let cmd = `${config.constants.smart_contract.SCILLA_BINARY} -iblockchain ${blockchainPath} -o ${outputPath} -init ${initPath} -i ${codePath} -gaslimit ${payload.gasLimit} -libdir ${config.constants.smart_contract.SCILLA_LIB}`;
+
+    const standardOpt = ['-libdir', config.constants.smart_contract.SCILLA_LIB, '-gaslimit', payload.gasLimit];
+    const initOpt = ['-init', initPath];
+    const outputOpt = ['-o', outputPath];
+    const codeOpt = ['-i', codePath];
+    const blockchainOpt = ['-iblockchain', blockchainPath];
+
+    const cmdOpt = [].concat.apply([], [standardOpt, initOpt, outputOpt, codeOpt, blockchainOpt])
 
     if (isCodeDeployment) {
       logVerbose(logLabel, "Code Deployment");
@@ -182,8 +200,11 @@ module.exports = {
       msgObj._sender = `0x${senderAddr}`;
       fs.writeFileSync(msgPath, JSON.stringify(msgObj));
 
-      // Invoke contract requires additional message and state paths
-      cmd = `${cmd} -imessage ${msgPath} -istate ${statePath} `
+      // Append additional options for transition calls
+      cmdOpt.push('-imessage');
+      cmdOpt.push(msgPath);
+      cmdOpt.push('-istate');
+      cmdOpt.push(statePath);
     }
 
     if (!fs.existsSync(codePath) || !fs.existsSync(initPath)) {
@@ -195,7 +216,7 @@ module.exports = {
 
     if (!config.scilla.remote) {
       // local scilla interpreter
-      retMsg = await runLocalInterpreterAsync(cmd, outputPath);
+      retMsg = await runLocalInterpreterAsync(cmdOpt, outputPath);
     } else {
       const apiReqParams = {
         output: outputPath,
