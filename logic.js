@@ -152,7 +152,6 @@ module.exports = {
       throw new Error('Invalid Tx Json');
     }
 
-    let transactionSuccessful = false;
     let responseObj = {};
 
     const currentBNum = blockchain.getBlockNum();
@@ -190,7 +189,6 @@ module.exports = {
         walletCtrl.increaseNonce(senderAddress);
         walletCtrl.addFunds(payload.toAddr.toLowerCase(), bnAmount);
         responseObj.Info = 'Non-contract txn, sent to shard';
-        transactionSuccessful = true;
       } else {
         /* contract creation / invoke transition */
         logVerbose(logLabel, 'Task: Contract Deployment / Create Transaction');
@@ -253,17 +251,21 @@ module.exports = {
       }
 
     } catch (err) {
-      console.log(err);
+      logVerbose(logLabel, 'Transaction is NOT accepted by the blockchain');
 
+      // Incorrect Balance (Amt, Nonce) does NOT increase the nonce value
       if (err instanceof BalanceError) {
-        console.log(`Error: ${err.message}`);
+        console.log(`Balance Error: ${err.message}`);
         // Deducts gas required for transaction
       }
 
       if (err instanceof InterpreterError) {
         // Note: Core zilliqa current deducts based on the CONSTANT.XML file config
-        console.log('Scilla run is not successful. Deducting the entire gasLimit ;)');
-        walletCtrl.deductFunds(senderAddress, bnAmountRequiredForTx);
+        console.log('Scilla run is not successful.');
+        // Deducts the amount of gas as specified in the config.constants settings
+        const bnInvokeGas = new BN(config.constants.gas.CONTRACT_INVOKE_GAS)
+        const deductableZils = bnInvokeGas.mul(bnGasPrice);
+        walletCtrl.deductFunds(senderAddress, deductableZils);
       }
 
       if (err instanceof MultiContractError) {

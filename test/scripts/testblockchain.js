@@ -17,7 +17,7 @@ async function testBlockchain() {
         version: 1,
         toAddr: 'd90f2e538ce0df89c8273cad3b63ec44a3c4ed82',
         amount: new BN(888),
-        gasPrice: new BN(1),
+        gasPrice: new BN(101),
         // can be `number` if size is <= 2^53 (i.e., window.MAX_SAFE_INTEGER)
         gasLimit: Long.fromNumber(10),
       }),
@@ -94,7 +94,7 @@ end`;
     // instance of class Contract
     const contract = zilliqa.contracts.new(code, init);
 
-    const hello = await contract.deploy(new BN(1), Long.fromNumber(5000));
+    const hello = await contract.deploy(new BN(100), Long.fromNumber(5000));
     console.log(hello);
 
 

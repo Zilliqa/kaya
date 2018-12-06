@@ -29,7 +29,7 @@ module.exports = {
     // sets timer for the block confirmation
     blockInterval: 10000, // 10000 : 10 seconds for one block
     blockStart: 0,
-    gasPrice: 1, // ratio of gas to zil (dummy value of 1:1)
+    gasPrice: 100, // Min Gas is now 100
     transferGasCost: 1 // Amount of gas consumed for each transfer
   },
 
@@ -39,6 +39,19 @@ module.exports = {
     defaultNonce: 0,
   },
 
+  // Relevant constants config copied from core zilliqa repo (constants.xml)
+  constants: {
+    gas: {
+      CONTRACT_CREATE_GAS: 500,
+      CONTRACT_INVOKE_GAS: 100,
+      NORMAL_TRAN_GAS: 10
+    },
+    smart_contract: {
+      SCILLA_BINARY: "./components/scilla/scilla-runner",
+      SCILLA_LIB: "./components/scilla/stdlib"
+    }
+  },
+
   /*
 Settings for the scilla interpreter
 - runner-path: Relative path to your scilla-runner
@@ -46,14 +59,12 @@ Settings for the scilla interpreter
 - url: URL to the remote scilla interpreter
 */
   scilla: {
-    runnerPath: "./components/scilla/scilla-runner",
-    localLibDir: "./components/scilla/stdlib",
     remote: false,
     url: "https://scilla-runner.zilliqa.com/contract/call",
   },
 
   testconfigs: {
-    gasPrice: 1,
+    gasPrice: 100,
     gasLimit: 10,
     transferAmt: 100,
     args: {

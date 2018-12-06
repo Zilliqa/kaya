@@ -59,8 +59,8 @@ const initializeContractState = amt => {
 
 const runRemoteInterpreterAsync = async data => {
   logVerbose(logLabel, "Running Remote Interpreter");
-
-  throw new InterpreterError('Test');
+  console.log('throwing interpreter error');
+  throw new InterpreterError('Remote interpreter is currently unavailable');
 
   const reqData = {
     code: fs.readFileSync(data.code, "utf-8"),
@@ -82,6 +82,7 @@ const runRemoteInterpreterAsync = async data => {
     body: reqData,
   };
 
+  logVerbose(logLabel, 'Attempting to run remote interpreter now');
   let response;
   try {
     response = await rp(options);
@@ -89,9 +90,11 @@ const runRemoteInterpreterAsync = async data => {
     console.log(`Interpreter failed to process code. Error message received:`);
     console.log(`${err.message}`);
     console.log("Possible fix: Have your code passed type checking?");
-    throw new Error("KayaRPC-specific: Interpreter error");
+    throw new InterpreterError('Remote interpreter failed to run')
   }
-
+  
+  // FIXME: Change error mechanism once the Scilla versioning is completed
+  // https://github.com/Zilliqa/scilla/issues/291
   if (!response.message.gas_remaining) {
     console.log(
       "WARNING: You are using an outdated scilla interpreter. Please upgrade to the latest version"
@@ -105,14 +108,14 @@ const runRemoteInterpreterAsync = async data => {
 const runLocalInterpreterAsync = async (command, outputPath) => {
   logVerbose(logLabel, "Running local scilla interpreter");
   // Run Scilla Interpreter
-  if (!fs.existsSync(config.scilla.runnerPath)) {
+  if (!fs.existsSync(config.constants.smart_contract.SCILLA_BINARY)) {
     logVerbose(logLabel, "Scilla runner not found. Hint: Have you compiled the scilla binaries?");
-    throw new Error("Kaya RPC Runtime Error: Scilla-runner not found");
+    throw new InterpreterError("Kaya RPC Runtime Error: Scilla-runner not found");
   }
 
   const result = await execAsync(command);
   if (result.stderr !== "") {
-    throw new Error(`Interpreter error: ${result.stderr}`);
+    throw new InterpreterError(`Interpreter error: ${result.stderr}`);
   }
 
   logVerbose(logLabel, "Scilla execution completed");
@@ -148,7 +151,7 @@ module.exports = {
     const codePath = `${dir}${contractAddr}_code.scilla`;
     const outputPath = `${dir}${contractAddr}_out.json`;
     const statePath = `${dir}${contractAddr}_state.json`;
-    let cmd = `${config.scilla.runnerPath} -iblockchain ${blockchainPath} -o ${outputPath} -init ${initPath} -i ${codePath} -gaslimit ${payload.gasLimit} -libdir ${config.scilla.localLibDir}`;
+    let cmd = `${config.constants.smart_contract.SCILLA_BINARY} -iblockchain ${blockchainPath} -o ${outputPath} -init ${initPath} -i ${codePath} -gaslimit ${payload.gasLimit} -libdir ${config.constants.smart_contract.SCILLA_LIB}`;
 
     if (isCodeDeployment) {
       logVerbose(logLabel, "Code Deployment");
