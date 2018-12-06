@@ -51,6 +51,32 @@ const computeContractAddr = (senderAddr) => {
 };
 
 /**
+ * Confirms the transaction by logging it
+ * @method logTransaction
+ * @param { Object } payload - payload of the incoming message
+ * @param { String } transactionID - transaction ID
+ * @param { Object } receiptInfo - information about gas and if the transaction is confirmed
+ * Does not return any message
+ */
+
+const logTransaction = (payload, transactionID, receiptInfo) => {
+
+  const txnDetails = {
+    ID: transactionID,
+    amount: payload.amount,
+    nonce: payload.nonce,
+    receipt: receiptInfo,
+    senderPubKey: payload.pubKey,
+    signature: payload.signature,
+    toAddr: payload.toAddr,
+    version: payload.version,
+  };
+  transactions[transactionID] = txnDetails;
+  logVerbose(logLabel, `Transaction logged: ${transactionID}`)
+
+}
+
+/**
  * 
  * Computes the transaction hash from a given payload
  * @method computeTransactionHash
@@ -165,11 +191,14 @@ module.exports = {
     const bnInvokeGas = new BN(config.constants.gas.CONTRACT_INVOKE_GAS)
     const deductableZils = bnInvokeGas.mul(bnGasPrice);
     const senderAddress = zCrypto.getAddressFromPublicKey(payload.pubKey);
+    const txnId = computeTransactionHash(payload);
 
     logVerbose(logLabel, `Sender: ${senderAddress}`);
     const userNonce = walletCtrl.getBalance(senderAddress).nonce;
     logVerbose(logLabel, `User Nonce: ${userNonce}`);
     logVerbose(logLabel, `Payload Nonce: ${payload.nonce}`);
+
+    let receiptInfo = {};
 
     try {
 
@@ -185,12 +214,15 @@ module.exports = {
       if (!payload.code && !payload.data) {
         // p2p token transfer
         logVerbose(logLabel, 'Transaction Type: P2P Transfer (Type 1)');
-        const bnTransferTransactionCost = new BN(config.blockchain.transferGasCost * config.blockchain.gasPrice);
-        const totalSum = bnAmount.add(bnTransferTransactionCost);
+        const bnTransferGas = new BN(config.constants.gas.NORMAL_TRAN_GAS);
+        const bnTransferCostInZils = bnTransferGas.mul(bnGasPrice);
+        const totalSum = bnAmount.add(bnTransferCostInZils);
         walletCtrl.deductFunds(senderAddress, totalSum);
         walletCtrl.increaseNonce(senderAddress);
         walletCtrl.addFunds(payload.toAddr.toLowerCase(), bnAmount);
         responseObj.Info = 'Non-contract txn, sent to shard';
+        receiptInfo.cumulative_gas = bnTransferGas.toString();
+        receiptInfo.success = true;
       } else {
         /* contract creation / invoke transition */
         logVerbose(logLabel, 'Task: Contract Deployment / Create Transaction');
@@ -250,7 +282,14 @@ module.exports = {
           // Placeholder msg - since there's no shards in Kaya RPC
           responseObj.Info = 'Contract Txn, Shards Match of the sender and receiver';
         }
+
+        receiptInfo.cumulative_gas = bnGasConsumed.toString();
+        receiptInfo.success = true;
       }
+
+      // Confirms transaction by storing the transaction object in-memory
+      logTransaction(payload, txnId, receiptInfo);
+      logVerbose(logLabel, `Transaction confirmed by the blockchain`);
 
     } catch (err) {
       logVerbose(logLabel, 'Transaction is NOT accepted by the blockchain');
@@ -259,48 +298,33 @@ module.exports = {
       if (err instanceof BalanceError) {
         console.log(`Balance Error: ${err.message}`);
         walletCtrl.deductFunds(senderAddress, deductableZils);
-      }
-
-      if (err instanceof InterpreterError) {
+      } else if (err instanceof InterpreterError) {
         // Note: Core zilliqa current deducts based on the CONSTANT.XML file config
         console.log('Scilla run is not successful.');
         // Deducts the amount of gas as specified in the config.constants settings
         walletCtrl.deductFunds(senderAddress, deductableZils);
-      }
-
-      if (err instanceof MultiContractError) {
+        receiptInfo = {};
+        receiptInfo.cumulative_gas = bnInvokeGas.toString();
+        receiptInfo.success = false;
+        logTransaction(payload, txnId, receiptInfo);
+        logVerbose(logLabel, `Transaction is logged but it is not accepted due to scilla errors.`);
+      } else if (err instanceof MultiContractError) {
         // Msg: Contract Txn, Sent To Ds
         console.log('Multi-contract calls not supported.');
         responseObj.Info = 'Contract Txn, Sent To Ds';
         // Do not deduct gas for the time being
+      } else {
+        // Propagate uncaught error to client
+        console.log(`Uncaught error`);
+        console.log(err);
+        throw err;
       }
-
     } finally {
       // Returns output to caller
-      /*  Update Transactions */
-      const txnId = computeTransactionHash(payload);
-      logVerbose(logLabel, `Transaction will be logged as ${txnId}`);
-      recInfo = {};
-      recInfo.cumulative_gas = 1;
-      recInfo.success = true;
-
-      const txnDetails = {
-        ID: txnId,
-        amount: payload.amount,
-        nonce: payload.nonce,
-        receipt: recInfo,
-        senderPubKey: payload.pubKey,
-        signature: payload.signature,
-        toAddr: payload.toAddr,
-        version: payload.version,
-      };
-      transactions[txnId] = txnDetails;
+      logVerbose(logLabel, `Returning transactionID to user: ${txnId}`);
       responseObj.TranID = txnId;
       return responseObj;
     }
-
-
-
   },
 
   processGetTransaction: (data) => {
