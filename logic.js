@@ -19,10 +19,13 @@
 const hashjs = require('hash.js');
 const fs = require('fs');
 const BN = require('bn.js');
-const { Zilliqa } = require('zilliqa-js');
+const zCrypto = require('@zilliqa-js/crypto');
+const zUtils = require('@zilliqa-js/util');
+const { bytes } = require('@zilliqa-js/util');
 const scillaCtrl = require('./components/scilla/scilla');
 const walletCtrl = require('./components/wallet/wallet');
 const blockchain = require('./components/blockchain');
+const { InterpreterError, BalanceError, MultiContractError } = require('./components/CustomErrors');
 const { logVerbose, consolePrint } = require('./utilities');
 const config = require('./config');
 
@@ -32,27 +35,53 @@ const logLabel = ('Logic.js');
 let transactions = {};
 let createdContractsByUsers = {}; // address => contract addresses
 
-/*  Dummy constructor for zilliqajs */
-// @dev: Will be replaced once zilliqa-js exposes utils without constructors
-const zilliqa = new Zilliqa({
-  nodeUrl: 'http://localhost:8888',
-});
-
-// check multiplication overflow: Returns true if overflow
-const checkOverflow = (a, b) => {
-  const c = a * b;
-  return a !== c / b || b !== c / a;
+/**
+ * computes the contract address from the sender's address and nonce
+ * @method computeContractAddr
+ * @param { String } senderAddr 
+ * @returns { String } contract address to be deployed
+ */
+const computeContractAddr = (senderAddr) => {
+  const userNonce = walletCtrl.getBalance(senderAddr).nonce;
+  return hashjs.sha256().
+    update(senderAddr, 'hex').
+    update(bytes.intToHexArray(userNonce, 16).join(''), 'hex')
+    .digest('hex')
+    .slice(24);
 };
 
-// compute contract address from the sender's current nonce
-const computeContractAddr = (sender) => {
-  const userNonce = walletCtrl.getBalance(sender).nonce;
-  const nonceStr = zilliqa.util.intToByteArray(userNonce, 64).join('');
-  const digest = hashjs.sha256().update(sender).update(nonceStr).digest('hex');
-  return digest.slice(24);
-};
+/**
+ * Confirms the transaction by logging it
+ * @method logTransaction
+ * @param { Object } payload - payload of the incoming message
+ * @param { String } transactionID - transaction ID
+ * @param { Object } receiptInfo - information about gas and if the transaction is confirmed
+ * Does not return any message
+ */
 
-// compute transactionHash from the payload
+const logTransaction = (payload, transactionID, receiptInfo) => {
+
+  const txnDetails = {
+    ID: transactionID,
+    amount: payload.amount,
+    nonce: payload.nonce,
+    receipt: receiptInfo,
+    senderPubKey: payload.pubKey,
+    signature: payload.signature,
+    toAddr: payload.toAddr,
+    version: payload.version,
+  };
+  transactions[transactionID] = txnDetails;
+  logVerbose(logLabel, `Transaction logged: ${transactionID}`)
+
+}
+
+/**
+ * 
+ * Computes the transaction hash from a given payload
+ * @method computeTransactionHash
+ * @param { Object } payload : Payload of the message
+ */
 const computeTransactionHash = (payload) => {
   // transactionID is a sha256 digest of txndetails
   const copyPayload = JSON.parse(JSON.stringify(payload));
@@ -68,7 +97,13 @@ const computeTransactionHash = (payload) => {
 // check for common elements within the list
 const intersect = (a, b) => [...new Set(a)].filter(x => new Set(b).has(x));
 
-// checks if the transactionJson is well-formed
+/**
+ * Checks the transaction payload to make sure that it is well-formed
+ * @method checkTransactionJson
+ * @param { Object} data : Payload retrieved from message
+ * @returns { Boolean } : True if the payload is valid, false if it is not
+ */
+
 const checkTransactionJson = (data) => {
   if (data !== null && typeof data !== 'object') return false;
   const payload = data[0];
@@ -76,7 +111,7 @@ const checkTransactionJson = (data) => {
   const expectedFields = [
     'version',
     'nonce',
-    'to',
+    'toAddr',
     'amount',
     'pubKey',
     'gasPrice',
@@ -90,18 +125,23 @@ const checkTransactionJson = (data) => {
   const payloadKeys = Object.keys(payload);
   const expected = intersect(payloadKeys, expectedFields).length;
   const actual = Object.keys(expectedFields).length;
-
-  // `amount` must be a string after zilliqa-js 0.2.0
-  // FIXME: Enable checks after release of zilliqa-js 0.2.0
-  // if(typeof(payload['amount']) === 'number') {
-  //   console.log(`[DEPRECATION NOTICE] Please upgrade your zilliqa-js`);
-  //   return false;
-  // }
-
   // number of overlap keys must be the same as the expected keys
   if (expected !== actual) return false;
-  // validate signature - TODO
 
+  // Type checking for the payload
+  Object.keys(payload).map(e => {
+    // Only version and nonce are number
+    if (e === 'version' || e === 'nonce') {
+      if (!Number.isInteger(payload[e])) {
+        return false;
+      }
+    } else {
+      if (typeof (payload[e] !== 'string')) {
+        return false;
+      }
+    }
+  })
+  //FIXME: Add signature verification
   return true;
 };
 
@@ -122,9 +162,11 @@ module.exports = {
 
   /**
   * Function that handles the create transaction requests
-  * @param : data { Object } : Message object passed from client through server.js
-  * @param: options { Object } : List of options passed from server.js
-  * @returns: txnId { String } : Transaction hash
+  * @async
+  * @method processCreateTxn
+  * @param { Object } data : Message object passed from client through server.js
+  * @param { Object } options : List of options passed from server.js
+  * @returns { String } : Transaction hash 
   * Throws in the event of error. Caller should catch or delegate these errors
   */
   processCreateTxn: async (data, options) => {
@@ -136,123 +178,161 @@ module.exports = {
       throw new Error('Invalid Tx Json');
     }
 
+    let responseObj = {};
+
     const currentBNum = blockchain.getBlockNum();
     const dir = options.dataPath;
+
+    // Getting data from payload
     const payload = data[0];
-    const senderAddress = zilliqa.util.getAddressFromPublicKey(payload.pubKey);
+    const bnAmount = new BN(payload.amount);
+    const bnGasLimit = new BN(payload.gasLimit);
+    const bnGasPrice = new BN(payload.gasPrice);
+    const bnInvokeGas = new BN(config.constants.gas.CONTRACT_INVOKE_GAS)
+    const deductableZils = bnInvokeGas.mul(bnGasPrice);
+    const senderAddress = zCrypto.getAddressFromPublicKey(payload.pubKey);
+    const txnId = computeTransactionHash(payload);
 
     logVerbose(logLabel, `Sender: ${senderAddress}`);
     const userNonce = walletCtrl.getBalance(senderAddress).nonce;
     logVerbose(logLabel, `User Nonce: ${userNonce}`);
     logVerbose(logLabel, `Payload Nonce: ${payload.nonce}`);
 
-    // check if payload gasPrice is sufficient
-    const blockchainGasPrice = config.blockchain.gasPrice;
-    if (payload.gasPrice < blockchainGasPrice) {
-      throw new Error(
-        `Payload gas price is insufficient. Current gas price is ${
-        config.blockchain.gasPrice
-        }`,
-      );
-    }
+    let receiptInfo = {};
 
-    const transferTransactionCost = config.blockchain.transferGasCost * config.blockchain.gasPrice;
+    try {
 
-    if (payload.nonce !== userNonce + 1) {
-      // payload.nonce is not valid. Deduct gas anyway
-      // FIXME: Waiting for scilla interpreter to return a structured output
-      // about out of gas errors
-      // https://github.com/Zilliqa/scilla/issues/214
-      walletCtrl.deductFunds(senderAddress, transferTransactionCost);
-      logVerbose(logLabel, 'Invalid Nonce');
-      throw new Error('Invalid Tx Json');
-    }
-
-    if (!payload.code && !payload.data) {
-       // p2p token transfer
-      logVerbose(logLabel, 'p2p token tranfer');
-      const bnAmount = new BN(payload.amount); 
-      const bnTxFee = new BN(transferTransactionCost);
-      const totalSum = bnAmount.add(bnTxFee).toNumber();
-      walletCtrl.deductFunds(senderAddress, totalSum);
-      walletCtrl.increaseNonce(senderAddress);
-      walletCtrl.addFunds(payload.to.toLowerCase(), payload.amount);
-    } else {
-      /* contract generation */
-      logVerbose(logLabel, 'Task: Contract Deployment / Create Transaction');
-      // take the sha256 hash of address+nonce, then extract the rightmost 20 bytes
-      const contractAddr = computeContractAddr(senderAddress);
-
-      if (checkOverflow(payload.gasLimit, payload.gasPrice)) {
-        throw new Error('Overflow detected: Invalid gas limit or gas price');
+      if (payload.nonce !== userNonce + 1) {
+        throw new BalanceError('Nonce incorrect');
       }
-      const gasLimitToZil = payload.gasLimit * payload.gasPrice;
-      const gasAndAmount = payload.amount + gasLimitToZil;
-
-      if (!walletCtrl.sufficientFunds(senderAddress, gasAndAmount)) {
-        logVerbose(logLabel, 'Insufficient funds. Returning error to client.');
-        throw new Error('Insufficient funds');
-      }
-      logVerbose(logLabel, `Contract will be deployed at: ${contractAddr}`);
-
-      const responseData = await scillaCtrl.executeScillaRun(
-        payload,
-        contractAddr,
-        dir,
-        currentBNum,
-        payload.gasLimit,
-      );
-      // Deduct funds
-      const nextAddr = responseData.nextAddress;
-      const gasConsumed = payload.gasLimit - responseData.gasRemaining;
-      if (checkOverflow(gasConsumed, payload.gasPrice)) {
-        throw new Error('Overflow detected: Invalid gas limit or gas price');
-      }
-      const gasConsumedInZil = gasConsumed * payload.gasPrice;
-
-      walletCtrl.deductFunds(
-        senderAddress,
-        payload.amount + gasConsumedInZil,
-      );
-      walletCtrl.increaseNonce(senderAddress); // only increase if a contract is successful
-
-      // FIXME: Support multicontract calls
-      if (nextAddr !== '0'.repeat(40) && nextAddr.substring(2) !== senderAddress) {
-        console.log('Multi-contract calls not supported.');
-        throw new Error('Multi-contract calls are not supported yet.');
+      // check if payload gasPrice is sufficient
+      const bnBlockchainGasPrice = new BN(config.blockchain.gasPrice);
+      if (bnBlockchainGasPrice.gt(bnGasPrice)) {
+        throw new BalanceError('Insufficient Gas Price')
       }
 
-      // Only update if it is a deployment call
-      if (payload.code && payload.to === '0'.repeat(40)) {
-        // Update address_to_contracts
-        if (senderAddress in createdContractsByUsers) {
-          logVerbose(logLabel, 'User has contracts. Appending to list');
-          createdContractsByUsers[senderAddress].push(contractAddr);
-        } else {
-          logVerbose(logLabel, 'No existing contracts. Creating new entry.');
-          createdContractsByUsers[senderAddress] = [contractAddr];
+      if (!payload.code && !payload.data) {
+        // p2p token transfer
+        logVerbose(logLabel, 'Transaction Type: P2P Transfer (Type 1)');
+        const bnTransferGas = new BN(config.constants.gas.NORMAL_TRAN_GAS);
+        const bnTransferCostInZils = bnTransferGas.mul(bnGasPrice);
+        const totalSum = bnAmount.add(bnTransferCostInZils);
+        walletCtrl.deductFunds(senderAddress, totalSum);
+        walletCtrl.increaseNonce(senderAddress);
+        walletCtrl.addFunds(payload.toAddr.toLowerCase(), bnAmount);
+        responseObj.Info = 'Non-contract txn, sent to shard';
+        receiptInfo.cumulative_gas = bnTransferGas.toString();
+        receiptInfo.success = true;
+      } else {
+        /* contract creation / invoke transition */
+        logVerbose(logLabel, 'Task: Contract Deployment / Create Transaction');
+        // take the sha256 hash of address+nonce, then extract the rightmost 20 bytes
+        const contractAddr = computeContractAddr(senderAddress);
+
+        // Before the scilla interpreter runs, address should have sufficient zils to pay for gasLimit + amount
+        const bnGasLimitInZils = bnGasLimit.mul(bnGasPrice);
+        const bnAmountRequiredForTx = bnAmount.add(bnGasLimitInZils);
+
+        if (!walletCtrl.sufficientFunds(senderAddress, bnAmountRequiredForTx)) {
+          logVerbose(logLabel, 'Insufficient funds. Returning error to client.');
+          throw new BalanceError('Insufficient balance to process transction');
         }
-        logVerbose(logLabel, `Addr-to-Contracts: ${createdContractsByUsers}`);
+
+        logVerbose(logLabel, 'Running scilla interpreter now');
+        walletCtrl.increaseNonce(senderAddress);  // Always increase nonce whenever the interpreter is run
+        // Interpreter can throw an InterpreterError
+        const responseData = await scillaCtrl.executeScillaRun(
+          payload,
+          contractAddr,
+          senderAddress,
+          dir,
+          currentBNum
+        );
+        logVerbose(logLabel, 'Scilla interpreter completed');
+
+        const nextAddr = responseData.nextAddress;
+        const bnGasRemaining = new BN(responseData.gasRemaining);
+        const bnGasConsumed = bnGasLimit.sub(bnGasRemaining);
+        const gasConsumedInZil = bnGasPrice.mul(bnGasConsumed);
+        const deductableAmount = gasConsumedInZil.add(bnAmount);
+        logVerbose(logLabel, `Gas Consumed in Zils ${gasConsumedInZil.toString()}`);
+        logVerbose(logLabel, `Gas Consumed: ${bnGasConsumed.toString()}`);
+        walletCtrl.deductFunds(senderAddress, deductableAmount);
+
+        // FIXME: Support multicontract calls
+        if (nextAddr !== '0'.repeat(40) && nextAddr.substring(2) !== senderAddress) {
+          throw new MultiContractError('Multi-contract calls are not supported yet.');
+        }
+
+        // Only update if it is a deployment call
+        if (payload.code && payload.toAddr === '0'.repeat(40)) {
+          logVerbose(logLabel, `Contract deployed at: ${contractAddr}`);
+          responseObj.Info = 'Contract Creation txn, sent to shard';
+          responseObj.ContractAddress = contractAddr;
+
+          // Update address_to_contracts
+          if (senderAddress in createdContractsByUsers) {
+            logVerbose(logLabel, 'User has contracts. Appending to list');
+            createdContractsByUsers[senderAddress].push(contractAddr);
+          } else {
+            logVerbose(logLabel, 'No existing contracts. Creating new entry.');
+            createdContractsByUsers[senderAddress] = [contractAddr];
+          }
+        } else {
+          // Placeholder msg - since there's no shards in Kaya RPC
+          responseObj.Info = 'Contract Txn, Shards Match of the sender and receiver';
+        }
+
+        receiptInfo.cumulative_gas = bnGasConsumed.toString();
+        receiptInfo.success = true;
       }
+
+      // Confirms transaction by storing the transaction object in-memory
+      logTransaction(payload, txnId, receiptInfo);
+      logVerbose(logLabel, `Transaction confirmed by the blockchain`);
+
+    } catch (err) {
+      logVerbose(logLabel, 'Transaction is NOT accepted by the blockchain');
+
+      // Incorrect Balance (Amt, Nonce) does NOT increase the nonce value
+      if (err instanceof BalanceError) {
+        console.log(`Balance Error: ${err.message}`);
+        walletCtrl.deductFunds(senderAddress, deductableZils);
+      } else if (err instanceof InterpreterError) {
+        // Note: Core zilliqa current deducts based on the CONSTANT.XML file config
+        console.log('Scilla run is not successful.');
+        // Deducts the amount of gas as specified in the config.constants settings
+        walletCtrl.deductFunds(senderAddress, deductableZils);
+        receiptInfo = {};
+        receiptInfo.cumulative_gas = bnInvokeGas.toString();
+        receiptInfo.success = false;
+        logTransaction(payload, txnId, receiptInfo);
+        logVerbose(logLabel, `Transaction is logged but it is not accepted due to scilla errors.`);
+      } else if (err instanceof MultiContractError) {
+        // Msg: Contract Txn, Sent To Ds
+        console.log('Multi-contract calls not supported.');
+        responseObj.Info = 'Contract Txn, Sent To Ds';
+        // Do not deduct gas for the time being
+      } else {
+        // Propagate uncaught error to client
+        console.log(`Uncaught error`);
+        console.log(err);
+        throw err;
+      }
+    } finally {
+      // Returns output to caller
+      logVerbose(logLabel, `Returning transactionID to user: ${txnId}`);
+      responseObj.TranID = txnId;
+      return responseObj;
     }
-
-
-    /*  Update Transactions */
-    const txnId = computeTransactionHash(payload);
-    logVerbose(logLabel, `Transaction will be logged as ${txnId}`);
-    const txnDetails = {
-      ID: txnId,
-      amount: payload.amount,
-      nonce: payload.nonce,
-      senderPubKey: payload.pubKey,
-      signature: payload.signature,
-      toAddr: payload.to,
-      version: payload.version,
-    };
-    transactions[txnId] = txnDetails;
-
-    return txnId;
   },
+
+  /**
+   * Given a payload, returns the Transaction object if found
+   * Throws if the payload is invalid
+   * @method processGetTransaction
+   * @param { Object } data - payload object
+   */
 
   processGetTransaction: (data) => {
     if (!data) {
@@ -271,6 +351,12 @@ module.exports = {
     throw new Error('Txn Hash not Present.');
   },
 
+  /**
+   * Retrieves the last 100 transaction hash
+   * @method processGetRecentTransactions
+   * @returns { Object } - 100 transaction hashes
+   */
+
   processGetRecentTransactions: () => {
     logVerbose(logLabel, 'Getting Recent Transactions');
 
@@ -281,10 +367,12 @@ module.exports = {
     return responseObj;
   },
 
-  /*
-  * Function to process GetSmartContract's state, init or code
-  * @params : { String } : enum of either data, init or state
-  */
+  /**
+   * Function to process GetSmartContract's state, init or code
+   * @param { Object } data : data retrieved from payload
+   * @param { String } dataPath : datapath where the state file is stored
+   * @param { String } type - enum of either data, init or state
+   */
   processGetDataFromContract: (data, dataPath, type) => {
 
     const fileType = type.trim().toLowerCase();
@@ -303,11 +391,11 @@ module.exports = {
 
     // checking contract address's validity
     const contractAddress = data[0];
-    if (contractAddress == null || !zilliqa.util.isAddress(contractAddress)) {
+    if (contractAddress == null || !zUtils.validation.isAddress(contractAddress)) {
       consolePrint('Invalid request');
       throw new Error('Address size inappropriate');
     }
-    const filePath = `${dataPath}${contractAddress.toUpperCase()}_${fileType}.${ext}`;
+    const filePath = `${dataPath}${contractAddress.toLowerCase()}_${fileType}.${ext}`;
     logVerbose(logLabel, `Retrieving data from ${filePath}`);
 
     if (!fs.existsSync(filePath)) {
@@ -323,9 +411,14 @@ module.exports = {
     return JSON.parse(responseData);
   },
 
-  /*
-    Function returns the list of smart contracts created by an account
-  */
+  /**
+   * Retrieves the smart contracts for a given address
+   * @method processGetSmartContracts
+   * @param { Object } data : data retrieved from payload
+   * @param { String } dataPath : datapath where the state file is stored
+   * @returns { Object } : All the state for contracts deployed by the address
+   */
+
   processGetSmartContracts: (data, dataPath) => {
     if (!data) {
       logVerbose(logLabel, 'Invalid params');
@@ -336,8 +429,8 @@ module.exports = {
     }
 
     const addr = data[0].toLowerCase();
-    console.log(`Getting smart contracts created by ${addr}`);
-    if (addr == null || !zilliqa.util.isAddress(addr)) {
+    logVerbose(logLabel, `Getting smart contracts created by ${addr}`);
+    if (addr === null || !zUtils.validation.isAddress(addr)) {
       console.log('Invalid request');
       throw new Error('Address size inappropriate');
     }
@@ -350,7 +443,7 @@ module.exports = {
     const contracts = createdContractsByUsers[addr];
 
     contracts.forEach((contractId) => {
-      const statePath = `${dataPath}${contractId.toUpperCase()}_state.json`;
+      const statePath = `${dataPath}${contractId.toLowerCase()}_state.json`;
       if (!fs.existsSync(statePath)) {
         console.log(`No state file found (Contract: ${contractId}`);
         throw new Error('Address does not exist');

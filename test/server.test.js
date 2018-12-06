@@ -75,7 +75,7 @@ describe('Server Initialization Tests', () => {
         .send(makeQuery("GetBalance", '0'.repeat(40)))
         .then((response1) => {
             expect(response1.statusCode).toBe(200);
-            expect(response1.body).toEqual({"id": "1", "jsonrpc": "2.0", "result": {"balance": 0, "nonce": 0}});
+            expect(response1.body).toEqual({"id": "1", "jsonrpc": "2.0", "result": {"balance": "0", "nonce": 0}});
             done();
         });
     });

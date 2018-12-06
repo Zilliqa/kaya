@@ -18,12 +18,14 @@
 const fs = require("fs");
 const { promisify } = require("util");
 const rp = require("request-promise");
-const { exec } = require("child_process");
+const { execFile } = require("child_process");
 const { paramsCleanup, codeCleanup, logVerbose } = require("../../utilities");
+const { InterpreterError } = require('../CustomErrors');
 const config = require("../../config");
 const logLabel = "Scilla";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+
 
 const makeBlockchainJson = (val, blockchainPath) => {
   const blockchainData = [
@@ -47,15 +49,18 @@ const initializeContractState = amt => {
   ];
   return initState;
 };
+/**
+ * Runs the remote interpreter (currently hosted by zilliqa)
+ * @async
+ * @method runRemoteInterpreterAsync
+ * @param {Object} data object containing the code, state, init, message and blockchain filepath
+ * @returns: Output message received from the remote scilla interpreter
+ */
 
-/*
-  Runs the remote interpreter (currently hosted by zilliqa)
-  [DEFAULT] - configurable through the config file
-  @params: data object containing the code, state, init, message and blockchain filepath
-  @returns: Output message received from the remote scilla interpreter
-*/
 const runRemoteInterpreterAsync = async data => {
   logVerbose(logLabel, "Running Remote Interpreter");
+  console.log('throwing interpreter error');
+  throw new InterpreterError('Remote interpreter is currently unavailable');
 
   const reqData = {
     code: fs.readFileSync(data.code, "utf-8"),
@@ -77,6 +82,7 @@ const runRemoteInterpreterAsync = async data => {
     body: reqData,
   };
 
+  logVerbose(logLabel, 'Attempting to run remote interpreter now');
   let response;
   try {
     response = await rp(options);
@@ -84,9 +90,11 @@ const runRemoteInterpreterAsync = async data => {
     console.log(`Interpreter failed to process code. Error message received:`);
     console.log(`${err.message}`);
     console.log("Possible fix: Have your code passed type checking?");
-    throw new Error("KayaRPC-specific: Interpreter error");
+    throw new InterpreterError('Remote interpreter failed to run')
   }
-
+  
+  // FIXME: Change error mechanism once the Scilla versioning is completed
+  // https://github.com/Zilliqa/scilla/issues/291
   if (!response.message.gas_remaining) {
     console.log(
       "WARNING: You are using an outdated scilla interpreter. Please upgrade to the latest version"
@@ -97,17 +105,28 @@ const runRemoteInterpreterAsync = async data => {
   return response.message;
 };
 
-const runLocalInterpreterAsync = async (command, outputPath) => {
+/**
+ * Executes the local interpreter
+ * @async
+ * @method runLocalInterpreterAsync
+ * @param { Object } cmdOptions: Command options required to run the scilla interpreter
+ * @param { String } outputPath : File path to the output file
+ * @returns { Object } - response object
+ */
+
+const runLocalInterpreterAsync = async (cmdOptions, outputPath) => {
   logVerbose(logLabel, "Running local scilla interpreter");
+
+  const SCILLA_BIN_PATH = config.constants.smart_contract.SCILLA_BINARY;
   // Run Scilla Interpreter
-  if (!fs.existsSync(config.scilla.runnerPath)) {
+  if (!fs.existsSync(SCILLA_BIN_PATH)) {
     logVerbose(logLabel, "Scilla runner not found. Hint: Have you compiled the scilla binaries?");
-    throw new Error("Kaya RPC Runtime Error: Scilla-runner not found");
+    throw new InterpreterError("Kaya RPC Runtime Error: Scilla-runner not found");
   }
 
-  const result = await execAsync(command);
+  const result = await execFileAsync(SCILLA_BIN_PATH, cmdOptions);
   if (result.stderr !== "") {
-    throw new Error(`Interpreter error: ${result.stderr}`);
+    throw new InterpreterError(`Interpreter error: ${result.stderr}`);
   }
 
   logVerbose(logLabel, "Scilla execution completed");
@@ -117,25 +136,43 @@ const runLocalInterpreterAsync = async (command, outputPath) => {
 };
 
 module.exports = {
-  executeScillaRun: async (payload, address, dir, currentBnum, gasLimit) => {
+
+  /**
+   * Takes arguments from `logic.js` and runs the scilla interpreter
+   * 
+   * @method executeScillaRun 
+   * @async
+   * @param { Object } payload - payload object from the message
+   * @param { String } contractAddr - Contract address, only applicable if it is a deployment call
+   * @param { String } senderAddress - message sender address
+   * @param { String } directory of the data files
+   * @param { String } current block number
+   * @param { String } gasLimit - gasLimit specified by the caller
+   * @returns { Object } consisting of `gasRemaining and nextAddress`
+   */
+  executeScillaRun: async (payload, contractAddr, senderAddr, dir, currentBnum) => {
     // Get the blocknumber into a json file
-    const blockchainPath = `${dir}/blockchain.json`;
+    const blockchainPath = `${dir}blockchain.json`;
     makeBlockchainJson(currentBnum, blockchainPath);
 
-    let isCodeDeployment = payload.code && payload.to === "0".repeat(40);
-    const contractAddr = isCodeDeployment ? address : payload.to;
+    let isCodeDeployment = payload.code && payload.toAddr === "0".repeat(40);
+    contractAddr = (isCodeDeployment) ? contractAddr : payload.toAddr;
 
     const initPath = `${dir}${contractAddr}_init.json`;
     const codePath = `${dir}${contractAddr}_code.scilla`;
-    const outputPath = `${dir}/${contractAddr}_out.json`;
+    const outputPath = `${dir}${contractAddr}_out.json`;
     const statePath = `${dir}${contractAddr}_state.json`;
-    let cmd;
+
+    const standardOpt = ['-libdir', config.constants.smart_contract.SCILLA_LIB, '-gaslimit', payload.gasLimit];
+    const initOpt = ['-init', initPath];
+    const outputOpt = ['-o', outputPath];
+    const codeOpt = ['-i', codePath];
+    const blockchainOpt = ['-iblockchain', blockchainPath];
+
+    const cmdOpt = [].concat.apply([], [standardOpt, initOpt, outputOpt, codeOpt, blockchainOpt])
+
     if (isCodeDeployment) {
       logVerbose(logLabel, "Code Deployment");
-      // initialized with standard message template
-      isCodeDeployment = true;
-      cmd = `${config.scilla.runnerPath} -iblockchain ${blockchainPath} -o ${outputPath} -init ${initPath} -i ${codePath} -gaslimit ${gasLimit} -libdir ${
-        config.scilla.localLibDir}`;
 
       // get init data from payload
       const initParams = JSON.stringify(payload.data);
@@ -147,7 +184,7 @@ module.exports = {
       fs.writeFileSync(codePath, cleanedCode);
     } else {
       // Invoke transition
-      logVerbose(logLabel, `Calling transition within contract ${payload.to}`);
+      logVerbose(logLabel, `Calling transition within contract ${payload.toAddr}`);
 
       logVerbose(logLabel, `Code Path: ${codePath}`);
       logVerbose(logLabel, `Init Path: ${initPath}`);
@@ -156,15 +193,18 @@ module.exports = {
         throw new Error("Address does not exist");
       }
 
-      // get message from payload information
-      const msgPath = `${dir}${payload.to}_message.json`;
+      // Create message object from payload
+      const msgPath = `${dir}${payload.toAddr}_message.json`;
+      msgObj = JSON.parse(payload.data);
+      msgObj._amount = payload.amount;
+      msgObj._sender = `0x${senderAddr}`;
+      fs.writeFileSync(msgPath, JSON.stringify(msgObj));
 
-      const incomingMessage = JSON.stringify(payload.data);
-      const cleanedMsg = paramsCleanup(incomingMessage);
-      fs.writeFileSync(msgPath, cleanedMsg);
-
-      // Invoke contract requires additional message and state paths
-      cmd = `${cmd} -imessage ${msgPath} -istate ${statePath}`;
+      // Append additional options for transition calls
+      cmdOpt.push('-imessage');
+      cmdOpt.push(msgPath);
+      cmdOpt.push('-istate');
+      cmdOpt.push(statePath);
     }
 
     if (!fs.existsSync(codePath) || !fs.existsSync(initPath)) {
@@ -176,7 +216,7 @@ module.exports = {
 
     if (!config.scilla.remote) {
       // local scilla interpreter
-      retMsg = await runLocalInterpreterAsync(cmd, outputPath);
+      retMsg = await runLocalInterpreterAsync(cmdOpt, outputPath);
     } else {
       const apiReqParams = {
         output: outputPath,
@@ -209,7 +249,7 @@ module.exports = {
       logVerbose(logLabel, `Next address: ${retMsg.message._recipient}`);
       responseData.nextAddress = retMsg.message._recipient;
     }
-    // Contract deployment runs do not have returned message
+    // Contract deployment do not have the next address
     responseData.nextAddress = "0".repeat(40);
 
     return responseData;

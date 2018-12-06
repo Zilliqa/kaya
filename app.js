@@ -97,7 +97,7 @@ if (process.env.NODE_ENV === 'test') {
 * Account creation/loading based on presets given 
 * @dev : Only create wallets if the user does not supply any load file
 */
-if(!options.load) { 
+if (!options.load) {
   if (options.fixtures) {
     utils.logVerbose(logLabel, `Bootstrapping from account fixture files: ${options.fixtures}`);
     const accountsPath = options.fixtures;
@@ -113,7 +113,6 @@ if(!options.load) {
 }
 
 wallet.printWallet();
-
 
 // cross region settings with Env
 if (process.env.NODE_ENV === 'dev') {
@@ -199,10 +198,12 @@ const handler = async (req, res) => {
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
       break;
     case 'CreateTransaction':
+      console.log(body.params);
       try {
         const txnId = await logic.processCreateTxn(body.params, options);
         data = txnId;
       } catch (err) {
+        console.log(err);
         data = err.message;
         res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
         break;
@@ -248,7 +249,7 @@ process.on('SIGINT', function () {
   // If `save` is enabled, store files under the saved/ directory
   if (options.save) {
     console.log(`Save mode enabled. Extracting data now..`);
-    
+
     const dir = config.savedFilesDir;
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir);
@@ -256,7 +257,7 @@ process.on('SIGINT', function () {
 
     // Saved files will be prefixed with the timestamp when the user decides to end the session
     const timestamp = utils.getDateTimeString();
-    
+
     const outputData = `${dir}${timestamp}`;
     const targetFilePath = `${outputData}_data.json`;
     utils.consolePrint(`Files will be saved at ${targetFilePath}`);
@@ -283,7 +284,7 @@ process.on('SIGINT', function () {
   // remove files from the db_path
   rimraf.sync(`${options.dataPath}*`);
   console.log(`Files from ${options.dataPath} removed. Shutting down now.`);
-  process.exit(0);  
+  process.exit(0);
 })
 
 module.exports = {
