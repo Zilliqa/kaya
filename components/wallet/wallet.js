@@ -30,8 +30,13 @@ const logLabel = 'Wallet';
 // Wallet will store address, private key and balance
 let wallets = {};
 
+/**
+ * Create a new wallet with the settings registered in `config.js` file
+ * @returns { Object } - wallet containing private key, amount and nonce
+ */
+
 const createNewWallet = () => {
-  const pk = zCrypto.generatePrivateKey();
+  const pk = zCrypto.schnorr.generatePrivateKey();
   const address = zCrypto.getAddressFromPrivateKey(pk);
   const newWallet = {
     privateKey: pk,

@@ -327,6 +327,13 @@ module.exports = {
     }
   },
 
+  /**
+   * Given a payload, returns the Transaction object if found
+   * Throws if the payload is invalid
+   * @method processGetTransaction
+   * @param { Object } data - payload object
+   */
+
   processGetTransaction: (data) => {
     if (!data) {
       logVerbose(logLabel, 'Invalid params');
@@ -344,6 +351,12 @@ module.exports = {
     throw new Error('Txn Hash not Present.');
   },
 
+  /**
+   * Retrieves the last 100 transaction hash
+   * @method processGetRecentTransactions
+   * @returns { Object } - 100 transaction hashes
+   */
+
   processGetRecentTransactions: () => {
     logVerbose(logLabel, 'Getting Recent Transactions');
 
@@ -356,7 +369,9 @@ module.exports = {
 
   /**
    * Function to process GetSmartContract's state, init or code
-   * @param { String } : enum of either data, init or state
+   * @param { Object } data : data retrieved from payload
+   * @param { String } dataPath : datapath where the state file is stored
+   * @param { String } type - enum of either data, init or state
    */
   processGetDataFromContract: (data, dataPath, type) => {
 
