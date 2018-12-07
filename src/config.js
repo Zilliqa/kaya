@@ -18,13 +18,13 @@ kaya.  If not, see <http://www.gnu.org/licenses/>.
 /* Configuration file */
 /* Feel free to add more things to this file that will help you in development */
 
-const packagejs = require('./package.json');
+const packagejs = require('../package.json');
 
 module.exports = {
   port: 4200,
   version: packagejs.version,
-  dataPath: 'data/',
-  savedFilesDir : 'saved/',
+  dataPath: '../data/',
+  savedFilesDir : '../saved/',
 
   // blockchain specific configuration
   blockchain: {
