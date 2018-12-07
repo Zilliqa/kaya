@@ -206,7 +206,7 @@ module.exports = {
         throw new BalanceError('Nonce incorrect');
       }
       // check if payload gasPrice is sufficient
-      const bnBlockchainGasPrice = new BN(config.blockchain.gasPrice);
+      const bnBlockchainGasPrice = new BN(config.blockchain.minimumGasPrice);
       if (bnBlockchainGasPrice.gt(bnGasPrice)) {
         throw new BalanceError('Insufficient Gas Price')
       }

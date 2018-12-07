@@ -232,6 +232,10 @@ const handler = async (req, res) => {
       }
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
       break;
+    case 'GetMinimumGasPrice':
+      data = makeResponse(body.id, body.jsonrpc, config.blockchain.minimumGasPrice, false);
+      res.status(200).send(data);
+      break;
     default:
       data = { Error: 'Unsupported Method' };
       res.status(404).send(data);
