@@ -34,6 +34,7 @@ const logLabel = ('Logic.js');
 // non-persistent states. Initializes whenever server starts
 let transactions = {};
 let createdContractsByUsers = {}; // address => contract addresses
+const contractAddressesByTransactionID = {};  // transaction hash => contract address
 
 /**
  * computes the contract address from the sender's address and nonce
@@ -278,6 +279,9 @@ module.exports = {
             logVerbose(logLabel, 'No existing contracts. Creating new entry.');
             createdContractsByUsers[senderAddress] = [contractAddr];
           }
+
+          contractAddressesByTransactionID[txnId] = contractAddr;
+          logVerbose(logLabel, `TransID: ${txnId} => Contract Address: ${contractAddr}`);
         } else {
           // Placeholder msg - since there's no shards in Kaya RPC
           responseObj.Info = 'Contract Txn, Shards Match of the sender and receiver';
@@ -457,4 +461,27 @@ module.exports = {
 
     return stateLists;
   },
+
+  /**
+   * Process Get Contract Address by Transaction ID
+   * @method processGetContractAddressByTransactionID
+   * @param { Object } data - data object of the payload which contrains transaction hash
+   * @returns { String } contractAddress - 20 bytes string
+   */
+  processGetContractAddressByTransactionID: (data) => {
+    if(typeof data === 'object' && data === null || data[0].length !== 64) {
+      throw new Error('Size not appropriate');
+    }
+    const transId = data[0];
+    if(!transactions[transId]) {
+      throw new Error("Txn Hash not Present");
+    }
+
+    const contractAddr = contractAddressesByTransactionID[transId];
+    if(!contractAddr) { 
+      throw new Error("ID not a contract txn");
+    } else {
+      return contractAddr;
+    }
+  }
 };
