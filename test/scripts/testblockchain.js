@@ -17,13 +17,14 @@ async function testBlockchain() {
         version: 1,
         toAddr: 'd90f2e538ce0df89c8273cad3b63ec44a3c4ed82',
         amount: new BN(888),
+        // gasPrice must be >= minGasPrice
         gasPrice: new BN(101),
         // can be `number` if size is <= 2^53 (i.e., window.MAX_SAFE_INTEGER)
         gasLimit: Long.fromNumber(10),
       }),
     );
     console.log(tx);
-    
+
     console.log('Deploying a contract now');
     // Deploy a contract
     const code = `(* HelloWorld contract *)
@@ -104,7 +105,7 @@ end`;
         type: 'String',
         value: 'Hello World',
       },
-    ]);
+    ], new BN(0), Long.fromNumber(5000), new BN(101));
     console.log(callTx);
     const state = await hello.getState();
     console.log(state);
