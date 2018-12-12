@@ -32,8 +32,8 @@ const config = require('./config');
 const logLabel = ('Logic.js');
 
 // non-persistent states. Initializes whenever server starts
-let transactions = {};
-let createdContractsByUsers = {}; // address => contract addresses
+const transactions = {};
+const createdContractsByUsers = {}; // address => contract addresses
 const contractAddressesByTransactionID = {};  // transaction hash => contract address
 
 /**
@@ -139,12 +139,16 @@ const checkTransactionJson = (data) => {
         return false;
       }
     } else {
-      if (typeof (payload[e] !== 'string')) {
+      if (zUtils.validation.isString(payload[e])) {
         return false;
       }
     }
   })
-  //FIXME: Add signature verification
+
+  logVerbose(logLabel, 'Checking if signature is valid');
+  if(!zUtils.validation.isSignature(payload.signature)) {
+    return false;
+  }
   return true;
 };
 
