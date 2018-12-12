@@ -113,6 +113,8 @@ const checkTransactionJson = (data) => {
     'version',
     'nonce',
     'toAddr',
+    'code',
+    'data',
     'amount',
     'pubKey',
     'gasPrice',
@@ -122,7 +124,7 @@ const checkTransactionJson = (data) => {
 
   /* Checking the keys in the payload */
   const numKeys = Object.keys(payload).length;
-  if (numKeys < 8) return false;
+  if (numKeys < expectedFields.length) return false;
   const payloadKeys = Object.keys(payload);
   const expected = intersect(payloadKeys, expectedFields).length;
   const actual = Object.keys(expectedFields).length;
@@ -265,8 +267,9 @@ module.exports = {
           throw new MultiContractError('Multi-contract calls are not supported yet.');
         }
 
+        const isDeployment = payload.code && payload.toAddr === '0'.repeat(40);
         // Only update if it is a deployment call
-        if (payload.code && payload.toAddr === '0'.repeat(40)) {
+        if (isDeployment) {
           logVerbose(logLabel, `Contract deployed at: ${contractAddr}`);
           responseObj.Info = 'Contract Creation txn, sent to shard';
           responseObj.ContractAddress = contractAddr;
