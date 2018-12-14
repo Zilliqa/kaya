@@ -29,6 +29,11 @@ async function testBlockchain() {
     const code = fs.readFileSync('HelloWorld.scilla', 'utf-8');
     const init = [
       {
+        "vname": "_scilla_version",
+        "type": "Uint32",
+        "value": "0"
+      },
+      {
         vname: 'owner',
         type: 'ByStr20',
         // NOTE: all byte strings passed to Scilla contracts _must_ be
