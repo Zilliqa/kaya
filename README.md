@@ -102,7 +102,7 @@ KayaRPC comes with a few preset configurations for lazy programmers:
 
 Some of the functions in Kaya RPC are covered under automated testing using `jest`. However, scilla related transactions are not covered through automated testing. To test the `CreateTransaction` functionalities, you will have to test it manually.
 
-From `test/scripts/`, you can use run `node testblockchain.js` to test the Kaya RPC. The script will make a payment transaction, deployment transaction and transition invocation. 
+From `test/scripts/`, you can use run `node TestBlockchain.js` to test the Kaya RPC. The script will make a payment transaction, deployment transaction and transition invocation. 
 
 ## License
 

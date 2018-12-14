@@ -22,6 +22,7 @@ const BN = require('bn.js');
 const zCrypto = require('@zilliqa-js/crypto');
 const zUtils = require('@zilliqa-js/util');
 const { bytes } = require('@zilliqa-js/util');
+const zAccount = require('@zilliqa-js/account');
 const scillaCtrl = require('./components/scilla/scilla');
 const walletCtrl = require('./components/wallet/wallet');
 const blockchain = require('./components/blockchain');
@@ -95,61 +96,16 @@ const computeTransactionHash = (payload) => {
   return transactionHash;
 };
 
-// check for common elements within the list
-const intersect = (a, b) => [...new Set(a)].filter(x => new Set(b).has(x));
-
 /**
  * Checks the transaction payload to make sure that it is well-formed
  * @method checkTransactionJson
  * @param { Object} data : Payload retrieved from message
  * @returns { Boolean } : True if the payload is valid, false if it is not
  */
-
 const checkTransactionJson = (data) => {
   if (data !== null && typeof data !== 'object') return false;
   const payload = data[0];
-
-  const expectedFields = [
-    'version',
-    'nonce',
-    'toAddr',
-    'code',
-    'data',
-    'amount',
-    'pubKey',
-    'gasPrice',
-    'gasLimit',
-    'signature',
-  ];
-
-  /* Checking the keys in the payload */
-  const numKeys = Object.keys(payload).length;
-  if (numKeys < expectedFields.length) return false;
-  const payloadKeys = Object.keys(payload);
-  const expected = intersect(payloadKeys, expectedFields).length;
-  const actual = Object.keys(expectedFields).length;
-  // number of overlap keys must be the same as the expected keys
-  if (expected !== actual) return false;
-
-  // Type checking for the payload
-  Object.keys(payload).map(e => {
-    // Only version and nonce are number
-    if (e === 'version' || e === 'nonce') {
-      if (!Number.isInteger(payload[e])) {
-        return false;
-      }
-    } else {
-      if (zUtils.validation.isString(payload[e])) {
-        return false;
-      }
-    }
-  })
-
-  logVerbose(logLabel, 'Checking if signature is valid');
-  if(!zUtils.validation.isSignature(payload.signature)) {
-    return false;
-  }
-  return true;
+  return zAccount.util.isTxParams(payload);
 };
 
 module.exports = {
