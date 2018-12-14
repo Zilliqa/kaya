@@ -126,6 +126,7 @@ const runLocalInterpreterAsync = async (cmdOptions, outputPath) => {
 
   const result = await execFileAsync(SCILLA_BIN_PATH, cmdOptions);
   if (result.stderr !== "") {
+    console.log(`Interpreter error: ${result.stderr}`);
     throw new InterpreterError(`Interpreter error: ${result.stderr}`);
   }
 

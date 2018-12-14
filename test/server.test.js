@@ -17,8 +17,8 @@
 
 
 const request = require('supertest');
-const app = require('../app');
-const config = require('../config');
+const app = require('../src/app');
+const config = require('../src/config');
 require('isomorphic-fetch');
 
 const makeQuery = (method, params) => { 

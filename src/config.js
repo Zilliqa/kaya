@@ -18,18 +18,20 @@ kaya.  If not, see <http://www.gnu.org/licenses/>.
 /* Configuration file */
 /* Feel free to add more things to this file that will help you in development */
 
+const packagejs = require('../package.json');
+
 module.exports = {
   port: 4200,
-  version: '0.2.0',
-  dataPath: 'data/',
-  savedFilesDir : 'saved/',
+  version: packagejs.version,
+  dataPath: '../data/',
+  savedFilesDir : '../saved/',
 
   // blockchain specific configuration
   blockchain: {
     // sets timer for the block confirmation
     blockInterval: 10000, // 10000 : 10 seconds for one block
     blockStart: 0,
-    gasPrice: 100, // Min Gas is now 100
+    minimumGasPrice: "100", // Min Gas is now 100
     transferGasCost: 1 // Amount of gas consumed for each transfer
   },
 
@@ -47,8 +49,8 @@ module.exports = {
       NORMAL_TRAN_GAS: 10
     },
     smart_contract: {
-      SCILLA_BINARY: "./components/scilla/scilla-runner",
-      SCILLA_LIB: "./components/scilla/stdlib"
+      SCILLA_BINARY: "./src/components/scilla/scilla-runner",
+      SCILLA_LIB: "./src/components/scilla/stdlib"
     }
   },
 

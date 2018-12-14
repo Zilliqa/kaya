@@ -19,12 +19,22 @@ Currently, Kaya supports the following functions:
 * `GetBalance`
 * `GetSmartContractInit`
 * `GetSmartContractCode`
+* `GetContractAddressFromTransactionID`
+* `GetMinimumGasPrice`
 
 Methods that are NOT supported:
-* `GetDsBlock`
-* `GetTxBlock`
-* `GetLatestDsBlock`
-* `GetLatestTxBlock`
+* `GetShardingStructure`
+* `GetNumDSBlocks`
+* `GetDSBlockRate`
+* `GetNumTxBlocks`
+* `GetTxBlockRate`
+* `GetNumTransactions`
+* `GetTransactionRate`
+* `GetCurrentMiniEpoch`
+* `GetCurrentDSEpoch`
+* `GetNumTxnsTxEpoch`
+* `GetNumTxnsDSEpoch`
+
 
 In addition, the following features are not supported yet:
 * Multi-contract calls
@@ -38,7 +48,6 @@ Kaya RPC server is distributed as a Node package via `npm`. Ensure that you have
 ```
 npm install -g kaya-cli
 ```
-
 
 Scilla files must be processed using the `scilla-interpreter`. The [Scilla interpreter](https://scilla.readthedocs.io/en/latest/interface.html) executable provides a calling interface that enables users to invoke transitions with specified inputs and obtain outputs. 
 
@@ -93,19 +102,7 @@ KayaRPC comes with a few preset configurations for lazy programmers:
 
 Some of the functions in Kaya RPC are covered under automated testing using `jest`. However, scilla related transactions are not covered through automated testing. To test the `CreateTransaction` functionalities, you will have to test it manually.
 
-From `test/scripts/`, you can use run `node DeployContract.js` to test contract deployment. 
-Then, use `node CreateTransaction --key [private-key] --to [contract_addr]` to make transition calls. 
-You can use the `curl` commands stated in the [jsonrpc apidocs](https://apidocs.zilliqa.com/#introduction) to test the rest of the functions.
-
-Use `--key` to specify a private key. Otherwise, a random privatekey will be generated.
-
-### Testing with Fixture Files
-
-You can also use the `--test` flag, which uses default test configurations: 
-1. Start the server using `npm run debug:fixtures`
-2. Deploy a contract using `node DeployContract.js --test`.
-3. Check where the contract is deployed. It should be on the logs if you have enabled `debug` mode, otherwise you can check it through the `GetSmartContracts` method.
-4. Send a transaction using `node CreateTransaction.js --test`
+From `test/scripts/`, you can use run `node TestBlockchain.js` to test the Kaya RPC. The script will make a payment transaction, deployment transaction and transition invocation. 
 
 ## License
 

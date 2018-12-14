@@ -37,11 +37,16 @@ if (process.env.NODE_ENV !== 'test') {
   argv = config.testconfigs.args;
 }
 
-// utils.initArgs(argv); // init options in utils
-
-
 const logLabel = 'App.js';
 
+/**
+ * Make the response headers before returning to client
+ * @method makeResponse
+ * @param { String } id 
+ * @param { String} jsonrpc 
+ * @param { Object } data 
+ * @param { Boolean } isErr 
+ */
 const makeResponse = (id, jsonrpc, data, isErr) => {
   const responseObj = { id, jsonrpc };
   responseObj.result = isErr ? { Error: data } : data;
@@ -231,6 +236,21 @@ const handler = async (req, res) => {
         break;
       }
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
+      break;
+    case 'GetContractAddressFromTransactionID':
+      try {
+        const result = logic.processGetContractAddressByTransactionID(body.params);
+        data = result;
+      } catch (err) {
+        data = err.message;
+        res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+        break;
+      }
+      res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
+      break;
+    case 'GetMinimumGasPrice':
+      data = makeResponse(body.id, body.jsonrpc, config.blockchain.minimumGasPrice, false);
+      res.status(200).send(data);
       break;
     default:
       data = { Error: 'Unsupported Method' };

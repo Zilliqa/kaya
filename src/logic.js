@@ -22,6 +22,7 @@ const BN = require('bn.js');
 const zCrypto = require('@zilliqa-js/crypto');
 const zUtils = require('@zilliqa-js/util');
 const { bytes } = require('@zilliqa-js/util');
+const zAccount = require('@zilliqa-js/account');
 const scillaCtrl = require('./components/scilla/scilla');
 const walletCtrl = require('./components/wallet/wallet');
 const blockchain = require('./components/blockchain');
@@ -32,8 +33,9 @@ const config = require('./config');
 const logLabel = ('Logic.js');
 
 // non-persistent states. Initializes whenever server starts
-let transactions = {};
-let createdContractsByUsers = {}; // address => contract addresses
+const transactions = {};
+const createdContractsByUsers = {}; // address => contract addresses
+const contractAddressesByTransactionID = {};  // transaction hash => contract address
 
 /**
  * computes the contract address from the sender's address and nonce
@@ -94,55 +96,16 @@ const computeTransactionHash = (payload) => {
   return transactionHash;
 };
 
-// check for common elements within the list
-const intersect = (a, b) => [...new Set(a)].filter(x => new Set(b).has(x));
-
 /**
  * Checks the transaction payload to make sure that it is well-formed
  * @method checkTransactionJson
  * @param { Object} data : Payload retrieved from message
  * @returns { Boolean } : True if the payload is valid, false if it is not
  */
-
 const checkTransactionJson = (data) => {
   if (data !== null && typeof data !== 'object') return false;
   const payload = data[0];
-
-  const expectedFields = [
-    'version',
-    'nonce',
-    'toAddr',
-    'amount',
-    'pubKey',
-    'gasPrice',
-    'gasLimit',
-    'signature',
-  ];
-
-  /* Checking the keys in the payload */
-  const numKeys = Object.keys(payload).length;
-  if (numKeys < 8) return false;
-  const payloadKeys = Object.keys(payload);
-  const expected = intersect(payloadKeys, expectedFields).length;
-  const actual = Object.keys(expectedFields).length;
-  // number of overlap keys must be the same as the expected keys
-  if (expected !== actual) return false;
-
-  // Type checking for the payload
-  Object.keys(payload).map(e => {
-    // Only version and nonce are number
-    if (e === 'version' || e === 'nonce') {
-      if (!Number.isInteger(payload[e])) {
-        return false;
-      }
-    } else {
-      if (typeof (payload[e] !== 'string')) {
-        return false;
-      }
-    }
-  })
-  //FIXME: Add signature verification
-  return true;
+  return zAccount.util.isTxParams(payload);
 };
 
 module.exports = {
@@ -206,7 +169,7 @@ module.exports = {
         throw new BalanceError('Nonce incorrect');
       }
       // check if payload gasPrice is sufficient
-      const bnBlockchainGasPrice = new BN(config.blockchain.gasPrice);
+      const bnBlockchainGasPrice = new BN(config.blockchain.minimumGasPrice);
       if (bnBlockchainGasPrice.gt(bnGasPrice)) {
         throw new BalanceError('Insufficient Gas Price')
       }
@@ -264,8 +227,9 @@ module.exports = {
           throw new MultiContractError('Multi-contract calls are not supported yet.');
         }
 
+        const isDeployment = payload.code && payload.toAddr === '0'.repeat(40);
         // Only update if it is a deployment call
-        if (payload.code && payload.toAddr === '0'.repeat(40)) {
+        if (isDeployment) {
           logVerbose(logLabel, `Contract deployed at: ${contractAddr}`);
           responseObj.Info = 'Contract Creation txn, sent to shard';
           responseObj.ContractAddress = contractAddr;
@@ -278,6 +242,9 @@ module.exports = {
             logVerbose(logLabel, 'No existing contracts. Creating new entry.');
             createdContractsByUsers[senderAddress] = [contractAddr];
           }
+
+          contractAddressesByTransactionID[txnId] = contractAddr;
+          logVerbose(logLabel, `TransID: ${txnId} => Contract Address: ${contractAddr}`);
         } else {
           // Placeholder msg - since there's no shards in Kaya RPC
           responseObj.Info = 'Contract Txn, Shards Match of the sender and receiver';
@@ -457,4 +424,27 @@ module.exports = {
 
     return stateLists;
   },
+
+  /**
+   * Process Get Contract Address by Transaction ID
+   * @method processGetContractAddressByTransactionID
+   * @param { Object } data - data object of the payload which contrains transaction hash
+   * @returns { String } contractAddress - 20 bytes string
+   */
+  processGetContractAddressByTransactionID: (data) => {
+    if(typeof data === 'object' && data === null || data[0].length !== 64) {
+      throw new Error('Size not appropriate');
+    }
+    const transId = data[0];
+    if(!transactions[transId]) {
+      throw new Error("Txn Hash not Present");
+    }
+
+    const contractAddr = contractAddressesByTransactionID[transId];
+    if(!contractAddr) { 
+      throw new Error("ID not a contract txn");
+    } else {
+      return contractAddr;
+    }
+  }
 };
