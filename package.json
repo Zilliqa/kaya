@@ -1,11 +1,11 @@
 {
   "name": "kaya-cli",
-  "version": "0.2.3",
+  "version": "0.2.5",
   "description": "Zilliqa's RPC Server",
-  "main": "server.js",
+  "main": "src/server.js",
   "scripts": {
     "test": "jest -c jest.config.js",
-    "dev": "cross-env NODE_ENV=dev node server.js",
+    "dev": "cross-env NODE_ENV=dev node src/server.js",
     "start": "node src/server.js",
     "start:fixtures": "node src/server.js --f test/account-fixtures.json",
     "debug": "node src/server.js -v",
@@ -18,7 +18,7 @@
     "url": "https://github.com/Zilliqa/kaya"
   },
   "bin": {
-    "kaya-cli": "./server.js"
+    "kaya-cli": "./src/server.js"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
