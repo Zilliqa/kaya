@@ -1,3 +1,5 @@
+const errorCode = require('../ErrorCodes');
+
 class InterpreterError extends Error {
     constructor(message) {
         super(message);

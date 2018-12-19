@@ -20,13 +20,13 @@ const express = require('express');
 const fs = require('fs');
 const rimraf = require('rimraf');
 const yargs = require('yargs');
-
 const expressjs = express();
 const config = require('./config');
 const logic = require('./logic');
 const wallet = require('./components/wallet/wallet');
 const utils = require('./utilities');
 const initArgv = require('./argv');
+const errorCodes = require('./ErrorCodes');
 
 expressjs.use(bodyParser.json({ extended: false }));
 let argv;
@@ -49,7 +49,11 @@ const logLabel = 'App.js';
  */
 const makeResponse = (id, jsonrpc, data, isErr) => {
   const responseObj = { id, jsonrpc };
-  responseObj.result = isErr ? { Error: data } : data;
+  if (isErr) { 
+    responseObj.error = data;
+  } else {
+    responseObj.result = data;
+  }
   return responseObj;
 }
 
@@ -133,6 +137,7 @@ expressjs.get('/', (req, res) => {
 
 const handler = async (req, res) => {
   const { body } = req;
+  const {id, method, jsonrpc, params} = body;
   let data = {};
   let result;
   let addr;
@@ -155,7 +160,7 @@ const handler = async (req, res) => {
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
       break;
     case 'GetNetworkId':
-      data = makeResponse(body.id, body.jsonrpc, 'Testnet', false);
+      data = makeResponse(body.id, body.jsonrpc, 'TestNet', false);
       res.status(200).send(data);
       break;
     case 'GetSmartContractCode':
@@ -253,8 +258,11 @@ const handler = async (req, res) => {
       res.status(200).send(data);
       break;
     default:
-      data = { Error: 'Unsupported Method' };
-      res.status(404).send(data);
+      data = { 
+        code: errorCodes.RPC_INVALID_REQUEST,
+        message: 'METHOD_NOT_FOUND: The method being requested is not available on this server'
+      };
+      res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
   }
   utils.logVerbose(logLabel, 'Sending response back to client');
 };
