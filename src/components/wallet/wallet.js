@@ -116,8 +116,9 @@ module.exports = {
       const accountAddresses = Object.keys(wallets);
       const keys = [];
       accountAddresses.forEach((addr, index) => {
+        const balanceInZils = zUtils.units.fromQa(wallets[addr].amount, 'zil');
         consolePrint(
-          `(${index + 1}) ${addr}\t(Amt: ${(wallets[addr].amount).toString()})\t(Nonce: ${
+          `(${index + 1}) ${addr}\t(${balanceInZils} ZILs)\t(Nonce: ${
           wallets[addr].nonce
           })`);
         keys.push(wallets[addr].privateKey);
