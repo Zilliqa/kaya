@@ -31,7 +31,7 @@ module.exports = {
     // sets timer for the block confirmation
     blockInterval: 10000, // 10000 : 10 seconds for one block
     blockStart: 0,
-    minimumGasPrice: "100", // Min Gas is now 100
+    minimumGasPrice: "1_000_000_000", // Min Gas is now 100
     transferGasCost: 1 // Amount of gas consumed for each transfer
   },
 
@@ -66,7 +66,7 @@ Settings for the scilla interpreter
   },
 
   testconfigs: {
-    gasPrice: 100,
+    gasPrice: "1_000_000_000",
     gasLimit: 10,
     transferAmt: 100,
     args: {
