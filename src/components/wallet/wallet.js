@@ -24,7 +24,7 @@ const { logVerbose, consolePrint } = require('../../utilities');
 const config = require('../../config');
 const logLabel = 'Wallet';
 const errorCodes = require('../../ErrorCodes');
-const { BalanceError } = require('../CustomErrors');
+const { RPCError } = require('../CustomErrors');
 
 // @dev: As this is a kaya, private keys will be stored
 // note: Real systems do not store private key
@@ -200,7 +200,7 @@ module.exports = {
       throw new Error('Type error');
     };
     if (!zUtils.validation.isAddress(address)) {
-      throw new Error('Address size not appropriate');
+      throw new RPCError('Address size not appropriate', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
     if (!wallets[address]) {
       // initialize new wallet account
@@ -231,10 +231,10 @@ module.exports = {
   increaseNonce: (address) => {
     logVerbose(logLabel, `Increasing nonce for ${address}`);
     if (!zUtils.validation.isAddress(address)) {
-      throw new Error('Address size not appropriate');
+      throw new RPCError('Address size not appropriate', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
     if (!wallets[address]) {
-      throw new Error('Address not found');
+      throw new RPCError('Account is not created', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     } else {
       const newNonce = wallets[address].nonce + 1;
       wallets[address].nonce = newNonce;
@@ -251,14 +251,14 @@ module.exports = {
 
   getBalance: (value) => {
     if (!zUtils.validation.isAddress(value)) {
-      throw new Error('Address size not appropriate');
+      throw new RPCError('Address size not appropriate', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
 
     const address = value.toLowerCase();
     logVerbose(logLabel, `Getting balance for ${address}`);
 
     if (!wallets[address]) {
-      throw new BalanceError('Account is not created');
+      throw new RPCError('Account is not created', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
 
     return {
