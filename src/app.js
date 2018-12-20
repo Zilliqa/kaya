@@ -49,8 +49,12 @@ const logLabel = 'App.js';
  */
 const makeResponse = (id, jsonrpc, data, isErr) => {
   const responseObj = { id, jsonrpc };
-  if (isErr) { 
-    responseObj.error = data;
+  if (isErr) {
+    const error = {};
+    error.code = data.code;
+    error.data = data.data;
+    error.message = data.message;
+    responseObj.error = error;
   } else {
     responseObj.result = data;
   }
@@ -149,12 +153,10 @@ const handler = async (req, res) => {
         addr = JSON.stringify(addr);
       }
       utils.logVerbose(logLabel, `Getting balance for ${addr}`);
-
       try {
         data = wallet.getBalance(addr);
       } catch (err) {
-        data = err.message;
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
         break;
       }
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
@@ -213,7 +215,6 @@ const handler = async (req, res) => {
         const txnId = await logic.processCreateTxn(body.params, options);
         data = txnId;
       } catch (err) {
-        console.log(err);
         data = err.message;
         res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
         break;

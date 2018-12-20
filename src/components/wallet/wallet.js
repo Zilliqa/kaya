@@ -23,6 +23,8 @@ const BN = require('bn.js');
 const { logVerbose, consolePrint } = require('../../utilities');
 const config = require('../../config');
 const logLabel = 'Wallet';
+const errorCodes = require('../../ErrorCodes');
+const { BalanceError } = require('../CustomErrors');
 
 // @dev: As this is a kaya, private keys will be stored
 // note: Real systems do not store private key
@@ -256,10 +258,7 @@ module.exports = {
     logVerbose(logLabel, `Getting balance for ${address}`);
 
     if (!wallets[address]) {
-      return {
-        balance: "0",
-        nonce: 0,
-      };
+      throw new BalanceError('Account is not created');
     }
 
     return {

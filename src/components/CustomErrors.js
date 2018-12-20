@@ -11,6 +11,8 @@ class BalanceError extends Error {
     constructor(message) {
         super(message);
         this.name = "BalanceError";
+        this.code = errorCode.RPC_INVALID_ADDRESS_OR_KEY,
+        this.data = null
     }
 }
 

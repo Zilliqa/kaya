@@ -29,7 +29,6 @@ const blockchain = require('./components/blockchain');
 const { InterpreterError, BalanceError, MultiContractError } = require('./components/CustomErrors');
 const { logVerbose, consolePrint } = require('./utilities');
 const config = require('./config');
-
 const logLabel = ('Logic.js');
 
 // non-persistent states. Initializes whenever server starts
