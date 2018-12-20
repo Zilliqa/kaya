@@ -100,7 +100,7 @@ describe('Smart Contract related methods Tests', () => {
         .then((response) => {
             expect(response.statusCode).toBe(200);
             expect(response.body).toEqual(
-                {"id":"1","jsonrpc":"2.0","result":{"Error":"Address does not exist"}}
+                {"error": {"code": -5, "data": null, "message": "Address does not exist"}, "id": "1", "jsonrpc": "2.0"}
             );
             done();
         });
@@ -112,7 +112,7 @@ describe('Smart Contract related methods Tests', () => {
         .then((response) => {
             expect(response.statusCode).toBe(200);
             expect(response.body).toEqual(
-                {"id":"1","jsonrpc":"2.0","result":{"Error":"Address does not exist"}}
+                {"error": {"code": -5, "data": null, "message": "Address does not exist"}, "id": "1", "jsonrpc": "2.0"}
             );
             done();
         });
@@ -124,7 +124,7 @@ describe('Smart Contract related methods Tests', () => {
         .then((response) => {
             expect(response.statusCode).toBe(200);
             expect(response.body).toEqual(
-                {"id":"1","jsonrpc":"2.0","result":{"Error":"Address does not exist"}}
+                {"error": {"code": -5, "data": null, "message": "Address does not exist"}, "id": "1", "jsonrpc": "2.0"}
             );
             done();
         });
@@ -136,7 +136,7 @@ describe('Smart Contract related methods Tests', () => {
         .then((response) => {
             expect(response.statusCode).toBe(200);
             expect(response.body).toEqual(
-                {"id":"1","jsonrpc":"2.0","result":{"Error":"Address does not exist"}}
+                {"error": {"code": -5, "data": null, "message": "Address does not exist"}, "id": "1", "jsonrpc": "2.0"}
             );
             done();
         });

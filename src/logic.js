@@ -26,10 +26,11 @@ const zAccount = require('@zilliqa-js/account');
 const scillaCtrl = require('./components/scilla/scilla');
 const walletCtrl = require('./components/wallet/wallet');
 const blockchain = require('./components/blockchain');
-const { InterpreterError, BalanceError, MultiContractError } = require('./components/CustomErrors');
+const { InterpreterError, BalanceError, MultiContractError, RPCError } = require('./components/CustomErrors');
 const { logVerbose, consolePrint } = require('./utilities');
 const config = require('./config');
 const logLabel = ('Logic.js');
+const errorCodes = require('./ErrorCodes');
 
 // non-persistent states. Initializes whenever server starts
 const transactions = {};
@@ -303,8 +304,10 @@ module.exports = {
   processGetTransaction: (data) => {
     if (!data) {
       logVerbose(logLabel, 'Invalid params');
-      const err = new Error(
-        'INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised',
+      const err = new RPCError(
+        'INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised: Size not appropriate',
+        errorCodes.RPC_INVALID_PARAMS,
+        null
       );
       throw err;
     }
@@ -314,7 +317,12 @@ module.exports = {
     if (res) {
       return res;
     }
-    throw new Error('Txn Hash not Present.');
+    const err = new RPCError(
+      'INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised: Size not appropriate',
+      errorCodes.RPC_DATABASE_ERROR,
+      null
+    );
+    throw err;
   },
 
   /**
@@ -343,30 +351,38 @@ module.exports = {
 
     const fileType = type.trim().toLowerCase();
     if (!['init', 'state', 'code'].includes(fileType)) {
-      throw new Error('Invalid option flag');
+      const err = new RPCError(
+        'INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised: Invalid options flag',
+        errorCodes.RPC_INVALID_PARAMS,
+        null
+      );
+      throw err;
     }
     const ext = fileType === 'code' ? 'scilla' : 'json';
     logVerbose(logLabel, `Getting SmartContract ${fileType}`);
 
     if (!data) {
       logVerbose(logLabel, 'Invalid params');
-      throw new Error(
-        'INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised',
+      const err = new RPCError(
+        'INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised: Size not appropriate',
+        errorCodes.RPC_INVALID_PARAMS,
+        null
       );
+      throw err;
     }
 
     // checking contract address's validity
     const contractAddress = data[0];
     if (contractAddress == null || !zUtils.validation.isAddress(contractAddress)) {
       consolePrint('Invalid request');
-      throw new Error('Address size inappropriate');
+      throw new RPCError('Address size not appropriate', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
     const filePath = `${dataPath}${contractAddress.toLowerCase()}_${fileType}.${ext}`;
     logVerbose(logLabel, `Retrieving data from ${filePath}`);
 
     if (!fs.existsSync(filePath)) {
       consolePrint(`No ${type} file found (Contract: ${contractAddress}`);
-      throw new Error('Address does not exist');
+      throw new RPCError('Address does not exist', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
 
     const responseData = fs.readFileSync(filePath, 'utf-8');
@@ -398,12 +414,12 @@ module.exports = {
     logVerbose(logLabel, `Getting smart contracts created by ${addr}`);
     if (addr === null || !zUtils.validation.isAddress(addr)) {
       console.log('Invalid request');
-      throw new Error('Address size inappropriate');
+      throw new RPCError('Address size not appropriate', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
 
     const stateLists = [];
     if (!createdContractsByUsers[addr]) {
-      throw new Error('Address does not exist');
+      throw new RPCError('Address does not exist', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
     // Addr found - proceed to append state to return list
     const contracts = createdContractsByUsers[addr];
@@ -412,7 +428,7 @@ module.exports = {
       const statePath = `${dataPath}${contractId.toLowerCase()}_state.json`;
       if (!fs.existsSync(statePath)) {
         console.log(`No state file found (Contract: ${contractId}`);
-        throw new Error('Address does not exist');
+        throw new RPCError('Address does not exist', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
       }
       const retMsg = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
       const contractStateObj = {};
@@ -432,7 +448,7 @@ module.exports = {
    */
   processGetContractAddressByTransactionID: (data) => {
     if(typeof data === 'object' && data === null || data[0].length !== 64) {
-      throw new Error('Size not appropriate');
+      throw new RPCError('Size not appropriate', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
     const transId = data[0];
     if(!transactions[transId]) {

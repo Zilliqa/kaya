@@ -141,7 +141,6 @@ expressjs.get('/', (req, res) => {
 
 const handler = async (req, res) => {
   const { body } = req;
-  const {id, method, jsonrpc, params} = body;
   let data = {};
   let result;
   let addr;
@@ -170,8 +169,7 @@ const handler = async (req, res) => {
         result = logic.processGetDataFromContract(body.params, options.dataPath, 'code');
         data = result;
       } catch (err) {
-        data = err.message;
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
         break;
       }
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
@@ -181,8 +179,7 @@ const handler = async (req, res) => {
         result = logic.processGetDataFromContract(body.params, options.dataPath, 'state');
         data = result;
       } catch (err) {
-        data = err.message;
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
         break;
       }
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
@@ -192,8 +189,7 @@ const handler = async (req, res) => {
         result = logic.processGetDataFromContract(body.params, options.dataPath, 'init');
         data = result;
       } catch (err) {
-        data = err.message;
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
         break;
       }
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
@@ -203,8 +199,7 @@ const handler = async (req, res) => {
         result = logic.processGetSmartContracts(body.params, options.dataPath);
         data = result;
       } catch (err) {
-        data = err.message;
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
         break;
       }
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
@@ -215,8 +210,7 @@ const handler = async (req, res) => {
         const txnId = await logic.processCreateTxn(body.params, options);
         data = txnId;
       } catch (err) {
-        data = err.message;
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
         break;
       }
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
@@ -226,8 +220,7 @@ const handler = async (req, res) => {
         const obj = logic.processGetTransaction(body.params);
         data = obj;
       } catch (err) {
-        data = err.message;
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
         break;
       }
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
@@ -237,8 +230,7 @@ const handler = async (req, res) => {
         const obj = logic.processGetRecentTransactions();
         data = obj;
       } catch (err) {
-        data = err.message;
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
         break;
       }
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
@@ -248,8 +240,7 @@ const handler = async (req, res) => {
         const result = logic.processGetContractAddressByTransactionID(body.params);
         data = result;
       } catch (err) {
-        data = err.message;
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
         break;
       }
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
