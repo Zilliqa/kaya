@@ -26,7 +26,8 @@ const logic = require('./logic');
 const wallet = require('./components/wallet/wallet');
 const utils = require('./utilities');
 const initArgv = require('./argv');
-const errorCodes = require('./ErrorCodes');
+const zCore = require('@zilliqa-js/core')
+
 
 expressjs.use(bodyParser.json({ extended: false }));
 let argv;
@@ -38,6 +39,8 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 const logLabel = 'App.js';
+const errorCodes = zCore.RPCErrorCode;
+
 
 /**
  * Make the response headers before returning to client
@@ -49,16 +52,15 @@ const logLabel = 'App.js';
  */
 const makeResponse = (id, jsonrpc, data, isErr) => {
   const responseObj = { id, jsonrpc };
+  let errorObj;
   if (isErr) {
-    const error = {};
-    error.code = data.code;
-    error.data = data.data;
-    error.message = data.message;
-    responseObj.error = error;
-  } else {
-    responseObj.result = data;
+    errorObj = {
+      code: data.code,
+      data: data.data,
+      message: data.message
+    }
   }
-  return responseObj;
+  return isErr ? { ...responseObj, error: errorObj } : { ...responseObj, result: data };
 }
 
 const wrapAsync = fn => (req, res, next) => {
@@ -250,7 +252,7 @@ const handler = async (req, res) => {
       res.status(200).send(data);
       break;
     default:
-      data = { 
+      data = {
         code: errorCodes.RPC_INVALID_REQUEST,
         message: 'METHOD_NOT_FOUND: The method being requested is not available on this server'
       };

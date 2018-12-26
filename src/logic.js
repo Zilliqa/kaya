@@ -30,7 +30,8 @@ const { InterpreterError, BalanceError, MultiContractError, RPCError } = require
 const { logVerbose, consolePrint } = require('./utilities');
 const config = require('./config');
 const logLabel = ('Logic.js');
-const errorCodes = require('./ErrorCodes');
+const zCore = require('@zilliqa-js/core')
+const errorCodes = zCore.RPCErrorCode;
 
 // non-persistent states. Initializes whenever server starts
 const transactions = {};

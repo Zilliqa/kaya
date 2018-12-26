@@ -65,7 +65,7 @@ describe('Server Initialization Tests', () => {
         .send(makeQuery("GetBalance", testAccount1))
         .then((response1) => {
             expect(response1.statusCode).toBe(200);
-            expect(response1.body).toEqual({"id": "1", "jsonrpc": "2.0", "result": {"balance": config.wallet.defaultAmt, "nonce": config.wallet.defaultNonce}});
+            expect(response1.body).toEqual({"id": "1", "jsonrpc": "2.0", "result": {"balance": config.wallet.defaultAmt.toString(), "nonce": config.wallet.defaultNonce}});
             done();
         });
     });

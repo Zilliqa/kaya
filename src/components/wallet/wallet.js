@@ -23,8 +23,10 @@ const BN = require('bn.js');
 const { logVerbose, consolePrint } = require('../../utilities');
 const config = require('../../config');
 const logLabel = 'Wallet';
-const errorCodes = require('../../ErrorCodes');
+const zCore = require('@zilliqa-js/core')
 const { RPCError } = require('../CustomErrors');
+
+const errorCodes = zCore.RPCErrorCode;
 
 // @dev: As this is a kaya, private keys will be stored
 // note: Real systems do not store private key
@@ -42,7 +44,7 @@ const createNewWallet = () => {
   const address = zCrypto.getAddressFromPrivateKey(pk);
   const newWallet = {
     privateKey: pk,
-    amount: new BN(config.wallet.defaultAmt),
+    amount: config.wallet.defaultAmt,
     nonce: config.wallet.defaultNonce,
   };
   wallets[address] = newWallet;
@@ -147,21 +149,17 @@ module.exports = {
       throw new Error('Type error');
     };
     // checking if an address has sufficient funds for deduction
-    const userBalance = module.exports.getBalance(address);
     logVerbose(logLabel, `Checking if ${address} has ${amount}`);
-    const bnCurrentBalance = new BN(userBalance.balance);
-    if(amount.lte(bnCurrentBalance)) {
-      logVerbose(logLabel, 'Sufficient Funds.');
-      return true;
-    }
-    logVerbose(logLabel, 'Insufficient funds.');
-    return false;
+    const bnCurrentBalance = wallets[address.toLowerCase()].amount
+    const fundsSufficient = amount.lte(bnCurrentBalance) ? true : false;
+    logVerbose(logLabel, `Funds sufficient ${fundsSufficient}`);
+    return fundsSufficient;
   },
 
   /** 
    * Deduct funds from an account
-   * @param {string}: Address of an account
-   * @param {Number}: amount to be deducted
+   * @param { String }: Address of an account
+   * @param { BN }: amount to be deducted
    * Does not return any value
    */
 

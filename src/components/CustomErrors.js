@@ -1,4 +1,5 @@
-const errorCode = require('../ErrorCodes');
+const zCore = require('@zilliqa-js/core')
+const errorCodes = zCore.RPCErrorCode;
 
 class InterpreterError extends Error {
     constructor(message) {
@@ -11,7 +12,7 @@ class BalanceError extends Error {
     constructor(message) {
         super(message);
         this.name = "BalanceError";
-        this.code = errorCode.RPC_INVALID_ADDRESS_OR_KEY,
+        this.code = errorCodes.RPC_INVALID_ADDRESS_OR_KEY,
         this.data = null
     }
 }

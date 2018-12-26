@@ -19,6 +19,8 @@ kaya.  If not, see <http://www.gnu.org/licenses/>.
 /* Feel free to add more things to this file that will help you in development */
 
 const packagejs = require('../package.json');
+const { BN } = require('@zilliqa-js/util');
+
 
 module.exports = {
   port: 4200,
@@ -31,13 +33,13 @@ module.exports = {
     // sets timer for the block confirmation
     blockInterval: 10000, // 10000 : 10 seconds for one block
     blockStart: 0,
-    minimumGasPrice: "1_000_000_000", // Min Gas is now 100
+    minimumGasPrice: new BN("1_000_000_000"), // Min Gas is now 100
     transferGasCost: 1 // Amount of gas consumed for each transfer
   },
 
   wallet: {
     numAccounts: 10, // number of default accounts
-    defaultAmt: "1000000000000000000", // default amount of zils assigned to each wallet
+    defaultAmt: new BN("1000000000000000000"), // default amount of zils assigned to each wallet
     defaultNonce: 0,
   },
 
