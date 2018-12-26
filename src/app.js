@@ -20,13 +20,14 @@ const express = require('express');
 const fs = require('fs');
 const rimraf = require('rimraf');
 const yargs = require('yargs');
-
 const expressjs = express();
 const config = require('./config');
 const logic = require('./logic');
 const wallet = require('./components/wallet/wallet');
 const utils = require('./utilities');
 const initArgv = require('./argv');
+const zCore = require('@zilliqa-js/core')
+
 
 expressjs.use(bodyParser.json({ extended: false }));
 let argv;
@@ -38,6 +39,8 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 const logLabel = 'App.js';
+const errorCodes = zCore.RPCErrorCode;
+
 
 /**
  * Make the response headers before returning to client
@@ -49,8 +52,15 @@ const logLabel = 'App.js';
  */
 const makeResponse = (id, jsonrpc, data, isErr) => {
   const responseObj = { id, jsonrpc };
-  responseObj.result = isErr ? { Error: data } : data;
-  return responseObj;
+  let errorObj;
+  if (isErr) {
+    errorObj = {
+      code: data.code,
+      data: data.data,
+      message: data.message
+    }
+  }
+  return isErr ? { ...responseObj, error: errorObj } : { ...responseObj, result: data };
 }
 
 const wrapAsync = fn => (req, res, next) => {
@@ -144,18 +154,16 @@ const handler = async (req, res) => {
         addr = JSON.stringify(addr);
       }
       utils.logVerbose(logLabel, `Getting balance for ${addr}`);
-
       try {
         data = wallet.getBalance(addr);
       } catch (err) {
-        data = err.message;
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
         break;
       }
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
       break;
     case 'GetNetworkId':
-      data = makeResponse(body.id, body.jsonrpc, 'Testnet', false);
+      data = makeResponse(body.id, body.jsonrpc, 'TestNet', false);
       res.status(200).send(data);
       break;
     case 'GetSmartContractCode':
@@ -163,8 +171,7 @@ const handler = async (req, res) => {
         result = logic.processGetDataFromContract(body.params, options.dataPath, 'code');
         data = result;
       } catch (err) {
-        data = err.message;
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
         break;
       }
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
@@ -174,8 +181,7 @@ const handler = async (req, res) => {
         result = logic.processGetDataFromContract(body.params, options.dataPath, 'state');
         data = result;
       } catch (err) {
-        data = err.message;
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
         break;
       }
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
@@ -185,8 +191,7 @@ const handler = async (req, res) => {
         result = logic.processGetDataFromContract(body.params, options.dataPath, 'init');
         data = result;
       } catch (err) {
-        data = err.message;
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
         break;
       }
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
@@ -196,8 +201,7 @@ const handler = async (req, res) => {
         result = logic.processGetSmartContracts(body.params, options.dataPath);
         data = result;
       } catch (err) {
-        data = err.message;
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
         break;
       }
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
@@ -208,9 +212,7 @@ const handler = async (req, res) => {
         const txnId = await logic.processCreateTxn(body.params, options);
         data = txnId;
       } catch (err) {
-        console.log(err);
-        data = err.message;
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
         break;
       }
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
@@ -220,8 +222,7 @@ const handler = async (req, res) => {
         const obj = logic.processGetTransaction(body.params);
         data = obj;
       } catch (err) {
-        data = err.message;
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
         break;
       }
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
@@ -231,8 +232,7 @@ const handler = async (req, res) => {
         const obj = logic.processGetRecentTransactions();
         data = obj;
       } catch (err) {
-        data = err.message;
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
         break;
       }
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
@@ -242,8 +242,7 @@ const handler = async (req, res) => {
         const result = logic.processGetContractAddressByTransactionID(body.params);
         data = result;
       } catch (err) {
-        data = err.message;
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
+        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
         break;
       }
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
@@ -253,8 +252,11 @@ const handler = async (req, res) => {
       res.status(200).send(data);
       break;
     default:
-      data = { Error: 'Unsupported Method' };
-      res.status(404).send(data);
+      data = {
+        code: errorCodes.RPC_INVALID_REQUEST,
+        message: 'METHOD_NOT_FOUND: The method being requested is not available on this server'
+      };
+      res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
   }
   utils.logVerbose(logLabel, 'Sending response back to client');
 };

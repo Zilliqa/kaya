@@ -23,6 +23,10 @@ const BN = require('bn.js');
 const { logVerbose, consolePrint } = require('../../utilities');
 const config = require('../../config');
 const logLabel = 'Wallet';
+const zCore = require('@zilliqa-js/core')
+const { RPCError } = require('../CustomErrors');
+
+const errorCodes = zCore.RPCErrorCode;
 
 // @dev: As this is a kaya, private keys will be stored
 // note: Real systems do not store private key
@@ -40,7 +44,7 @@ const createNewWallet = () => {
   const address = zCrypto.getAddressFromPrivateKey(pk);
   const newWallet = {
     privateKey: pk,
-    amount: new BN(config.wallet.defaultAmt),
+    amount: config.wallet.defaultAmt,
     nonce: config.wallet.defaultNonce,
   };
   wallets[address] = newWallet;
@@ -116,8 +120,9 @@ module.exports = {
       const accountAddresses = Object.keys(wallets);
       const keys = [];
       accountAddresses.forEach((addr, index) => {
+        const balanceInZils = zUtils.units.fromQa(wallets[addr].amount, 'zil');
         consolePrint(
-          `(${index + 1}) ${addr}\t(Amt: ${(wallets[addr].amount).toString()})\t(Nonce: ${
+          `(${index + 1}) ${addr}\t(${balanceInZils} ZILs)\t(Nonce: ${
           wallets[addr].nonce
           })`);
         keys.push(wallets[addr].privateKey);
@@ -144,21 +149,17 @@ module.exports = {
       throw new Error('Type error');
     };
     // checking if an address has sufficient funds for deduction
-    const userBalance = module.exports.getBalance(address);
     logVerbose(logLabel, `Checking if ${address} has ${amount}`);
-    const bnCurrentBalance = new BN(userBalance.balance);
-    if(amount.lte(bnCurrentBalance)) {
-      logVerbose(logLabel, 'Sufficient Funds.');
-      return true;
-    }
-    logVerbose(logLabel, 'Insufficient funds.');
-    return false;
+    const bnCurrentBalance = wallets[address.toLowerCase()].amount
+    const fundsSufficient = amount.lte(bnCurrentBalance) ? true : false;
+    logVerbose(logLabel, `Funds sufficient ${fundsSufficient}`);
+    return fundsSufficient;
   },
 
   /** 
    * Deduct funds from an account
-   * @param {string}: Address of an account
-   * @param {Number}: amount to be deducted
+   * @param { String }: Address of an account
+   * @param { BN }: amount to be deducted
    * Does not return any value
    */
 
@@ -197,7 +198,7 @@ module.exports = {
       throw new Error('Type error');
     };
     if (!zUtils.validation.isAddress(address)) {
-      throw new Error('Address size not appropriate');
+      throw new RPCError('Address size not appropriate', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
     if (!wallets[address]) {
       // initialize new wallet account
@@ -228,10 +229,10 @@ module.exports = {
   increaseNonce: (address) => {
     logVerbose(logLabel, `Increasing nonce for ${address}`);
     if (!zUtils.validation.isAddress(address)) {
-      throw new Error('Address size not appropriate');
+      throw new RPCError('Address size not appropriate', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
     if (!wallets[address]) {
-      throw new Error('Address not found');
+      throw new RPCError('Account is not created', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     } else {
       const newNonce = wallets[address].nonce + 1;
       wallets[address].nonce = newNonce;
@@ -248,17 +249,14 @@ module.exports = {
 
   getBalance: (value) => {
     if (!zUtils.validation.isAddress(value)) {
-      throw new Error('Address size not appropriate');
+      throw new RPCError('Address size not appropriate', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
 
     const address = value.toLowerCase();
     logVerbose(logLabel, `Getting balance for ${address}`);
 
     if (!wallets[address]) {
-      return {
-        balance: "0",
-        nonce: 0,
-      };
+      throw new RPCError('Account is not created', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
 
     return {

@@ -17,7 +17,7 @@ async function testBlockchain() {
         toAddr: 'd90f2e538ce0df89c8273cad3b63ec44a3c4ed82',
         amount: new BN(888),
         // gasPrice must be >= minGasPrice
-        gasPrice: new BN(101),
+        gasPrice: new BN('1_000_000_000'),
         // can be `number` if size is <= 2^53 (i.e., window.MAX_SAFE_INTEGER)
         gasLimit: Long.fromNumber(10),
       }),
@@ -52,17 +52,28 @@ async function testBlockchain() {
     // instance of class Contract
     const contract = zilliqa.contracts.new(code, init);
 
-    const hello = await contract.deploy(new BN(100), Long.fromNumber(5000));
-    console.log(hello);
+    const [deployTx, hello] = await contract.deploy({
+      gasPrice: new BN('1_000_000_000'),
+      gasLimit: Long.fromNumber(5000)
+    });
+
+    // Introspect the state of the underlying transaction
+    console.log('Deployment Transaction ID: ', deployTx.id);
+    console.log('Deployment Transaction Receipt: ', deployTx.txParams.receipt);
 
     const callTx = await hello.call('setHello', [
       {
         vname: 'msg',
         type: 'String',
         value: 'Hello World',
-      },
-    ], new BN(0), Long.fromNumber(5000), new BN(101));
-    console.log(callTx);
+      }],
+      {
+        amount: new BN(0),
+        gasPrice: new BN('1_000_000_000'),
+        gasLimit: Long.fromNumber(5000)
+      });
+    const { receipt } = callTx.txParams;
+    console.log(receipt);
     const state = await hello.getState();
     console.log(state);
   } catch (err) {
