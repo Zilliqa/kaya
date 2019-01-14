@@ -248,7 +248,7 @@ const handler = async (req, res) => {
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
       break;
     case 'GetMinimumGasPrice':
-      data = makeResponse(body.id, body.jsonrpc, config.blockchain.minimumGasPrice, false);
+      data = makeResponse(body.id, body.jsonrpc, config.blockchain.minimumGasPrice.toString(), false);
       res.status(200).send(data);
       break;
     default:
