@@ -181,20 +181,17 @@ module.exports = {
       const thisAddr = {
         vname: "_this_address",
         type: "ByStr20",
-        value: "0xabfeccdc9012345678901234567890f777567890"
+        value: `0x${contractAddr}`
       };
 
       const thisCreationBlock = {
         "vname": "_creation_block",
         "type" : "BNum",
-        "value" : "1"
+        "value" : `${currentBnum}`
     };
 
-      const deploymentPayload = [...acceptedPayload, thisAddr, thisCreationBlock];
-      console.log(typeof(acceptedPayload));
-    
+      const deploymentPayload = [...acceptedPayload, thisAddr, thisCreationBlock];    
       const initParams = JSON.stringify(deploymentPayload);
-      console.log(initParams);
       fs.writeFileSync(initPath, initParams);
 
       const rawCode = JSON.stringify(payload.code);
