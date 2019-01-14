@@ -92,7 +92,7 @@ const runRemoteInterpreterAsync = async data => {
     console.log("Possible fix: Have your code passed type checking?");
     throw new InterpreterError('Remote interpreter failed to run')
   }
-  
+
   // FIXME: Change error mechanism once the Scilla versioning is completed
   // https://github.com/Zilliqa/scilla/issues/291
   if (!response.message.gas_remaining) {
@@ -176,9 +176,26 @@ module.exports = {
       logVerbose(logLabel, "Code Deployment");
 
       // get init data from payload
-      const initParams = JSON.stringify(payload.data);
-      const cleanedParams = paramsCleanup(initParams);
-      fs.writeFileSync(initPath, cleanedParams);
+      const acceptedPayload = JSON.parse(payload.data);
+
+      const thisAddr = {
+        vname: "_this_address",
+        type: "ByStr20",
+        value: "0xabfeccdc9012345678901234567890f777567890"
+      };
+
+      const thisCreationBlock = {
+        "vname": "_creation_block",
+        "type" : "BNum",
+        "value" : "1"
+    };
+
+      const deploymentPayload = [...acceptedPayload, thisAddr, thisCreationBlock];
+      console.log(typeof(acceptedPayload));
+    
+      const initParams = JSON.stringify(deploymentPayload);
+      console.log(initParams);
+      fs.writeFileSync(initPath, initParams);
 
       const rawCode = JSON.stringify(payload.code);
       const cleanedCode = codeCleanup(rawCode);
@@ -199,6 +216,7 @@ module.exports = {
       msgObj = JSON.parse(payload.data);
       msgObj._amount = payload.amount;
       msgObj._sender = `0x${senderAddr}`;
+      console.log(msgObj);
       fs.writeFileSync(msgPath, JSON.stringify(msgObj));
 
       // Append additional options for transition calls
