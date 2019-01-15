@@ -171,6 +171,8 @@ module.exports = {
       }
       // check if payload gasPrice is sufficient
       const bnBlockchainGasPrice = new BN(config.blockchain.minimumGasPrice);
+      console.log(bnBlockchainGasPrice.toString());
+      console.log(bnGasPrice.toString());
       if (bnBlockchainGasPrice.gt(bnGasPrice)) {
         throw new BalanceError('Insufficient Gas Price')
       }

@@ -33,7 +33,7 @@ module.exports = {
     // sets timer for the block confirmation
     blockInterval: 10000, // 10000 : 10 seconds for one block
     blockStart: 0,
-    minimumGasPrice: new BN("1_000_000_000"), // Min Gas is now 100
+    minimumGasPrice: new BN("1000000000"),
     transferGasCost: 1 // Amount of gas consumed for each transfer
   },
 
