@@ -158,6 +158,7 @@ module.exports = {
 
     let isCodeDeployment = payload.code && payload.toAddr === "0".repeat(40);
     contractAddr = (isCodeDeployment) ? contractAddr : payload.toAddr;
+    contractAddr = contractAddr.toLowerCase();
 
     const initPath = `${dir}${contractAddr}_init.json`;
     const codePath = `${dir}${contractAddr}_code.scilla`;
