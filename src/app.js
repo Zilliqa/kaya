@@ -41,7 +41,6 @@ if (process.env.NODE_ENV !== 'test') {
 const logLabel = 'App.js';
 const errorCodes = zCore.RPCErrorCode;
 
-
 /**
  * Make the response headers before returning to client
  * @method makeResponse

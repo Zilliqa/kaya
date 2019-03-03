@@ -21,7 +21,7 @@ const fs = require('fs');
 const BN = require('bn.js');
 const zCrypto = require('@zilliqa-js/crypto');
 const zCore = require('@zilliqa-js/core');
-const { bytes, isAddress } = require('@zilliqa-js/util');
+const { bytes, validation } = require('@zilliqa-js/util');
 const zAccount = require('@zilliqa-js/account');
 const scillaCtrl = require('./components/scilla/scilla');
 const walletCtrl = require('./components/wallet/wallet');
@@ -181,8 +181,6 @@ module.exports = {
       }
       // check if payload gasPrice is sufficient
       const bnBlockchainGasPrice = new BN(config.blockchain.minimumGasPrice);
-      console.log(bnBlockchainGasPrice.toString());
-      console.log(bnGasPrice.toString());
       if (bnBlockchainGasPrice.gt(bnGasPrice)) {
         throw new BalanceError('Insufficient Gas Price');
       }
@@ -386,7 +384,7 @@ module.exports = {
 
     // checking contract address's validity
     const contractAddress = data[0];
-    if (contractAddress == null || !isAddress(contractAddress)) {
+    if (contractAddress == null || !validation.isAddress(contractAddress)) {
       consolePrint('Invalid request');
       throw new RPCError('Address size not appropriate', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
@@ -425,7 +423,7 @@ module.exports = {
 
     const addr = data[0].toLowerCase();
     logVerbose(logLabel, `Getting smart contracts created by ${addr}`);
-    if (addr === null || !isAddress(addr)) {
+    if (addr === null || !validation.isAddress(addr)) {
       console.log('Invalid request');
       throw new RPCError('Address size not appropriate', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
