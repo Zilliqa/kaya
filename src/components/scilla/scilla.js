@@ -19,14 +19,12 @@ const fs = require("fs");
 const { promisify } = require("util");
 const rp = require("request-promise");
 const { execFile } = require("child_process");
-const { paramsCleanup, codeCleanup, logVerbose } = require("../../utilities");
+const { codeCleanup, logVerbose } = require("../../utilities");
 const { InterpreterError } = require('../CustomErrors');
 const config = require("../../config");
-const logLabel = "Scilla";
+const logLabel = "SCILLA";
 
 const execFileAsync = promisify(execFile);
-
-
 const makeBlockchainJson = (val, blockchainPath) => {
   const blockchainData = [
     {
@@ -60,6 +58,7 @@ const initializeContractState = amt => {
 const runRemoteInterpreterAsync = async data => {
   logVerbose(logLabel, "Running Remote Interpreter");
   console.log('throwing interpreter error');
+  console.log(config.scilla.RUNNER_URL);
   throw new InterpreterError('Remote interpreter is currently unavailable');
 
   const reqData = {
@@ -77,7 +76,7 @@ const runRemoteInterpreterAsync = async data => {
 
   const options = {
     method: "POST",
-    url: config.scilla.url,
+    url: config.scilla.RUNNER_URL,
     json: true,
     body: reqData,
   };

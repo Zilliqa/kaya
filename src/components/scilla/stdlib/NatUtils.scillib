@@ -1,0 +1,87 @@
+library NatUtils
+
+(* Nat -> Option Nat *)
+let nat_prev = fun (n: Nat) =>
+  match n with
+	| Succ n1 => Some {Nat} n1
+	| Zero => None {Nat}
+	end
+
+(* Nat -> Bool *)
+let is_some_zero = fun (n: Nat) =>
+	match n with
+  | Zero => True
+  | _ => False
+	end
+
+(* Nat -> Nat -> Bool *)
+let nat_eq = fun (n : Nat) => fun (m : Nat) =>
+  let z = Some {Nat} m in
+		let f = fun (res : Option Nat) => fun (n : Nat) =>
+      match res with
+      | None => None {Nat}
+      | Some m1 => nat_prev m1
+			end in
+	let folder = @nat_fold (Option Nat) in
+  let e = folder f z n in
+  match e with
+  | Some Zero => True
+  | _ => False
+	end
+
+(* Nat -> Uint32 *)
+let nat_to_int =
+  fun (n : Nat) =>
+    let f =
+      fun (z : Uint32) =>
+      fun (n : Nat) =>
+        match n with
+        | _ =>
+          let one_int = Uint32 1 in
+          builtin add z one_int
+        end
+    in
+    let folder = @nat_fold Uint32 in
+    let zero_int = Uint32 0 in
+      folder f zero_int n
+
+let uint32_to_nat_helper =
+  fun (m : Option Uint32) =>
+    match m with
+    | Some x =>
+      let res = builtin to_nat x in
+      Some {Nat} res
+    | None => None {Nat}
+    end
+
+(* UintX/IntX -> Option Nat *)
+let uint32_to_nat =
+  fun (n : Uint32) =>
+    let m = builtin to_uint32 n in
+    uint32_to_nat_helper m
+
+let uint64_to_nat =
+  fun (n : Uint64) =>
+    let m = builtin to_uint32 n in
+    uint32_to_nat_helper m
+
+let uint128_to_nat =
+  fun (n : Uint128) =>
+    let m = builtin to_uint32 n in
+    uint32_to_nat_helper m
+
+let int32_to_nat =
+  fun (n : Int32) =>
+    let m = builtin to_uint32 n in
+    uint32_to_nat_helper m
+
+let int64_to_nat =
+  fun (n : Int64) =>
+    let m = builtin to_uint32 n in
+    uint32_to_nat_helper m
+
+let int128_to_nat =
+  fun (n : Int128) =>
+    let m = builtin to_uint32 n in
+    uint32_to_nat_helper m
+
