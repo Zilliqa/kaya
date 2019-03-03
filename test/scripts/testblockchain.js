@@ -4,7 +4,7 @@ const { Zilliqa } = require('@zilliqa-js/zilliqa');
 
 const zilliqa = new Zilliqa('http://localhost:4200');
 
-const CHAIN_ID = 2;
+const CHAIN_ID = 111;
 const MSG_VERSION = 1;
 const VERSION = bytes.pack(CHAIN_ID, MSG_VERSION);
 
@@ -18,7 +18,7 @@ async function testBlockchain() {
     // Send a transaction to the network
     const tx = await zilliqa.blockchain.createTransaction(
       zilliqa.transactions.new({
-        version: 1,
+        version: VERSION,
         toAddr: 'd90f2e538ce0df89c8273cad3b63ec44a3c4ed82',
         amount: new BN(888),
         // gasPrice must be >= minGasPrice

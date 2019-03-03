@@ -17,29 +17,29 @@ kaya.  If not, see <http://www.gnu.org/licenses/>.
 
 /* Configuration file */
 /* Feel free to add more things to this file that will help you in development */
-
-const packagejs = require('../package.json');
 const { BN } = require('@zilliqa-js/util');
 
+const packagejs = require('../package.json');
 
 module.exports = {
   port: 4200,
   version: packagejs.version,
   dataPath: '../data/',
-  savedFilesDir : '../saved/',
-  networkId: 888,
+  savedFilesDir: '../saved/',
+  chainId: 111,
+  msgVersion: 1,
   // blockchain specific configuration
   blockchain: {
     // sets timer for the block confirmation
     blockInterval: 10000, // 10000 : 10 seconds for one block
     blockStart: 0,
-    minimumGasPrice: new BN("1000000000"),
-    transferGasCost: 1 // Amount of gas consumed for each transfer
+    minimumGasPrice: new BN('1000000000'),
+    transferGasCost: 1, // Amount of gas consumed for each transfer
   },
 
   wallet: {
     numAccounts: 10, // number of default accounts
-    defaultAmt: new BN("1000000000000000000"), // default amount of zils assigned to each wallet
+    defaultAmt: new BN('1000000000000000000'), // default amount of zils assigned to each wallet
     defaultNonce: 0,
   },
 
@@ -48,12 +48,12 @@ module.exports = {
     gas: {
       CONTRACT_CREATE_GAS: 500,
       CONTRACT_INVOKE_GAS: 100,
-      NORMAL_TRAN_GAS: 10
+      NORMAL_TRAN_GAS: 10,
     },
     smart_contract: {
-      SCILLA_BINARY: "./src/components/scilla/scilla-runner",
-      SCILLA_LIB: "./src/components/scilla/stdlib"
-    }
+      SCILLA_BINARY: './src/components/scilla/scilla-runner',
+      SCILLA_LIB: './src/components/scilla/stdlib',
+    },
   },
 
   /*
@@ -64,12 +64,12 @@ Settings for the scilla interpreter
 */
   scilla: {
     remote: true,
-    CHECKER_URL: "https://scilla-runner.zilliqa.com/contract/check",
-    RUNNER_URL: "https://scilla-runner.zilliqa.com/contract/call",
+    CHECKER_URL: 'https://scilla-runner.zilliqa.com/contract/check',
+    RUNNER_URL: 'https://scilla-runner.zilliqa.com/contract/call',
   },
 
   testconfigs: {
-    gasPrice: "1_000_000_000",
+    gasPrice: '1_000_000_000',
     gasLimit: 10,
     transferAmt: 100,
     args: {
@@ -90,6 +90,7 @@ Settings for the scilla interpreter
       numAccounts: 10,
       l: null,
       load: null,
-      '$0': 'server.js' }
+      $0: 'server.js',
+    },
   },
 };

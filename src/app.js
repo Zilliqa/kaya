@@ -84,7 +84,7 @@ const options = {
 };
 
 utils.consolePrint(`Running from ${options.remote ? 'remote' : 'local'} interpreter`);
-if (options.remote) { utils.consolePrint(config.scilla.url); }
+if (options.remote) { utils.consolePrint(config.scilla.RUNNER_URL); }
 utils.consolePrint('='.repeat(80));
 
 utils.prepareDirectories(options.dataPath); // prepare the directories required
@@ -163,7 +163,7 @@ const handler = async (req, res) => {
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
       break;
     case 'GetNetworkId':
-      data = makeResponse(body.id, body.jsonrpc, 'TestNet', false);
+      data = makeResponse(body.id, body.jsonrpc, config.chainId.toString(), false);
       res.status(200).send(data);
       break;
     case 'GetSmartContractCode':
@@ -207,7 +207,6 @@ const handler = async (req, res) => {
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
       break;
     case 'CreateTransaction':
-      console.log(body.params);
       try {
         const txnId = await logic.processCreateTxn(body.params, options);
         data = txnId;
