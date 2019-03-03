@@ -27,7 +27,7 @@ module.exports = {
   version: packagejs.version,
   dataPath: '../data/',
   savedFilesDir : '../saved/',
-
+  networkId: 888,
   // blockchain specific configuration
   blockchain: {
     // sets timer for the block confirmation

@@ -1,7 +1,12 @@
 const fs = require('fs');
-const { BN, Long } = require('@zilliqa-js/util');
+const { BN, Long, bytes } = require('@zilliqa-js/util');
 const { Zilliqa } = require('@zilliqa-js/zilliqa');
+
 const zilliqa = new Zilliqa('http://localhost:4200');
+
+const CHAIN_ID = 2;
+const MSG_VERSION = 1;
+const VERSION = bytes.pack(CHAIN_ID, MSG_VERSION);
 
 // Populate the wallet with an account
 zilliqa.wallet.addByPrivateKey(
@@ -29,9 +34,9 @@ async function testBlockchain() {
     const code = fs.readFileSync('HelloWorld.scilla', 'utf-8');
     const init = [
       {
-        "vname": "_scilla_version",
-        "type": "Uint32",
-        "value": "0"
+        vname: '_scilla_version',
+        type: 'Uint32',
+        value: '0',
       },
       {
         vname: 'owner',
@@ -45,16 +50,17 @@ async function testBlockchain() {
       {
         vname: '_creation_block',
         type: 'BNum',
-        value: '100'
-      }
+        value: '100',
+      },
     ];
 
     // instance of class Contract
     const contract = zilliqa.contracts.new(code, init);
 
     const [deployTx, hello] = await contract.deploy({
+      version: VERSION,
       gasPrice: new BN('1_000_000_000'),
-      gasLimit: Long.fromNumber(5000)
+      gasLimit: Long.fromNumber(5000),
     });
 
     // Introspect the state of the underlying transaction
@@ -67,11 +73,12 @@ async function testBlockchain() {
         type: 'String',
         value: 'Hello World',
       }],
-      {
-        amount: new BN(0),
-        gasPrice: new BN('1_000_000_000'),
-        gasLimit: Long.fromNumber(5000)
-      });
+    {
+      version: VERSION,
+      amount: new BN(0),
+      gasPrice: new BN('1_000_000_000'),
+      gasLimit: Long.fromNumber(5000),
+    });
     const { receipt } = callTx.txParams;
     console.log(receipt);
     const state = await hello.getState();
