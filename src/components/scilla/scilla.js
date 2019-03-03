@@ -48,6 +48,30 @@ const initializeContractState = (amt) => {
   ];
   return initState;
 };
+
+/**
+ * Runs the remote checker (currently hosted by Zilliqa)
+ * @async
+ * @method runRemoteCheckerAsync
+ * @param { String } filepath to code
+ */
+const runRemoteCheckerAsync = async (filepath) => {
+  logVerbose(logLabel, 'Running Remote Checker');
+  const fullCode = fs.readFileSync(filepath, 'utf-8');
+  const reqBody = { code: fullCode };
+
+  const options = {
+    method: 'POST',
+    url: config.scilla.CHECKER_URL,
+    json: true,
+    body: reqBody,
+  };
+
+  const response = await rp(options);
+  return response;
+};
+
+
 /**
  * Runs the remote interpreter (currently hosted by zilliqa)
  * @async
@@ -55,7 +79,6 @@ const initializeContractState = (amt) => {
  * @param {Object} data object containing the code, state, init, message and blockchain filepath
  * @returns: Output message received from the remote scilla interpreter
  */
-
 const runRemoteInterpreterAsync = async (data) => {
   logVerbose(logLabel, 'Running Remote Interpreter');
 
@@ -228,21 +251,26 @@ module.exports = {
 
     let retMsg;
 
-    if (!config.scilla.remote) {
-      // local scilla interpreter
-      retMsg = await runLocalInterpreterAsync(cmdOpt, outputPath);
-    } else {
-      const apiReqParams = {
-        output: outputPath,
-        state: statePath,
-        code: codePath,
-        msg: msgPath,
-        init: initPath,
-        blockchain: blockchainPath,
-        gas: payload.gasLimit,
-        isDeployment: isCodeDeployment,
-      };
-      retMsg = await runRemoteInterpreterAsync(apiReqParams);
+    try {
+      if (!config.scilla.remote) {
+        // local scilla interpreter
+        retMsg = await runLocalInterpreterAsync(cmdOpt, outputPath);
+      } else {
+        await runRemoteCheckerAsync(codePath);
+        const apiReqParams = {
+          output: outputPath,
+          state: statePath,
+          code: codePath,
+          msg: msgPath,
+          init: initPath,
+          blockchain: blockchainPath,
+          gas: payload.gasLimit,
+          isDeployment: isCodeDeployment,
+        };
+        retMsg = await runRemoteInterpreterAsync(apiReqParams);
+      }
+    } catch (err) {
+      console.log('Error with scilla-checker / runner');
     }
 
     // Extract state from tmp/out.json
