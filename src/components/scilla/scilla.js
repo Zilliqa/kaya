@@ -67,8 +67,15 @@ const runRemoteCheckerAsync = async (filepath) => {
     body: reqBody,
   };
 
-  const response = await rp(options);
-  return response;
+  try {
+    await rp(options);
+    logVerbose(logLabel, 'Contract passes type-checker');
+  } catch (err) {
+    if (err.statusCode === 400) {
+      console.log('Error with type-checking [Remote Checker]');
+    }
+    throw new InterpreterError(`Error: ${err.message}`);
+  }
 };
 
 
@@ -166,10 +173,12 @@ const runLocalCheckerAsync = async (cmdOptions) => {
     throw new InterpreterError('Kaya RPC Runtime Error: Scilla-checker not found');
   }
 
-  const result = await execFileAsync(SCILLA_CHECKER_PATH, cmdOptions);
-  if (result && result.stderr !== '') {
-    console.log('Checker fails!');
-    throw new InterpreterError(`Checker error: ${result.stderr}`);
+  try {
+    await execFileAsync(SCILLA_CHECKER_PATH, cmdOptions);
+    logVerbose(logLabel, 'Contract passes type-checker');
+  } catch (err) {
+    console.log('Error: Typechecking failed. Possible fix: Run scilla-checker on your contract');
+    throw new InterpreterError('Checker fails');
   }
 };
 
@@ -265,53 +274,47 @@ module.exports = {
     }
 
     let retMsg;
-
-    try {
-      if (!config.scilla.remote) {
-        const checkerCmdOpts = ['-libdir', config.constants.smart_contract.SCILLA_LIB, codePath];
-        await runLocalCheckerAsync(checkerCmdOpts);
-        // local scilla interpreter
-        retMsg = await runLocalInterpreterAsync(cmdOpt, outputPath);
-      } else {
-        await runRemoteCheckerAsync(codePath);
-        const apiReqParams = {
-          output: outputPath,
-          state: statePath,
-          code: codePath,
-          msg: msgPath,
-          init: initPath,
-          blockchain: blockchainPath,
-          gas: payload.gasLimit,
-          isDeployment: isCodeDeployment,
-        };
-        retMsg = await runRemoteInterpreterAsync(apiReqParams);
-      }
-
-      // Extract state from tmp/out.json
-      let newState = JSON.stringify(retMsg.states);
-      if (isCodeDeployment) {
-        newState = JSON.stringify(initializeContractState(payload.amount));
-      }
-
-      fs.writeFileSync(statePath, newState);
-      logVerbose(logLabel, `State logged down in ${statePath}`);
-      console.log(`Contract Address Deployed: ${contractAddr}`);
-
-      const responseData = {};
-      responseData.gasRemaining = retMsg.gas_remaining;
-
-      // Obtains the next address based on the message
-      if (retMsg.message != null) {
-        logVerbose(logLabel, `Next address: ${retMsg.message._recipient}`);
-        responseData.nextAddress = retMsg.message._recipient;
-      }
-      // Contract deployment do not have the next address
-      responseData.nextAddress = '0'.repeat(40);
-
-      return responseData;
-    } catch (err) {
-      console.log('Error with scilla-checker / runner');
-      // FIXME: Add penalty controls here
+    if (!config.scilla.remote) {
+      const checkerCmdOpts = ['-libdir', config.constants.smart_contract.SCILLA_LIB, codePath];
+      await runLocalCheckerAsync(checkerCmdOpts);
+      // local scilla interpreter
+      retMsg = await runLocalInterpreterAsync(cmdOpt, outputPath);
+    } else {
+      await runRemoteCheckerAsync(codePath);
+      const apiReqParams = {
+        output: outputPath,
+        state: statePath,
+        code: codePath,
+        msg: msgPath,
+        init: initPath,
+        blockchain: blockchainPath,
+        gas: payload.gasLimit,
+        isDeployment: isCodeDeployment,
+      };
+      retMsg = await runRemoteInterpreterAsync(apiReqParams);
     }
+
+    // Extract state from tmp/out.json
+    let newState = JSON.stringify(retMsg.states);
+    if (isCodeDeployment) {
+      newState = JSON.stringify(initializeContractState(payload.amount));
+    }
+
+    fs.writeFileSync(statePath, newState);
+    logVerbose(logLabel, `State logged down in ${statePath}`);
+    console.log(`Contract Address Deployed: ${contractAddr}`);
+
+    const responseData = {};
+    responseData.gasRemaining = retMsg.gas_remaining;
+
+    // Obtains the next address based on the message
+    if (retMsg.message != null) {
+      logVerbose(logLabel, `Next address: ${retMsg.message._recipient}`);
+      responseData.nextAddress = retMsg.message._recipient;
+    }
+    // Contract deployment do not have the next address
+    responseData.nextAddress = '0'.repeat(40);
+
+    return responseData;
   },
 };
