@@ -217,6 +217,7 @@ module.exports = {
         walletCtrl.increaseNonce(senderAddress);
         // Always increase nonce whenever the interpreter is run
         // Interpreter can throw an InterpreterError
+
         const responseData = await scillaCtrl.executeScillaRun(
           payload,
           contractAddr,

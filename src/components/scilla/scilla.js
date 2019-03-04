@@ -137,7 +137,7 @@ const runRemoteInterpreterAsync = async (data) => {
 const runLocalInterpreterAsync = async (cmdOptions, outputPath) => {
   logVerbose(logLabel, 'Running local scilla interpreter');
 
-  const SCILLA_BIN_PATH = config.constants.smart_contract.SCILLA_BINARY;
+  const SCILLA_BIN_PATH = config.constants.smart_contract.SCILLA_RUNNER;
   // Run Scilla Interpreter
   if (!fs.existsSync(SCILLA_BIN_PATH)) {
     logVerbose(logLabel, 'Scilla runner not found. Hint: Have you compiled the scilla binaries?');
@@ -156,6 +156,21 @@ const runLocalInterpreterAsync = async (cmdOptions, outputPath) => {
 
   const retMsg = JSON.parse(fs.readFileSync(outputPath, 'utf-8'));
   return retMsg;
+};
+
+const runLocalCheckerAsync = async (cmdOptions) => {
+  logVerbose(logLabel, 'Running local checker');
+  const SCILLA_CHECKER_PATH = config.constants.smart_contract.SCILLA_CHECKER;
+  if (!fs.existsSync(SCILLA_CHECKER_PATH)) {
+    logVerbose(logLabel, 'Scilla checker not found. Hint: Have you compiled the scilla binaries?');
+    throw new InterpreterError('Kaya RPC Runtime Error: Scilla-checker not found');
+  }
+
+  const result = await execFileAsync(SCILLA_CHECKER_PATH, cmdOptions);
+  if (result && result.stderr !== '') {
+    console.log('Checker fails!');
+    throw new InterpreterError(`Checker error: ${result.stderr}`);
+  }
 };
 
 module.exports = {
@@ -253,6 +268,8 @@ module.exports = {
 
     try {
       if (!config.scilla.remote) {
+        const checkerCmdOpts = ['-libdir', config.constants.smart_contract.SCILLA_LIB, codePath];
+        await runLocalCheckerAsync(checkerCmdOpts);
         // local scilla interpreter
         retMsg = await runLocalInterpreterAsync(cmdOpt, outputPath);
       } else {
@@ -269,31 +286,32 @@ module.exports = {
         };
         retMsg = await runRemoteInterpreterAsync(apiReqParams);
       }
+
+      // Extract state from tmp/out.json
+      let newState = JSON.stringify(retMsg.states);
+      if (isCodeDeployment) {
+        newState = JSON.stringify(initializeContractState(payload.amount));
+      }
+
+      fs.writeFileSync(statePath, newState);
+      logVerbose(logLabel, `State logged down in ${statePath}`);
+      console.log(`Contract Address Deployed: ${contractAddr}`);
+
+      const responseData = {};
+      responseData.gasRemaining = retMsg.gas_remaining;
+
+      // Obtains the next address based on the message
+      if (retMsg.message != null) {
+        logVerbose(logLabel, `Next address: ${retMsg.message._recipient}`);
+        responseData.nextAddress = retMsg.message._recipient;
+      }
+      // Contract deployment do not have the next address
+      responseData.nextAddress = '0'.repeat(40);
+
+      return responseData;
     } catch (err) {
       console.log('Error with scilla-checker / runner');
+      // FIXME: Add penalty controls here
     }
-
-    // Extract state from tmp/out.json
-    let newState = JSON.stringify(retMsg.states);
-    if (isCodeDeployment) {
-      newState = JSON.stringify(initializeContractState(payload.amount));
-    }
-
-    fs.writeFileSync(statePath, newState);
-    logVerbose(logLabel, `State logged down in ${statePath}`);
-    console.log(`Contract Address Deployed: ${contractAddr}`);
-
-    const responseData = {};
-    responseData.gasRemaining = retMsg.gas_remaining;
-
-    // Obtains the next address based on the message
-    if (retMsg.message != null) {
-      logVerbose(logLabel, `Next address: ${retMsg.message._recipient}`);
-      responseData.nextAddress = retMsg.message._recipient;
-    }
-    // Contract deployment do not have the next address
-    responseData.nextAddress = '0'.repeat(40);
-
-    return responseData;
   },
 };

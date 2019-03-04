@@ -51,7 +51,8 @@ module.exports = {
       NORMAL_TRAN_GAS: 10,
     },
     smart_contract: {
-      SCILLA_BINARY: './src/components/scilla/scilla-runner',
+      SCILLA_RUNNER: './src/components/scilla/scilla-runner',
+      SCILLA_CHECKER: './src/components/scilla/scilla-checker',
       SCILLA_LIB: './src/components/scilla/stdlib',
     },
   },
