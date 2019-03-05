@@ -20,50 +20,52 @@ const hashjs = require('hash.js');
 const fs = require('fs');
 const BN = require('bn.js');
 const zCrypto = require('@zilliqa-js/crypto');
-const zUtils = require('@zilliqa-js/util');
-const { bytes } = require('@zilliqa-js/util');
+const zCore = require('@zilliqa-js/core');
+const { bytes, validation } = require('@zilliqa-js/util');
 const zAccount = require('@zilliqa-js/account');
 const scillaCtrl = require('./components/scilla/scilla');
 const walletCtrl = require('./components/wallet/wallet');
 const blockchain = require('./components/blockchain');
-const { InterpreterError, BalanceError, MultiContractError, RPCError } = require('./components/CustomErrors');
+const {
+  InterpreterError, BalanceError, MultiContractError, RPCError,
+} = require('./components/CustomErrors');
 const { logVerbose, consolePrint } = require('./utilities');
 const config = require('./config');
-const logLabel = ('Logic.js');
-const zCore = require('@zilliqa-js/core')
+
+const logLabel = ('LOGIC');
+
 const errorCodes = zCore.RPCErrorCode;
 
 // non-persistent states. Initializes whenever server starts
-const transactions = {};
-const createdContractsByUsers = {}; // address => contract addresses
-const contractAddressesByTransactionID = {};  // transaction hash => contract address
+let transactions = {};
+let createdContractsByUsers = {}; // address => contract addresses
+const contractAddressesByTransactionID = {}; // transaction hash => contract address
 
 /**
  * computes the contract address from the sender's address and nonce
  * @method computeContractAddr
- * @param { String } senderAddr 
+ * @param { String } senderAddr
  * @returns { String } contract address to be deployed
  */
 const computeContractAddr = (senderAddr) => {
   const userNonce = walletCtrl.getBalance(senderAddr).nonce;
-  return hashjs.sha256().
-    update(senderAddr, 'hex').
-    update(bytes.intToHexArray(userNonce, 16).join(''), 'hex')
+  return hashjs.sha256()
+    .update(senderAddr, 'hex')
+    .update(bytes.intToHexArray(userNonce, 16).join(''), 'hex')
     .digest('hex')
     .slice(24);
 };
 
 /**
  * Confirms the transaction by logging it
- * @method logTransaction
+ * @method confirmTransaction
  * @param { Object } payload - payload of the incoming message
  * @param { String } transactionID - transaction ID
  * @param { Object } receiptInfo - information about gas and if the transaction is confirmed
  * Does not return any message
  */
 
-const logTransaction = (payload, transactionID, receiptInfo) => {
-
+const confirmTransaction = (payload, transactionID, receiptInfo) => {
   const txnDetails = {
     ID: transactionID,
     amount: payload.amount,
@@ -75,12 +77,11 @@ const logTransaction = (payload, transactionID, receiptInfo) => {
     version: payload.version,
   };
   transactions[transactionID] = txnDetails;
-  logVerbose(logLabel, `Transaction logged: ${transactionID}`)
-
-}
+  logVerbose(logLabel, `Transaction logged: ${transactionID}`);
+};
 
 /**
- * 
+ *
  * Computes the transaction hash from a given payload
  * @method computeTransactionHash
  * @param { Object } payload : Payload of the message
@@ -104,8 +105,18 @@ const computeTransactionHash = (payload) => {
  * @returns { Boolean } : True if the payload is valid, false if it is not
  */
 const checkTransactionJson = (data) => {
+  const CHAIN_ID = config.chainId;
+  const MSG_VERSION = config.msgVersion;
+  const EXPECTED_VERSION = bytes.pack(CHAIN_ID, MSG_VERSION);
+
   if (data !== null && typeof data !== 'object') return false;
   const payload = data[0];
+  // User must supply the correct chain_id and msg_version
+  if (payload.version !== EXPECTED_VERSION) {
+    console.log('Error: Msg is not well-formed');
+    console.log('Possible fix: Did you specify the correct chain Id and msg version?');
+    return false;
+  }
   return zAccount.util.isTxParams(payload);
 };
 
@@ -121,7 +132,7 @@ module.exports = {
   loadData: (txns, contractsByUsers) => {
     transactions = txns;
     createdContractsByUsers = contractsByUsers;
-    logVerbose(logLabel, `Transactions and contract data loaded.`);
+    logVerbose(logLabel, 'Transactions and contract data loaded.');
   },
 
   /**
@@ -130,7 +141,7 @@ module.exports = {
   * @method processCreateTxn
   * @param { Object } data : Message object passed from client through server.js
   * @param { Object } options : List of options passed from server.js
-  * @returns { String } : Transaction hash 
+  * @returns { String } : Transaction hash
   * Throws in the event of error. Caller should catch or delegate these errors
   */
   processCreateTxn: async (data, options) => {
@@ -142,7 +153,7 @@ module.exports = {
       throw new Error('Invalid Tx Json');
     }
 
-    let responseObj = {};
+    const responseObj = {};
 
     const currentBNum = blockchain.getBlockNum();
     const dir = options.dataPath;
@@ -152,7 +163,7 @@ module.exports = {
     const bnAmount = new BN(payload.amount);
     const bnGasLimit = new BN(payload.gasLimit);
     const bnGasPrice = new BN(payload.gasPrice);
-    const bnInvokeGas = new BN(config.constants.gas.CONTRACT_INVOKE_GAS)
+    const bnInvokeGas = new BN(config.constants.gas.CONTRACT_INVOKE_GAS);
     const deductableZils = bnInvokeGas.mul(bnGasPrice);
     const senderAddress = zCrypto.getAddressFromPublicKey(payload.pubKey);
     const txnId = computeTransactionHash(payload);
@@ -165,16 +176,13 @@ module.exports = {
     let receiptInfo = {};
 
     try {
-
       if (payload.nonce !== userNonce + 1) {
         throw new BalanceError('Nonce incorrect');
       }
       // check if payload gasPrice is sufficient
       const bnBlockchainGasPrice = new BN(config.blockchain.minimumGasPrice);
-      console.log(bnBlockchainGasPrice.toString());
-      console.log(bnGasPrice.toString());
       if (bnBlockchainGasPrice.gt(bnGasPrice)) {
-        throw new BalanceError('Insufficient Gas Price')
+        throw new BalanceError('Insufficient Gas Price');
       }
 
       if (!payload.code && !payload.data) {
@@ -195,7 +203,8 @@ module.exports = {
         // take the sha256 hash of address+nonce, then extract the rightmost 20 bytes
         const contractAddr = computeContractAddr(senderAddress);
 
-        // Before the scilla interpreter runs, address should have sufficient zils to pay for gasLimit + amount
+        // Before the scilla interpreter runs
+        // address should have sufficient zils to pay for gasLimit + amount
         const bnGasLimitInZils = bnGasLimit.mul(bnGasPrice);
         const bnAmountRequiredForTx = bnAmount.add(bnGasLimitInZils);
 
@@ -205,14 +214,16 @@ module.exports = {
         }
 
         logVerbose(logLabel, 'Running scilla interpreter now');
-        walletCtrl.increaseNonce(senderAddress);  // Always increase nonce whenever the interpreter is run
+        walletCtrl.increaseNonce(senderAddress);
+        // Always increase nonce whenever the interpreter is run
         // Interpreter can throw an InterpreterError
+
         const responseData = await scillaCtrl.executeScillaRun(
           payload,
           contractAddr,
           senderAddress,
           dir,
-          currentBNum
+          currentBNum,
         );
         logVerbose(logLabel, 'Scilla interpreter completed');
 
@@ -258,9 +269,8 @@ module.exports = {
       }
 
       // Confirms transaction by storing the transaction object in-memory
-      logTransaction(payload, txnId, receiptInfo);
-      logVerbose(logLabel, `Transaction confirmed by the blockchain`);
-
+      confirmTransaction(payload, txnId, receiptInfo);
+      logVerbose(logLabel, 'Transaction confirmed by the blockchain');
     } catch (err) {
       logVerbose(logLabel, 'Transaction is NOT accepted by the blockchain');
 
@@ -276,8 +286,8 @@ module.exports = {
         receiptInfo = {};
         receiptInfo.cumulative_gas = bnInvokeGas.toString();
         receiptInfo.success = false;
-        logTransaction(payload, txnId, receiptInfo);
-        logVerbose(logLabel, `Transaction is logged but it is not accepted due to scilla errors.`);
+        confirmTransaction(payload, txnId, receiptInfo);
+        logVerbose(logLabel, 'Transaction is logged but it is not accepted due to scilla errors.');
       } else if (err instanceof MultiContractError) {
         // Msg: Contract Txn, Sent To Ds
         console.log('Multi-contract calls not supported.');
@@ -285,7 +295,7 @@ module.exports = {
         // Do not deduct gas for the time being
       } else {
         // Propagate uncaught error to client
-        console.log(`Uncaught error`);
+        console.log('Uncaught error');
         console.log(err);
         throw err;
       }
@@ -310,7 +320,7 @@ module.exports = {
       const err = new RPCError(
         'INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised: Size not appropriate',
         errorCodes.RPC_INVALID_PARAMS,
-        null
+        null,
       );
       throw err;
     }
@@ -323,7 +333,7 @@ module.exports = {
     const err = new RPCError(
       'INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised: Size not appropriate',
       errorCodes.RPC_DATABASE_ERROR,
-      null
+      null,
     );
     throw err;
   },
@@ -351,13 +361,12 @@ module.exports = {
    * @param { String } type - enum of either data, init or state
    */
   processGetDataFromContract: (data, dataPath, type) => {
-
     const fileType = type.trim().toLowerCase();
     if (!['init', 'state', 'code'].includes(fileType)) {
       const err = new RPCError(
         'INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised: Invalid options flag',
         errorCodes.RPC_INVALID_PARAMS,
-        null
+        null,
       );
       throw err;
     }
@@ -369,14 +378,14 @@ module.exports = {
       const err = new RPCError(
         'INVALID_PARAMS: Invalid method parameters (invalid name and/or type) recognised: Size not appropriate',
         errorCodes.RPC_INVALID_PARAMS,
-        null
+        null,
       );
       throw err;
     }
 
     // checking contract address's validity
     const contractAddress = data[0];
-    if (contractAddress == null || !zUtils.validation.isAddress(contractAddress)) {
+    if (contractAddress == null || !validation.isAddress(contractAddress)) {
       consolePrint('Invalid request');
       throw new RPCError('Address size not appropriate', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
@@ -415,7 +424,7 @@ module.exports = {
 
     const addr = data[0].toLowerCase();
     logVerbose(logLabel, `Getting smart contracts created by ${addr}`);
-    if (addr === null || !zUtils.validation.isAddress(addr)) {
+    if (addr === null || !validation.isAddress(addr)) {
       console.log('Invalid request');
       throw new RPCError('Address size not appropriate', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
@@ -450,19 +459,19 @@ module.exports = {
    * @returns { String } contractAddress - 20 bytes string
    */
   processGetContractAddressByTransactionID: (data) => {
-    if(typeof data === 'object' && data === null || data[0].length !== 64) {
+    if ((typeof data === 'object' && data === null) || data[0].length !== 64) {
       throw new RPCError('Size not appropriate', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
     const transId = data[0];
-    if(!transactions[transId]) {
-      throw new Error("Txn Hash not Present");
+    if (!transactions[transId]) {
+      throw new Error('Txn Hash not Present');
     }
 
     const contractAddr = contractAddressesByTransactionID[transId];
-    if(!contractAddr) { 
-      throw new Error("ID not a contract txn");
+    if (!contractAddr) {
+      throw new Error('ID not a contract txn');
     } else {
       return contractAddr;
     }
-  }
+  },
 };

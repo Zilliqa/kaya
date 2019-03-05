@@ -20,14 +20,14 @@ const express = require('express');
 const fs = require('fs');
 const rimraf = require('rimraf');
 const yargs = require('yargs');
+
 const expressjs = express();
+const zCore = require('@zilliqa-js/core');
 const config = require('./config');
 const logic = require('./logic');
 const wallet = require('./components/wallet/wallet');
 const utils = require('./utilities');
 const initArgv = require('./argv');
-const zCore = require('@zilliqa-js/core')
-
 
 expressjs.use(bodyParser.json({ extended: false }));
 let argv;
@@ -41,14 +41,13 @@ if (process.env.NODE_ENV !== 'test') {
 const logLabel = 'App.js';
 const errorCodes = zCore.RPCErrorCode;
 
-
 /**
  * Make the response headers before returning to client
  * @method makeResponse
- * @param { String } id 
- * @param { String} jsonrpc 
- * @param { Object } data 
- * @param { Boolean } isErr 
+ * @param { String } id
+ * @param { String} jsonrpc
+ * @param { Object } data
+ * @param { Boolean } isErr
  */
 const makeResponse = (id, jsonrpc, data, isErr) => {
   const responseObj = { id, jsonrpc };
@@ -57,11 +56,11 @@ const makeResponse = (id, jsonrpc, data, isErr) => {
     errorObj = {
       code: data.code,
       data: data.data,
-      message: data.message
-    }
+      message: data.message,
+    };
   }
   return isErr ? { ...responseObj, error: errorObj } : { ...responseObj, result: data };
-}
+};
 
 const wrapAsync = fn => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
@@ -73,18 +72,18 @@ if (argv.d.trim() === 'saved/') {
 
 // Stores all the option flags and configurations
 // Console defined flag will override the config settings
-let options = {
+const options = {
   fixtures: argv.f,
   numAccts: argv.n,
   dataPath: argv.d,
   remote: argv.r,
   verbose: argv.v,
   save: argv.s,
-  load: argv.l
-}
+  load: argv.l,
+};
 
-utils.consolePrint(`Running from ${options.remote ? 'remote' : 'local'} interpreter`)
-if (options.remote) { utils.consolePrint(config.scilla.url) };
+utils.consolePrint(`Running from ${options.remote ? 'remote' : 'local'} interpreter`);
+if (options.remote) { utils.consolePrint(config.scilla.RUNNER_URL); }
 utils.consolePrint('='.repeat(80));
 
 utils.prepareDirectories(options.dataPath); // prepare the directories required
@@ -108,8 +107,8 @@ if (process.env.NODE_ENV === 'test') {
   options.fixtures = 'test/account-fixtures.json';
 }
 
-/* 
-* Account creation/loading based on presets given 
+/*
+* Account creation/loading based on presets given
 * @dev : Only create wallets if the user does not supply any load file
 */
 if (!options.load) {
@@ -163,7 +162,7 @@ const handler = async (req, res) => {
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
       break;
     case 'GetNetworkId':
-      data = makeResponse(body.id, body.jsonrpc, 'TestNet', false);
+      data = makeResponse(body.id, body.jsonrpc, config.chainId.toString(), false);
       res.status(200).send(data);
       break;
     case 'GetSmartContractCode':
@@ -207,7 +206,6 @@ const handler = async (req, res) => {
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
       break;
     case 'CreateTransaction':
-      console.log(body.params);
       try {
         const txnId = await logic.processCreateTxn(body.params, options);
         data = txnId;
@@ -239,8 +237,8 @@ const handler = async (req, res) => {
       break;
     case 'GetContractAddressFromTransactionID':
       try {
-        const result = logic.processGetContractAddressByTransactionID(body.params);
-        data = result;
+        const obj = logic.processGetContractAddressByTransactionID(body.params);
+        data = obj;
       } catch (err) {
         res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
         break;
@@ -248,13 +246,14 @@ const handler = async (req, res) => {
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
       break;
     case 'GetMinimumGasPrice':
-      data = makeResponse(body.id, body.jsonrpc, config.blockchain.minimumGasPrice.toString(), false);
+      data = makeResponse(body.id, body.jsonrpc,
+        config.blockchain.minimumGasPrice.toString(), false);
       res.status(200).send(data);
       break;
     default:
       data = {
         code: errorCodes.RPC_INVALID_REQUEST,
-        message: 'METHOD_NOT_FOUND: The method being requested is not available on this server'
+        message: 'METHOD_NOT_FOUND: The method being requested is not available on this server',
       };
       res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
   }
@@ -265,12 +264,12 @@ expressjs.post('/', wrapAsync(handler));
 
 // Function below handles the end of the session due to SIGINT. It will save
 // data files if the `-s` flag is toggled and will remove all files from the data directory
-process.on('SIGINT', function () {
-  utils.consolePrint("Gracefully shutting down from SIGINT (Ctrl-C)");
+process.on('SIGINT', () => {
+  utils.consolePrint('Gracefully shutting down from SIGINT (Ctrl-C)');
 
   // If `save` is enabled, store files under the saved/ directory
   if (options.save) {
-    console.log(`Save mode enabled. Extracting data now..`);
+    console.log('Save mode enabled. Extracting data now..');
 
     const dir = config.savedFilesDir;
     if (!fs.existsSync(dir)) {
@@ -288,26 +287,26 @@ process.on('SIGINT', function () {
     utils.consolePrint('Extracting data...');
     const data = logic.exportData();
     data.accounts = wallet.getAccounts();
-    utils.consolePrint(`[1/5] Transactions and account data extracted`);
+    utils.consolePrint('[1/5] Transactions and account data extracted');
     data.states = utils.getDataFromDir(options.dataPath, 'state.json');
-    utils.consolePrint(`[2/5] Contract state data extracted`);
+    utils.consolePrint('[2/5] Contract state data extracted');
     data.init = utils.getDataFromDir(options.dataPath, 'init.json');
-    utils.consolePrint(`[3/5] Contract init data extracted`);
+    utils.consolePrint('[3/5] Contract init data extracted');
     data.codes = utils.getDataFromDir(options.dataPath, 'code.scilla');
-    utils.consolePrint(`[4/5] Contract code data extracted`);
+    utils.consolePrint('[4/5] Contract code data extracted');
 
     // Writing to the final exported data file in JSON format
     fs.writeFileSync(targetFilePath, JSON.stringify(data));
     utils.consolePrint(`[5/5] Data file written to ${targetFilePath}`);
 
-    utils.consolePrint(`Save successful`)
+    utils.consolePrint('Save successful');
   }
 
   // remove files from the db_path
   rimraf.sync(`${options.dataPath}*`);
   console.log(`Files from ${options.dataPath} removed. Shutting down now.`);
   process.exit(0);
-})
+});
 
 module.exports = {
   expressjs,

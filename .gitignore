@@ -77,6 +77,7 @@ saved/
 tmp/
 data/
 *scilla-runner
+*scilla-checker
 
 # Swap
 [._]*.s[a-v][a-z]

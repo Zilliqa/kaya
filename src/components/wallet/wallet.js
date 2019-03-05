@@ -18,12 +18,13 @@
 /* Wallet Component */
 const assert = require('assert');
 const zCrypto = require('@zilliqa-js/crypto');
-const zUtils = require('@zilliqa-js/util')
+const zUtils = require('@zilliqa-js/util');
 const BN = require('bn.js');
+const zCore = require('@zilliqa-js/core');
 const { logVerbose, consolePrint } = require('../../utilities');
 const config = require('../../config');
+
 const logLabel = 'Wallet';
-const zCore = require('@zilliqa-js/core')
 const { RPCError } = require('../CustomErrors');
 
 const errorCodes = zCore.RPCErrorCode;
@@ -93,19 +94,18 @@ module.exports = {
   // load accounts object into wallets
   loadAccounts: (accounts) => {
     validateAccounts(accounts);
-    Object.keys(accounts).map(addr => {
-      accounts[addr].amount = new BN(accounts[addr].amount);
+    const loadedAccounts = accounts;
+    Object.keys(accounts).forEach((addr) => {
+      loadedAccounts[addr].amount = new BN(accounts[addr].amount);
     });
     logVerbose(logLabel,
-      `${Object.keys(accounts).length} wallets bootstrapped from file`,
-    );
+      `${Object.keys(accounts).length} wallets bootstrapped from file`);
     wallets = accounts;
   },
 
   saveAccounts: (savedDir, timestamp) => {
     const targetFilePath = `${savedDir}${timestamp}_accounts.json`;
     logVerbose(logLabel, `Saving account details to ${targetFilePath}`);
-
   },
 
   // @fixme: Convert wallet object's amount field into string before exporting out
@@ -123,8 +123,9 @@ module.exports = {
         const balanceInZils = zUtils.units.fromQa(wallets[addr].amount, 'zil');
         consolePrint(
           `(${index + 1}) ${addr}\t(${balanceInZils} ZILs)\t(Nonce: ${
-          wallets[addr].nonce
-          })`);
+            wallets[addr].nonce
+          })`,
+        );
         keys.push(wallets[addr].privateKey);
       });
 
@@ -145,18 +146,18 @@ module.exports = {
    */
 
   sufficientFunds: (address, amount) => {
-    if(!BN.isBN(amount)) {
+    if (!BN.isBN(amount)) {
       throw new Error('Type error');
-    };
+    }
     // checking if an address has sufficient funds for deduction
     logVerbose(logLabel, `Checking if ${address} has ${amount}`);
-    const bnCurrentBalance = wallets[address.toLowerCase()].amount
-    const fundsSufficient = amount.lte(bnCurrentBalance) ? true : false;
+    const bnCurrentBalance = wallets[address.toLowerCase()].amount;
+    const fundsSufficient = !!amount.lte(bnCurrentBalance);
     logVerbose(logLabel, `Funds sufficient ${fundsSufficient}`);
     return fundsSufficient;
   },
 
-  /** 
+  /**
    * Deduct funds from an account
    * @param { String }: Address of an account
    * @param { BN }: amount to be deducted
@@ -164,9 +165,9 @@ module.exports = {
    */
 
   deductFunds: (address, amount) => {
-    if(!BN.isBN(amount)) {
+    if (!BN.isBN(amount)) {
       throw new Error('Type error');
-    };
+    }
 
     logVerbose(logLabel, `Deducting ${amount} from ${address}`);
     if (!zUtils.validation.isAddress(address)) {
@@ -177,16 +178,15 @@ module.exports = {
     }
 
     // deduct funds
-    let currentBalance = wallets[address].amount;
+    const currentBalance = wallets[address].amount;
     logVerbose(logLabel, `Sender's previous Balance: ${currentBalance}`);
     const newBalance = currentBalance.sub(amount);
     wallets[address].amount = newBalance;
     logVerbose(logLabel,
-      `Deduct funds complete. Sender's new balance: ${wallets[address].amount}`,
-    );
+      `Deduct funds complete. Sender's new balance: ${wallets[address].amount}`);
   },
 
-  /** 
+  /**
    * Add funds to an account address
    * @param { string }: address - Address of recipient
    * @param { Number }: amount - amount of zils to transfer
@@ -194,9 +194,9 @@ module.exports = {
    */
   addFunds: (address, amount) => {
     logVerbose(logLabel, `Adding ${amount} to ${address}`);
-    if(!BN.isBN(amount)) {
+    if (!BN.isBN(amount)) {
       throw new Error('Type error');
-    };
+    }
     if (!zUtils.validation.isAddress(address)) {
       throw new RPCError('Address size not appropriate', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
@@ -207,7 +207,7 @@ module.exports = {
       wallets[address].amount = new BN(0);
       wallets[address].nonce = 0;
     }
-    let currentBalance = wallets[address].amount;
+    const currentBalance = wallets[address].amount;
     logVerbose(logLabel, `Recipient's previous Balance: ${currentBalance.toString()}`);
 
     // add amount
@@ -216,14 +216,13 @@ module.exports = {
 
     logVerbose(logLabel,
       `Adding funds complete. Recipient's new Balance: ${
-      wallets[address].amount.toString()
-      }`,
-    );
+        wallets[address].amount.toString()
+      }`);
   },
 
   /**
    * Increases nonce for a given address
-   * @param { String } address 
+   * @param { String } address
    */
 
   increaseNonce: (address) => {

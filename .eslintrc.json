@@ -5,11 +5,14 @@
       "no-return-assign": 0,
       "no-extend-native": 0,
       "no-lonely-if": 0,
-      "prefer-destructuring": 0
+      "prefer-destructuring": 0,
+      "no-multi-assign": 0,
+      "import/no-extraneous-dependencies": 0
     },
     "env": {
       "es6" : true,
-      "node" : true
+      "node" : true,
+      "jest": true
     },
     "extends": ["airbnb-base"]
 }
