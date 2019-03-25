@@ -17,15 +17,27 @@
 */
 
 const config = require('./config');
+const yargs = require('yargs');
+const initArgv = require('./argv');
+
+let server_port;
+let argv;
+if (process.env.NODE_ENV !== 'test') {
+  argv = initArgv(yargs).argv;
+  server_port = argv.p ? argv.p : config.port;
+} else {
+  console.log('-------- TEST MODE -------------');
+  argv = config.testconfigs.args;
+}
 
 /* Information about Kaya RPC Server */
 
 console.log(`ZILLIQA KAYA RPC SERVER (ver: ${config.version})`);
-console.log(`Server listening on 127.0.0.1:${config.port}`);
+console.log(`Server listening on 127.0.0.1:${server_port}`);
 
 const app = require('./app');
 
-const server = app.expressjs.listen(config.port, (err) => {
+const server = app.expressjs.listen(server_port, (err) => {
   if (err) {
     process.exit(1);
   }
