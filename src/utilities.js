@@ -1,3 +1,5 @@
+/* eslint-disable no-param-reassign */
+/* eslint-disable no-cond-assign */
 /*
  This file is part of kaya.
   Copyright (c) 2018 - present Zilliqa Research Pte. Ltd.
@@ -55,7 +57,7 @@ module.exports = {
   },
 
   /**
-  * Called when the user chooses to load from an existing file 
+  * Called when the user chooses to load from an existing file
   * @param: { string } filepath to directory
   */
   loadData: (filePath) => {
@@ -65,37 +67,36 @@ module.exports = {
   },
 
   /*
-  * Writes the data files from the saved session into the working directory 
+  * Writes the data files from the saved session into the working directory
   * @params : { String } dataPath - Path to the working data directory
   * @params : { Object } data - Object that includes the init, code and state files
   */
   loadDataToDir: (dataPath, data) => {
     const states = data.states;
     const stateFileNames = Object.keys(states);
-    stateFileNames.forEach((file) => { 
+    stateFileNames.forEach((file) => {
       fs.writeFileSync(`${dataPath}/${file}`, JSON.stringify(states[file]));
     });
     module.exports.logVerbose(logLabel, `State files loaded into ${dataPath}`);
 
     const inits = data.init;
     const initFileNames = Object.keys(inits);
-    initFileNames.forEach((file) => { 
+    initFileNames.forEach((file) => {
       fs.writeFileSync(`${dataPath}/${file}`, JSON.stringify(inits[file]));
     });
     module.exports.logVerbose(logLabel, `Init files loaded into ${dataPath}`);
 
     const codes = data.codes;
     const codeFileNames = Object.keys(codes);
-    codeFileNames.forEach((file) => { 
+    codeFileNames.forEach((file) => {
       fs.writeFileSync(`${dataPath}/${file}`, codes[file]);
     });
     module.exports.logVerbose(logLabel, `Code files loaded into ${dataPath}`);
-
   },
 
   // log function that logs only when verbose mode is on
   logVerbose: (src, msg) => {
-    if(argv.v && process.env.NODE_ENV !== 'test') {
+    if (argv.v && process.env.NODE_ENV !== 'test') {
       console.log(`[${src}]\t : ${msg}`);
     }
   },
@@ -110,9 +111,7 @@ module.exports = {
   /**
   * @returns : { string } : Datetime format (e.g. 20181001T154832 )
   */
-  getDateTimeString: () => {
-    return moment().format('YYYYMMDD_hhmmss');
-  },
+  getDateTimeString: () => moment().format('YYYYMMDD_hhmmss'),
 
   /**
   * Given a piece of scilla code, removes comments
@@ -168,7 +167,7 @@ module.exports = {
     return cleanedParams;
   },
 
-  /** 
+  /**
    * prepareDirectories: Prepare the directories required
    * @param: { String } dataPath : Full path to file
    */
@@ -177,5 +176,5 @@ module.exports = {
       fs.mkdirSync(dataPath);
       module.exports.logVerbose(logLabel, `${__dirname}/${dataPath} created`);
     }
-  }
+  },
 };

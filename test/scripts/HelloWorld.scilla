@@ -1,4 +1,5 @@
 scilla_version 0
+
 (* HelloWorld contract *)
 
 import ListUtils
