@@ -1,3 +1,5 @@
+/* eslint-disable no-param-reassign */
+/* eslint-disable no-cond-assign */
 /*
  This file is part of kaya.
   Copyright (c) 2018 - present Zilliqa Research Pte. Ltd.
@@ -44,18 +46,18 @@ module.exports = {
   * @returns : { Object } - Data object for the specified file extension
   */
   getDataFromDir: (dataPath, fileExt) => {
-    files = glob.sync(`${dataPath}*_${fileExt}`);
+    const files = glob.sync(`${dataPath}*_${fileExt}`);
     const result = {};
     const isCode = (fileExt === 'code.scilla');
     files.forEach((file) => {
-      fileData = fs.readFileSync(file, 'utf-8');
+      const fileData = fs.readFileSync(file, 'utf-8');
       result[file.slice(dataPath.length)] = isCode ? fileData : JSON.parse(fileData);
     });
     return result;
   },
 
   /**
-  * Called when the user chooses to load from an existing file 
+  * Called when the user chooses to load from an existing file
   * @param: { string } filepath to directory
   */
   loadData: (filePath) => {
@@ -65,37 +67,36 @@ module.exports = {
   },
 
   /*
-  * Writes the data files from the saved session into the working directory 
+  * Writes the data files from the saved session into the working directory
   * @params : { String } dataPath - Path to the working data directory
   * @params : { Object } data - Object that includes the init, code and state files
   */
   loadDataToDir: (dataPath, data) => {
     const states = data.states;
     const stateFileNames = Object.keys(states);
-    stateFileNames.forEach((file) => { 
+    stateFileNames.forEach((file) => {
       fs.writeFileSync(`${dataPath}/${file}`, JSON.stringify(states[file]));
     });
     module.exports.logVerbose(logLabel, `State files loaded into ${dataPath}`);
 
     const inits = data.init;
     const initFileNames = Object.keys(inits);
-    initFileNames.forEach((file) => { 
+    initFileNames.forEach((file) => {
       fs.writeFileSync(`${dataPath}/${file}`, JSON.stringify(inits[file]));
     });
     module.exports.logVerbose(logLabel, `Init files loaded into ${dataPath}`);
 
     const codes = data.codes;
     const codeFileNames = Object.keys(codes);
-    codeFileNames.forEach((file) => { 
+    codeFileNames.forEach((file) => {
       fs.writeFileSync(`${dataPath}/${file}`, codes[file]);
     });
     module.exports.logVerbose(logLabel, `Code files loaded into ${dataPath}`);
-
   },
 
   // log function that logs only when verbose mode is on
   logVerbose: (src, msg) => {
-    if(argv.v && process.env.NODE_ENV !== 'test') {
+    if (argv.v && process.env.NODE_ENV !== 'test') {
       console.log(`[${src}]\t : ${msg}`);
     }
   },
@@ -110,16 +111,14 @@ module.exports = {
   /**
   * @returns : { string } : Datetime format (e.g. 20181001T154832 )
   */
-  getDateTimeString: () => {
-    return moment().format('YYYYMMDD_hhmmss');
-  },
+  getDateTimeString: () => moment().format('YYYYMMDD_hhmmss'),
 
   /**
   * Given a piece of scilla code, removes comments
   * @param : { string } : scilla code
   * @returns : { string } : scilla code without comments
   */
-  removeComments: str => {
+  removeComments: (str) => {
     let commentStart;
     let commentEnd;
     let str1;
@@ -150,7 +149,7 @@ module.exports = {
   * Clean up the code received from POST requests. Converts raw code from editor
   * into format that can be read by the interpreter
   */
-  codeCleanup: str => {
+  codeCleanup: (str) => {
     let cleanedCode = module.exports.removeComments(str);
     cleanedCode = cleanedCode.replace(/\\n|\\t/g, ' ').replace(/\\"/g, '"');
     cleanedCode = cleanedCode.substring(1, cleanedCode.length - 1);
@@ -160,7 +159,7 @@ module.exports = {
   /*
   * Clean up the incoming message from POST requests
   */
-  paramsCleanup: initParams => {
+  paramsCleanup: (initParams) => {
     let cleanedParams = initParams.trim();
     cleanedParams = cleanedParams
       .substring(1, cleanedParams.length - 1)
@@ -168,7 +167,7 @@ module.exports = {
     return cleanedParams;
   },
 
-  /** 
+  /**
    * prepareDirectories: Prepare the directories required
    * @param: { String } dataPath : Full path to file
    */
@@ -177,5 +176,5 @@ module.exports = {
       fs.mkdirSync(dataPath);
       module.exports.logVerbose(logLabel, `${__dirname}/${dataPath} created`);
     }
-  }
+  },
 };
