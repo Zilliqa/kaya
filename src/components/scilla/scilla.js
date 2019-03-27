@@ -19,7 +19,7 @@ const fs = require('fs');
 const { promisify } = require('util');
 const rp = require('request-promise');
 const { execFile } = require('child_process');
-const { codeCleanup, logVerbose } = require('../../utilities');
+const { logVerbose } = require('../../utilities');
 const { InterpreterError } = require('../CustomErrors');
 const config = require('../../config');
 
@@ -242,7 +242,7 @@ module.exports = {
       fs.writeFileSync(initPath, initParams);
 
       const rawCode = JSON.stringify(payload.code);
-      const cleanedCode = codeCleanup(rawCode);
+      const cleanedCode = rawCode;
       fs.writeFileSync(codePath, cleanedCode);
     } else {
       // Invoke transition

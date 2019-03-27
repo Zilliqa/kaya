@@ -303,8 +303,8 @@ module.exports = {
       // Returns output to caller
       logVerbose(logLabel, `Returning transactionID to user: ${txnId}`);
       responseObj.TranID = txnId;
-      return responseObj;
     }
+    return responseObj;
   },
 
   /**

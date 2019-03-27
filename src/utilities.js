@@ -44,11 +44,11 @@ module.exports = {
   * @returns : { Object } - Data object for the specified file extension
   */
   getDataFromDir: (dataPath, fileExt) => {
-    files = glob.sync(`${dataPath}*_${fileExt}`);
+    const files = glob.sync(`${dataPath}*_${fileExt}`);
     const result = {};
     const isCode = (fileExt === 'code.scilla');
     files.forEach((file) => {
-      fileData = fs.readFileSync(file, 'utf-8');
+      const fileData = fs.readFileSync(file, 'utf-8');
       result[file.slice(dataPath.length)] = isCode ? fileData : JSON.parse(fileData);
     });
     return result;
@@ -119,7 +119,7 @@ module.exports = {
   * @param : { string } : scilla code
   * @returns : { string } : scilla code without comments
   */
-  removeComments: str => {
+  removeComments: (str) => {
     let commentStart;
     let commentEnd;
     let str1;
@@ -150,7 +150,7 @@ module.exports = {
   * Clean up the code received from POST requests. Converts raw code from editor
   * into format that can be read by the interpreter
   */
-  codeCleanup: str => {
+  codeCleanup: (str) => {
     let cleanedCode = module.exports.removeComments(str);
     cleanedCode = cleanedCode.replace(/\\n|\\t/g, ' ').replace(/\\"/g, '"');
     cleanedCode = cleanedCode.substring(1, cleanedCode.length - 1);
@@ -160,7 +160,7 @@ module.exports = {
   /*
   * Clean up the incoming message from POST requests
   */
-  paramsCleanup: initParams => {
+  paramsCleanup: (initParams) => {
     let cleanedParams = initParams.trim();
     cleanedParams = cleanedParams
       .substring(1, cleanedParams.length - 1)
