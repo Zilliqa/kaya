@@ -13,7 +13,7 @@ Currently, Kaya supports the following functions:
 * `CreateTransaction`
 * `GetTransaction`
 * `GetRecentTransactions`
-* `GetNetworkID`
+* `GetNetworkId`
 * `GetSmartContractState`
 * `GetSmartContracts`
 * `GetBalance`
