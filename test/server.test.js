@@ -15,11 +15,19 @@
   kaya.  If not, see <http://www.gnu.org/licenses/>.
 * */
 
-
+require('isomorphic-fetch');
 const request = require('supertest');
+const { Zilliqa } = require('@zilliqa-js/zilliqa');
+const { BN, units } = require('@zilliqa-js/util');
 const app = require('../src/app');
 const config = require('../src/config');
-require('isomorphic-fetch');
+const Provider = require('../src/provider');
+
+const getZilliqa = () => {
+  const provider = new Provider({ dataPath: 'data/' });
+  console.log(Zilliqa)
+  return new Zilliqa(null, provider);
+};
 
 const makeQuery = (method, params) => ({
   id: '1',
@@ -56,6 +64,7 @@ describe('Test the Server Connection', () => {
 
 const accounts = app.wallet.getAccounts();
 const testAccount1 = Object.keys(accounts)[0];
+const testAccount2 = Object.keys(accounts)[1];
 
 describe('Server Initialization Tests', () => {
   test('Test Accounts generated should return the correct balance', async (done) => {
@@ -138,5 +147,43 @@ describe('Smart Contract related methods Tests', () => {
         );
         done();
       });
+  });
+});
+
+const getZilliqaBalance = async (zilliqa, address) => {
+  const data = await zilliqa.blockchain.getBalance(address);
+  return new BN(data.result.balance);
+};
+
+describe('Transaction Tests', () => {
+  const zilliqa = getZilliqa();
+
+  Object.keys(accounts).forEach((address) => {
+    zilliqa.wallet.addByPrivateKey(
+      accounts[address].privateKey,
+    );
+  });
+
+  const getBalance = address => getZilliqaBalance(zilliqa, address);
+
+  test('CreateTransaction success', async () => {
+    const amount = units.toQa('333', units.Units.Zil);
+    const account1balance = await getBalance(testAccount1);
+    const account2balance = await getBalance(testAccount2);
+    const t = await zilliqa.blockchain.createTransaction(
+      zilliqa.transactions.new({
+        version: 7274497,
+        toAddr: testAccount2,
+        amount,
+        gasPrice: config.blockchain.minimumGasPrice,
+        gasLimit: config.blockchain.minimumGasPrice.mul(new BN(2)),
+      }),
+    );
+    expect(t.txParams.receipt.success).toBeTruthy();
+    const gasPrice = t.txParams.gasPrice;
+    const cumulativeGas = new BN(t.txParams.receipt.cumulative_gas);
+    expect(await getBalance(testAccount1))
+      .toEqual(account1balance.sub(amount).sub(gasPrice.mul(cumulativeGas)));
+    expect(await getBalance(testAccount2)).toEqual(account2balance.add(amount));
   });
 });

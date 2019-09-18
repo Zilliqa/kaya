@@ -140,11 +140,11 @@ module.exports = {
   * @async
   * @method processCreateTxn
   * @param { Object } data : Message object passed from client through server.js
-  * @param { Object } options : List of options passed from server.js
+  * @param { String } dataPath : datapath where the state file is stored
   * @returns { String } : Transaction hash
   * Throws in the event of error. Caller should catch or delegate these errors
   */
-  processCreateTxn: async (data, options) => {
+  processCreateTxn: async (data, dataPath) => {
     logVerbose(logLabel, 'Processing transaction...');
     logVerbose(logLabel, `Payload well-formed? ${checkTransactionJson(data)}`);
 
@@ -156,7 +156,6 @@ module.exports = {
     const responseObj = {};
 
     const currentBNum = blockchain.getBlockNum();
-    const dir = options.dataPath;
 
     // Getting data from payload
     const payload = data[0];
@@ -222,7 +221,7 @@ module.exports = {
           payload,
           contractAddr,
           senderAddress,
-          dir,
+          dataPath,
           currentBNum,
         );
         logVerbose(logLabel, 'Scilla interpreter completed');
