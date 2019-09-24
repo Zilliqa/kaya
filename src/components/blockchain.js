@@ -21,11 +21,13 @@ let bnum = config.blockchain.blockStart;
 
 function addBnum() {
   bnum += 1;
+  return bnum;
 }
 
 // blockinterval is duration for each block number increment
-setInterval(addBnum, config.blockchain.blockInterval);
+if (config.blockchain.blockInterval > 0) setInterval(addBnum, config.blockchain.blockInterval);
 
 module.exports = {
   getBlockNum: () => bnum,
+  addBnum,
 };

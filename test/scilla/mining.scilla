@@ -1,0 +1,39 @@
+scilla_version 0
+
+import BoolUtils
+
+library MiningTest
+
+let success_block_count = Uint32 3
+
+(* Contract starts timer based on block number. *)
+contract MiningTest
+()
+
+field timer_start: BNum = BNum 0
+
+transition startTimer ()
+  accept;
+  blk <- & BLOCKNUMBER;
+  timer_start := blk
+end
+
+(* Emit "success" if timer is complete. Emit "pending" if not. *)
+transition checkTimer ()
+  accept;
+  blk <- & BLOCKNUMBER;
+  start_blk <- timer_start;
+  success_blk = builtin badd start_blk success_block_count;
+  success_is_current = builtin eq success_blk blk;
+  success_is_passed = builtin blt success_blk blk;
+
+  is_success = orb success_is_current success_is_passed;
+  match is_success with
+  | False =>
+    e = {_eventname: "pending"};
+    event e
+  | True =>
+    e = {_eventname: "success"};
+    event e
+  end
+end

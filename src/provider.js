@@ -3,6 +3,7 @@ const logic = require('./logic');
 const wallet = require('./components/wallet/wallet');
 const config = require('./config');
 const { RPCError } = require('./components/CustomErrors');
+const { addBnum, getBlockNum } = require('./components/blockchain');
 
 const errorCodes = zCore.RPCErrorCode;
 
@@ -79,6 +80,10 @@ class Provider {
         return logic.processGetContractAddressByTransactionID(params);
       case 'GetMinimumGasPrice':
         return config.blockchain.minimumGasPrice.toString();
+      case 'KayaMine':
+        return addBnum();
+      case 'GetNumTxBlocks':
+        return getBlockNum();
       default:
         throw new RPCError(
           'METHOD_NOT_FOUND: The method being requested is not available on this server',
