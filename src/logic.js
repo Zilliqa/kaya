@@ -146,10 +146,11 @@ module.exports = {
   */
   processCreateTxn: async (data, dataPath) => {
     logVerbose(logLabel, 'Processing transaction...');
-    logVerbose(logLabel, `Payload well-formed? ${checkTransactionJson(data)}`);
+    const isPayloadWellformed = checkTransactionJson(data);
+    logVerbose(logLabel, `Payload well-formed? ${isPayloadWellformed}`);
 
     // Checks the wellformness of the transaction JSON data
-    if (!checkTransactionJson(data)) {
+    if (!isPayloadWellformed) {
       throw new Error('Invalid Tx Json');
     }
 
@@ -158,7 +159,11 @@ module.exports = {
     const currentBNum = blockchain.getBlockNum();
 
     // Getting data from payload
-    const payload = data[0];
+    const dataElement = data[0];
+    const payload = {
+      ...dataElement,
+      gasLimit: dataElement.gasLimit.toString(),
+    };
     const bnAmount = new BN(payload.amount);
     const bnGasLimit = new BN(payload.gasLimit);
     const bnGasPrice = new BN(payload.gasPrice);

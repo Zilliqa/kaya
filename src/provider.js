@@ -1,5 +1,4 @@
 const zCore = require('@zilliqa-js/core');
-const { isTxParams } = require('@zilliqa-js/account/dist/util');
 const logic = require('./logic');
 const wallet = require('./components/wallet/wallet');
 const config = require('./config');
@@ -70,18 +69,8 @@ class Provider {
         return logic.processGetDataFromContract(params, this.options.dataPath, 'init');
       case 'GetSmartContracts':
         return logic.processGetSmartContracts(params, this.options.dataPath);
-      case 'CreateTransaction': {
-        const rawTxParam = params[0];
-        const txParams = isTxParams(rawTxParam)
-          ? [{
-            ...rawTxParam,
-            amount: rawTxParam.amount.toString(),
-            gasPrice: rawTxParam.gasPrice.toString(),
-            gasLimit: rawTxParam.gasLimit.toString(),
-          }]
-          : params;
-        return logic.processCreateTxn(txParams, this.options.dataPath);
-      }
+      case 'CreateTransaction':
+        return logic.processCreateTxn(params, this.options.dataPath);
       case 'GetTransaction':
         return logic.processGetTransaction(params);
       case 'GetRecentTransactions':

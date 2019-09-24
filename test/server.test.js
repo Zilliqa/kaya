@@ -25,7 +25,6 @@ const Provider = require('../src/provider');
 
 const getZilliqa = () => {
   const provider = new Provider({ dataPath: 'data/' });
-  console.log(Zilliqa)
   return new Zilliqa(null, provider);
 };
 
