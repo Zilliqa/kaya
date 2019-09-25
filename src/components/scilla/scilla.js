@@ -311,10 +311,10 @@ module.exports = {
     if (retMsg.message != null) {
       logVerbose(logLabel, `Next address: ${retMsg.message._recipient}`);
       responseData.nextAddress = retMsg.message._recipient;
+    } else {
+      // Contract deployment do not have the next address
+      responseData.nextAddress = '0'.repeat(40);
     }
-    // Contract deployment do not have the next address
-    responseData.nextAddress = '0'.repeat(40);
-
     return responseData;
   },
 };

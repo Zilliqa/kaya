@@ -26,9 +26,7 @@ const zAccount = require('@zilliqa-js/account');
 const scillaCtrl = require('./components/scilla/scilla');
 const walletCtrl = require('./components/wallet/wallet');
 const blockchain = require('./components/blockchain');
-const {
-  InterpreterError, BalanceError, MultiContractError, RPCError,
-} = require('./components/CustomErrors');
+const { InterpreterError, BalanceError, RPCError } = require('./components/CustomErrors');
 const { logVerbose, consolePrint } = require('./utilities');
 const config = require('./config');
 
@@ -200,8 +198,6 @@ module.exports = {
       } else {
         /* contract creation / invoke transition */
         logVerbose(logLabel, 'Task: Contract Deployment / Create Transaction');
-        // take the sha256 hash of address+nonce, then extract the rightmost 20 bytes
-        const contractAddr = computeContractAddr(senderAddress);
 
         // Before the scilla interpreter runs
         // address should have sufficient zils to pay for gasLimit + amount
@@ -214,51 +210,91 @@ module.exports = {
         }
 
         logVerbose(logLabel, 'Running scilla interpreter now');
-        walletCtrl.increaseNonce(senderAddress);
+
         // Always increase nonce whenever the interpreter is run
         // Interpreter can throw an InterpreterError
+        walletCtrl.increaseNonce(senderAddress);
 
-        const responseData = await scillaCtrl.executeScillaRun(
-          payload,
-          contractAddr,
-          senderAddress,
-          dir,
-          currentBNum,
-        );
-        logVerbose(logLabel, 'Scilla interpreter completed');
+        let bnGasRemaining = bnGasLimit;
+        const events = [];
+        let callsLeft = 6;
+        const executeTransition = async (
+          currentPayload, newContractAddress, currentSenderAddress,
+        ) => {
+          if (callsLeft < 1) throw new Error('Callstack too high');
+          if (bnGasRemaining.lt(new BN(0))) throw new Error('Not Enough Gas');
 
-        const nextAddr = responseData.nextAddress;
-        const bnGasRemaining = new BN(responseData.gasRemaining);
-        const bnGasConsumed = bnGasLimit.sub(bnGasRemaining);
-        const gasConsumedInZil = bnGasPrice.mul(bnGasConsumed);
-        const deductableAmount = gasConsumedInZil.add(bnAmount);
-        logVerbose(logLabel, `Gas Consumed in Zils ${gasConsumedInZil.toString()}`);
-        logVerbose(logLabel, `Gas Consumed: ${bnGasConsumed.toString()}`);
-        walletCtrl.deductFunds(senderAddress, deductableAmount);
+          const responseData = await scillaCtrl.executeScillaRun(
+            currentPayload,
+            newContractAddress,
+            currentSenderAddress,
+            dir,
+            currentBNum,
+          );
 
-        // FIXME: Support multicontract calls
-        if (nextAddr !== '0'.repeat(40) && nextAddr.substring(2) !== senderAddress) {
-          throw new MultiContractError('Multi-contract calls are not supported yet.');
-        }
+          if (responseData.retMsg && responseData.retMsg.events) {
+            const mapEvent = e => ({
+              ...e,
+              address: currentPayload.toAddr,
+            });
+            events.push(...responseData.retMsg.events.map(mapEvent));
+          }
+          callsLeft -= 1;
+          bnGasRemaining = new BN(responseData.gasRemaining);
+
+          const currentAddressUnprefixed = currentPayload.toAddr.replace('0x', '');
+          const nextAddress = responseData.nextAddress;
+          const nextAddressUnprefixed = nextAddress.replace('0x', '');
+          if (nextAddress !== '0'.repeat(40) && nextAddressUnprefixed !== currentAddressUnprefixed) {
+            const initPath = `${dir}${nextAddressUnprefixed}_init.json`;
+            const codePath = `${dir}${nextAddressUnprefixed}_code.scilla`;
+
+            if (!fs.existsSync(initPath) || !fs.existsSync(codePath)) return;
+            if (responseData.retMsg.message._tag === '') return;
+
+            await executeTransition(
+              {
+                toAddr: nextAddressUnprefixed,
+                amount: responseData.retMsg.message._amount || '0',
+                gasLimit: bnGasRemaining.toString(10),
+                data: JSON.stringify(responseData.retMsg.message),
+              },
+              null,
+              currentAddressUnprefixed.toLowerCase(),
+            );
+          }
+        };
 
         const isDeployment = payload.code && payload.toAddr === '0'.repeat(40);
+        const newContractAddress = isDeployment ? computeContractAddr(senderAddress) : null;
+        await executeTransition(payload, newContractAddress, senderAddress);
+        logVerbose(logLabel, 'Scilla interpreter completed');
+
+        if (events.length) receiptInfo.event_logs = events;
+        const bnGasConsumed = bnGasLimit.sub(bnGasRemaining);
+        const gasConsumedInZil = bnGasPrice.mul(bnGasConsumed);
+        logVerbose(logLabel, `Gas Consumed in Zils ${gasConsumedInZil.toString()}`);
+        logVerbose(logLabel, `Gas Consumed: ${bnGasConsumed.toString()}`);
+        const totalSum = new BN(payload.amount).add(gasConsumedInZil);
+        walletCtrl.deductFunds(senderAddress.replace('0x', ''), totalSum);
+
         // Only update if it is a deployment call
         if (isDeployment) {
-          logVerbose(logLabel, `Contract deployed at: ${contractAddr}`);
+          logVerbose(logLabel, `Contract deployed at: ${newContractAddress}`);
           responseObj.Info = 'Contract Creation txn, sent to shard';
-          responseObj.ContractAddress = contractAddr;
+          responseObj.ContractAddress = newContractAddress;
 
           // Update address_to_contracts
           if (senderAddress in createdContractsByUsers) {
             logVerbose(logLabel, 'User has contracts. Appending to list');
-            createdContractsByUsers[senderAddress].push(contractAddr);
+            createdContractsByUsers[senderAddress].push(newContractAddress);
           } else {
             logVerbose(logLabel, 'No existing contracts. Creating new entry.');
-            createdContractsByUsers[senderAddress] = [contractAddr];
+            createdContractsByUsers[senderAddress] = [newContractAddress];
           }
 
-          contractAddressesByTransactionID[txnId] = contractAddr;
-          logVerbose(logLabel, `TransID: ${txnId} => Contract Address: ${contractAddr}`);
+          contractAddressesByTransactionID[txnId] = newContractAddress;
+          logVerbose(logLabel, `TransID: ${txnId} => Contract Address: ${newContractAddress}`);
         } else {
           // Placeholder msg - since there's no shards in Kaya RPC
           responseObj.Info = 'Contract Txn, Shards Match of the sender and receiver';
@@ -288,11 +324,6 @@ module.exports = {
         receiptInfo.success = false;
         confirmTransaction(payload, txnId, receiptInfo);
         logVerbose(logLabel, 'Transaction is logged but it is not accepted due to scilla errors.');
-      } else if (err instanceof MultiContractError) {
-        // Msg: Contract Txn, Sent To Ds
-        console.log('Multi-contract calls not supported.');
-        responseObj.Info = 'Contract Txn, Sent To Ds';
-        // Do not deduct gas for the time being
       } else {
         // Propagate uncaught error to client
         console.log('Uncaught error');
