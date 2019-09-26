@@ -22,12 +22,12 @@ const rimraf = require('rimraf');
 const yargs = require('yargs');
 
 const expressjs = express();
-const zCore = require('@zilliqa-js/core');
 const config = require('./config');
 const logic = require('./logic');
 const wallet = require('./components/wallet/wallet');
 const utils = require('./utilities');
 const initArgv = require('./argv');
+const Provider = require('./provider');
 
 expressjs.use(bodyParser.json({ extended: false }));
 let argv;
@@ -39,28 +39,6 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 const logLabel = 'App.js';
-const errorCodes = zCore.RPCErrorCode;
-
-/**
- * Make the response headers before returning to client
- * @method makeResponse
- * @param { String } id
- * @param { String} jsonrpc
- * @param { Object } data
- * @param { Boolean } isErr
- */
-const makeResponse = (id, jsonrpc, data, isErr) => {
-  const responseObj = { id, jsonrpc };
-  let errorObj;
-  if (isErr) {
-    errorObj = {
-      code: data.code,
-      data: data.data,
-      message: data.message,
-    };
-  }
-  return isErr ? { ...responseObj, error: errorObj } : { ...responseObj, result: data };
-};
 
 const wrapAsync = fn => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
@@ -138,125 +116,14 @@ expressjs.get('/', (req, res) => {
   res.status(200).send('Kaya RPC Server');
 });
 
-// Method handling logic for incoming POST request
+const provider = new Provider(options);
 
+// Method handling logic for incoming POST request
 const handler = async (req, res) => {
   const { body } = req;
-  let data = {};
-  let result;
-  let addr;
   utils.logVerbose(logLabel, `Method specified ${body.method}`);
-  switch (body.method) {
-    case 'GetBalance':
-      addr = body.params[0];
-      if (typeof addr === 'object') {
-        addr = JSON.stringify(addr);
-      }
-      utils.logVerbose(logLabel, `Getting balance for ${addr}`);
-      try {
-        data = wallet.getBalance(addr);
-      } catch (err) {
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
-        break;
-      }
-      res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
-      break;
-    case 'GetNetworkId':
-      data = makeResponse(body.id, body.jsonrpc, config.chainId.toString(), false);
-      res.status(200).send(data);
-      break;
-    case 'GetSmartContractCode':
-      try {
-        result = logic.processGetDataFromContract(body.params, options.dataPath, 'code');
-        data = result;
-      } catch (err) {
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
-        break;
-      }
-      res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
-      break;
-    case 'GetSmartContractState':
-      try {
-        result = logic.processGetDataFromContract(body.params, options.dataPath, 'state');
-        data = result;
-      } catch (err) {
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
-        break;
-      }
-      res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
-      break;
-    case 'GetSmartContractInit':
-      try {
-        result = logic.processGetDataFromContract(body.params, options.dataPath, 'init');
-        data = result;
-      } catch (err) {
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
-        break;
-      }
-      res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
-      break;
-    case 'GetSmartContracts':
-      try {
-        result = logic.processGetSmartContracts(body.params, options.dataPath);
-        data = result;
-      } catch (err) {
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
-        break;
-      }
-      res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
-      break;
-    case 'CreateTransaction':
-      try {
-        const txnId = await logic.processCreateTxn(body.params, options);
-        data = txnId;
-      } catch (err) {
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
-        break;
-      }
-      res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
-      break;
-    case 'GetTransaction':
-      try {
-        const obj = logic.processGetTransaction(body.params);
-        data = obj;
-      } catch (err) {
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
-        break;
-      }
-      res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
-      break;
-    case 'GetRecentTransactions':
-      try {
-        const obj = logic.processGetRecentTransactions();
-        data = obj;
-      } catch (err) {
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
-        break;
-      }
-      res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
-      break;
-    case 'GetContractAddressFromTransactionID':
-      try {
-        const obj = logic.processGetContractAddressByTransactionID(body.params);
-        data = obj;
-      } catch (err) {
-        res.status(200).send(makeResponse(body.id, body.jsonrpc, err, true));
-        break;
-      }
-      res.status(200).send(makeResponse(body.id, body.jsonrpc, data, false));
-      break;
-    case 'GetMinimumGasPrice':
-      data = makeResponse(body.id, body.jsonrpc,
-        config.blockchain.minimumGasPrice.toString(), false);
-      res.status(200).send(data);
-      break;
-    default:
-      data = {
-        code: errorCodes.RPC_INVALID_REQUEST,
-        message: 'METHOD_NOT_FOUND: The method being requested is not available on this server',
-      };
-      res.status(200).send(makeResponse(body.id, body.jsonrpc, data, true));
-  }
+  const data = await provider.send(body.method, ...body.params);
+  res.status(200).send({ id: body.id, jsonrpc: body.jsonrpc, ...data });
   utils.logVerbose(logLabel, 'Sending response back to client');
 };
 
