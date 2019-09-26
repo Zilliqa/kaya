@@ -140,26 +140,30 @@ module.exports = {
   * @async
   * @method processCreateTxn
   * @param { Object } data : Message object passed from client through server.js
-  * @param { Object } options : List of options passed from server.js
+  * @param { String } dataPath : datapath where the state file is stored
   * @returns { String } : Transaction hash
   * Throws in the event of error. Caller should catch or delegate these errors
   */
-  processCreateTxn: async (data, options) => {
+  processCreateTxn: async (data, dataPath) => {
     logVerbose(logLabel, 'Processing transaction...');
-    logVerbose(logLabel, `Payload well-formed? ${checkTransactionJson(data)}`);
+    const isPayloadWellformed = checkTransactionJson(data);
+    logVerbose(logLabel, `Payload well-formed? ${isPayloadWellformed}`);
 
     // Checks the wellformness of the transaction JSON data
-    if (!checkTransactionJson(data)) {
+    if (!isPayloadWellformed) {
       throw new Error('Invalid Tx Json');
     }
 
     const responseObj = {};
 
     const currentBNum = blockchain.getBlockNum();
-    const dir = options.dataPath;
 
     // Getting data from payload
-    const payload = data[0];
+    const dataElement = data[0];
+    const payload = {
+      ...dataElement,
+      gasLimit: dataElement.gasLimit.toString(),
+    };
     const bnAmount = new BN(payload.amount);
     const bnGasLimit = new BN(payload.gasLimit);
     const bnGasPrice = new BN(payload.gasPrice);
@@ -222,7 +226,7 @@ module.exports = {
           payload,
           contractAddr,
           senderAddress,
-          dir,
+          dataPath,
           currentBNum,
         );
         logVerbose(logLabel, 'Scilla interpreter completed');
