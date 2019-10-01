@@ -1,0 +1,36 @@
+scilla_version 0
+
+library Test
+
+let one_msg =
+  fun (msg : Message) =>
+    let nil_msg = Nil {Message} in
+    Cons {Message} msg nil_msg
+
+contract Test
+()
+
+field last_amount: Uint128 = Uint128 0
+
+(* Call contrC. Also pass on _amount. Emit event. *)
+transition acceptBAndTransferToC (addrC : ByStr20)
+  accept;
+
+  last_amount := _amount;
+
+  e = {_eventname: "B"};
+  event e;
+
+  msg = { _tag : "simplyAccept"; _amount : _amount; _recipient : addrC };
+  msgs = one_msg msg;
+  send msgs
+end
+
+transition simplyAccept ()
+  accept;
+
+  last_amount := _amount;
+
+  e = {_eventname: "B"};
+  event e
+end

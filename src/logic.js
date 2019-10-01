@@ -67,6 +67,8 @@ const confirmTransaction = (payload, transactionID, receiptInfo) => {
   const txnDetails = {
     ID: transactionID,
     amount: payload.amount,
+    gasLimit: payload.gasLimit,
+    gasPrice: payload.gasPrice,
     nonce: payload.nonce,
     receipt: receiptInfo,
     senderPubKey: payload.pubKey,
@@ -215,33 +217,25 @@ module.exports = {
 
         logVerbose(logLabel, 'Running scilla interpreter now');
 
-        // Always increase nonce whenever the interpreter is run
-        // Interpreter can throw an InterpreterError
-        walletCtrl.increaseNonce(senderAddress);
-
         let bnGasRemaining = bnGasLimit;
         const events = [];
         let callsLeft = 6;
         const executeTransition = async (
-          currentPayload, newContractAddress, currentSenderAddress,
+          currentPayload, currentDeployedContractAddress, currentSenderAddress,
         ) => {
           if (callsLeft < 1) throw new Error('Callstack too high');
           if (bnGasRemaining.lt(new BN(0))) throw new Error('Not Enough Gas');
 
           const responseData = await scillaCtrl.executeScillaRun(
             currentPayload,
-            newContractAddress,
+            currentDeployedContractAddress,
             currentSenderAddress,
             dataPath,
             currentBNum,
           );
 
-          if (responseData.retMsg && responseData.retMsg.events) {
-            const mapEvent = e => ({
-              ...e,
-              address: currentPayload.toAddr,
-            });
-            events.push(...responseData.retMsg.events.map(mapEvent));
+          if (responseData.events) {
+            events.push(...responseData.events);
           }
           callsLeft -= 1;
           bnGasRemaining = new BN(responseData.gasRemaining);
@@ -254,14 +248,14 @@ module.exports = {
             const codePath = `${dataPath}${nextAddressUnprefixed}_code.scilla`;
 
             if (!fs.existsSync(initPath) || !fs.existsSync(codePath)) return;
-            if (responseData.retMsg.message._tag === '') return;
+            if (responseData.message._tag === '') return;
 
             await executeTransition(
               {
                 toAddr: nextAddressUnprefixed,
-                amount: responseData.retMsg.message._amount || '0',
+                amount: responseData.message._amount || '0',
                 gasLimit: bnGasRemaining.toString(10),
-                data: JSON.stringify(responseData.retMsg.message),
+                data: JSON.stringify(responseData.message),
               },
               null,
               currentAddressUnprefixed.toLowerCase(),
@@ -270,8 +264,12 @@ module.exports = {
         };
 
         const isDeployment = payload.code && payload.toAddr === '0'.repeat(40);
-        const newContractAddress = isDeployment ? computeContractAddr(senderAddress) : null;
-        await executeTransition(payload, newContractAddress, senderAddress);
+        const deployedContractAddress = isDeployment ? computeContractAddr(senderAddress) : null;
+        // Always increase nonce whenever the interpreter is run
+        // Interpreter can throw an InterpreterError
+        // if contract deployment, increase nonce after computeContractAddr
+        walletCtrl.increaseNonce(senderAddress);
+        await executeTransition(payload, deployedContractAddress, senderAddress);
         logVerbose(logLabel, 'Scilla interpreter completed');
 
         if (events.length) receiptInfo.event_logs = events;
@@ -284,21 +282,21 @@ module.exports = {
 
         // Only update if it is a deployment call
         if (isDeployment) {
-          logVerbose(logLabel, `Contract deployed at: ${newContractAddress}`);
+          logVerbose(logLabel, `Contract deployed at: ${deployedContractAddress}`);
           responseObj.Info = 'Contract Creation txn, sent to shard';
-          responseObj.ContractAddress = newContractAddress;
+          responseObj.ContractAddress = deployedContractAddress;
 
           // Update address_to_contracts
           if (senderAddress in createdContractsByUsers) {
             logVerbose(logLabel, 'User has contracts. Appending to list');
-            createdContractsByUsers[senderAddress].push(newContractAddress);
+            createdContractsByUsers[senderAddress].push(deployedContractAddress);
           } else {
             logVerbose(logLabel, 'No existing contracts. Creating new entry.');
-            createdContractsByUsers[senderAddress] = [newContractAddress];
+            createdContractsByUsers[senderAddress] = [deployedContractAddress];
           }
 
-          contractAddressesByTransactionID[txnId] = newContractAddress;
-          logVerbose(logLabel, `TransID: ${txnId} => Contract Address: ${newContractAddress}`);
+          contractAddressesByTransactionID[txnId] = deployedContractAddress;
+          logVerbose(logLabel, `TransID: ${txnId} => Contract Address: ${deployedContractAddress}`);
         } else {
           // Placeholder msg - since there's no shards in Kaya RPC
           responseObj.Info = 'Contract Txn, Shards Match of the sender and receiver';

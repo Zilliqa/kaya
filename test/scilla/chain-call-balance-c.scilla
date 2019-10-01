@@ -1,0 +1,30 @@
+scilla_version 0
+
+library Test
+
+let one_msg =
+  fun (msg : Message) =>
+    let nil_msg = Nil {Message} in
+    Cons {Message} msg nil_msg
+
+contract Test
+()
+
+field last_amount: Uint128 = Uint128 0
+
+(* Do not accept _amount. Emit event. *)
+transition noAcceptC ()
+  last_amount := _amount;
+
+  e = {_eventname: "C"};
+  event e
+end
+
+transition simplyAccept ()
+  accept;
+
+  last_amount := _amount;
+
+  e = {_eventname: "C"};
+  event e
+end
