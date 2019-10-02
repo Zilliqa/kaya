@@ -38,15 +38,20 @@ const makeBlockchainJson = (val, blockchainPath) => {
   logVerbose(logLabel, `blockchain.json file prepared for blocknumber: ${val}`);
 };
 
-const initializeContractState = (amt) => {
-  const initState = [
-    {
-      vname: '_balance',
-      type: 'Uint128',
-      value: amt.toString(),
-    },
-  ];
-  return initState;
+// Scilla runner doesn't return the balance correctly
+// We need to set it manually
+const getStateWithCorrectBalance = (states, amount) => {
+  logVerbose(logLabel, 'Payload amount', amount);
+  const balanceIndex = states.findIndex(state => state.vname === '_balance');
+  if (balanceIndex !== -1) {
+    const newStates = [...states];
+    newStates[balanceIndex] = {
+      ...states[balanceIndex],
+      value: amount.toString(),
+    };
+    return newStates;
+  }
+  return states;
 };
 
 /**
@@ -77,7 +82,6 @@ const runRemoteCheckerAsync = async (filepath) => {
     throw new InterpreterError(`Error: ${err.message}`);
   }
 };
-
 
 /**
  * Runs the remote interpreter (currently hosted by zilliqa)
@@ -203,7 +207,7 @@ module.exports = {
     makeBlockchainJson(currentBnum, blockchainPath);
 
     const isCodeDeployment = payload.code && payload.toAddr === '0'.repeat(40);
-    const contractAddr = ((isCodeDeployment) ? newContractAddr : payload.toAddr).toLowerCase();
+    const contractAddr = (isCodeDeployment ? newContractAddr : payload.toAddr).toLowerCase();
 
     const initPath = `${dir}${contractAddr}_init.json`;
     const codePath = `${dir}${contractAddr}_code.scilla`;
@@ -211,7 +215,12 @@ module.exports = {
     const statePath = `${dir}${contractAddr}_state.json`;
     const msgPath = `${dir}${payload.toAddr}_message.json`;
 
-    const standardOpt = ['-libdir', config.constants.smart_contract.SCILLA_LIB, '-gaslimit', payload.gasLimit];
+    const standardOpt = [
+      '-libdir',
+      config.constants.smart_contract.SCILLA_LIB,
+      '-gaslimit',
+      payload.gasLimit,
+    ];
     const initOpt = ['-init', initPath];
     const outputOpt = ['-o', outputPath];
     const codeOpt = ['-i', codePath];
@@ -294,15 +303,13 @@ module.exports = {
       retMsg = await runRemoteInterpreterAsync(apiReqParams);
     }
 
-    // Extract state from tmp/out.json
-    let newState = JSON.stringify(retMsg.states);
-    if (isCodeDeployment) {
-      newState = JSON.stringify(initializeContractState(payload.amount));
-    }
-
-    fs.writeFileSync(statePath, newState);
+    const prevStates = retMsg.states;
+    const newStates = isCodeDeployment
+      ? getStateWithCorrectBalance(prevStates, payload.amount)
+      : prevStates;
+    fs.writeFileSync(statePath, JSON.stringify(newStates));
     logVerbose(logLabel, `State logged down in ${statePath}`);
-    console.log(`Contract Address Deployed: ${contractAddr}`);
+    if (isCodeDeployment) logVerbose(logLabel, `Contract Address Deployed: ${contractAddr}`);
 
     const responseData = {};
     responseData.gasRemaining = retMsg.gas_remaining;
