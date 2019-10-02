@@ -162,7 +162,9 @@ module.exports = {
     const dataElement = data[0];
     const payload = {
       ...dataElement,
-      gasLimit: dataElement.gasLimit.toString(),
+      amount: dataElement.amount.toString(), // BN - toJSON returns hex string
+      gasLimit: dataElement.gasLimit.toString(), // Long - toJSON is not defined
+      gasPrice: dataElement.gasPrice.toString(), // BN - toJSON returns hex string
     };
     const bnAmount = new BN(payload.amount);
     const bnGasLimit = new BN(payload.gasLimit);
