@@ -31,7 +31,7 @@ module.exports = {
   // blockchain specific configuration
   blockchain: {
     // sets timer for the block confirmation
-    blockInterval: 10000, // 10000 : 10 seconds for one block
+    blockInterval: 0, // automatic block confirmation time in ms, 0 disables automatic confirmation
     blockStart: 0,
     minimumGasPrice: new BN('1000000000'),
     transferGasCost: 1, // Amount of gas consumed for each transfer
