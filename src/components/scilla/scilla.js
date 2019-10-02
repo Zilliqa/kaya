@@ -199,7 +199,7 @@ module.exports = {
    * @param { String } directory of the data files
    * @param { String } current block number
    * @param { String } gasLimit - gasLimit specified by the caller
-   * @returns { Object } consisting of `gasRemaining and nextAddress`
+   * @returns {{ gasRemaining, nextAddress, events, message }} - interpreter response
    */
   executeScillaRun: async (payload, newContractAddr, senderAddr, dir, currentBnum) => {
     // Get the blocknumber into a json file
@@ -313,15 +313,23 @@ module.exports = {
 
     const responseData = {};
     responseData.gasRemaining = retMsg.gas_remaining;
-
-    // Obtains the next address based on the message
-    if (retMsg.message != null) {
-      logVerbose(logLabel, `Next address: ${retMsg.message._recipient}`);
-      responseData.nextAddress = retMsg.message._recipient;
+    if (retMsg.events) {
+      responseData.events = retMsg.events.map(e => ({
+        ...e,
+        address: payload.toAddr,
+      }));
     }
-    // Contract deployment do not have the next address
-    responseData.nextAddress = '0'.repeat(40);
+    const message = retMsg.message;
+    if (message != null) {
+      responseData.message = message;
 
+      // Obtains the next address based on the message
+      logVerbose(logLabel, `Next address: ${message._recipient}`);
+      responseData.nextAddress = message._recipient;
+    } else {
+      // Contract deployment do not have the next address
+      responseData.nextAddress = '0'.repeat(40);
+    }
     return responseData;
   },
 };
