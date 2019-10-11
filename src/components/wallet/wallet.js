@@ -200,6 +200,7 @@ module.exports = {
     if (!zUtils.validation.isAddress(address)) {
       throw new RPCError('Address size not appropriate', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
+    address = address.replace('0x', '');
     if (!wallets[address]) {
       // initialize new wallet account
       logVerbose(logLabel, `Creating new wallet account for ${address}`);
