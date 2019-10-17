@@ -205,14 +205,15 @@ module.exports = {
     const blockchainPath = `${dir}blockchain.json`;
     makeBlockchainJson(currentBnum, blockchainPath);
 
-    const isCodeDeployment = payload.code && payload.toAddr === '0'.repeat(40);
-    const contractAddr = (isCodeDeployment ? newContractAddr : payload.toAddr).toLowerCase();
+    const toAddr = payload.toAddr && payload.toAddr.toLowerCase().replace('0x', '');
+    const isCodeDeployment = payload.code && toAddr === '0'.repeat(40);
+    const contractAddr = (isCodeDeployment ? newContractAddr : toAddr)
 
     const initPath = `${dir}${contractAddr}_init.json`;
     const codePath = `${dir}${contractAddr}_code.scilla`;
     const outputPath = `${dir}${contractAddr}_out.json`;
     const statePath = `${dir}${contractAddr}_state.json`;
-    const msgPath = `${dir}${payload.toAddr}_message.json`;
+    const msgPath = `${dir}${toAddr}_message.json`;
 
     const standardOpt = [
       '-libdir',
