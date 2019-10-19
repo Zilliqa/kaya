@@ -16,6 +16,7 @@
 */
 
 const fs = require('fs');
+const path = require('path');
 const { promisify } = require('util');
 const rp = require('request-promise');
 const { execFile } = require('child_process');
@@ -26,7 +27,25 @@ const config = require('../../config');
 const logLabel = 'SCILLA';
 
 const execFileAsync = promisify(execFile);
-const makeBlockchainJson = (val, blockchainPath) => {
+const fsWriteFileAsync = promisify(fs.writeFile);
+const fsMkdirAsync = promisify(fs.mkdir);
+
+const ensureExists = async (dirPath) => {
+  const mask = 0o700;
+  try {
+    await fsMkdirAsync(dirPath, mask);
+  } catch (err) {
+    if (err.code !== 'EEXIST') throw err; // ignore the error if the folder already exists
+  }
+};
+
+const writeKayaFile = async (filePath, text) => {
+  const dir = path.dirname(filePath);
+  await ensureExists(dir);
+  return fsWriteFileAsync(filePath, text);
+};
+
+const makeBlockchainJson = async (val, blockchainPath) => {
   const blockchainData = [
     {
       vname: 'BLOCKNUMBER',
@@ -34,7 +53,7 @@ const makeBlockchainJson = (val, blockchainPath) => {
       value: val.toString(),
     },
   ];
-  fs.writeFileSync(blockchainPath, JSON.stringify(blockchainData));
+  await writeKayaFile(blockchainPath, JSON.stringify(blockchainData));
   logVerbose(logLabel, `blockchain.json file prepared for blocknumber: ${val}`);
 };
 
@@ -203,7 +222,7 @@ module.exports = {
   executeScillaRun: async (payload, newContractAddr, senderAddr, dir, currentBnum) => {
     // Get the blocknumber into a json file
     const blockchainPath = `${dir}blockchain.json`;
-    makeBlockchainJson(currentBnum, blockchainPath);
+    await makeBlockchainJson(currentBnum, blockchainPath);
 
     const toAddr = payload.toAddr && payload.toAddr.toLowerCase().replace('0x', '');
     const isCodeDeployment = payload.code && toAddr === '0'.repeat(40);
@@ -248,11 +267,11 @@ module.exports = {
 
       const deploymentPayload = [...acceptedPayload, thisAddr];
       const initParams = JSON.stringify(deploymentPayload);
-      fs.writeFileSync(initPath, initParams);
+      await writeKayaFile(initPath, initParams);
 
       const rawCode = JSON.stringify(payload.code);
       const cleanedCode = codeCleanup(rawCode);
-      fs.writeFileSync(codePath, cleanedCode);
+      await writeKayaFile(codePath, cleanedCode);
     } else {
       // Invoke transition
       logVerbose(logLabel, `Calling transition within contract ${payload.toAddr}`);
@@ -268,7 +287,7 @@ module.exports = {
       const msgObj = JSON.parse(payload.data);
       msgObj._amount = payload.amount;
       msgObj._sender = `0x${senderAddr}`;
-      fs.writeFileSync(msgPath, JSON.stringify(msgObj));
+      await writeKayaFile(msgPath, JSON.stringify(msgObj));
 
       // Append additional options for transition calls
       cmdOpt.push('-imessage');
@@ -307,7 +326,7 @@ module.exports = {
     const newStates = isCodeDeployment
       ? getStateWithCorrectBalance(prevStates, payload.amount)
       : prevStates;
-    fs.writeFileSync(statePath, JSON.stringify(newStates));
+    await writeKayaFile(statePath, JSON.stringify(newStates));
     logVerbose(logLabel, `State logged down in ${statePath}`);
     if (isCodeDeployment) logVerbose(logLabel, `Contract Address Deployed: ${contractAddr}`);
 
