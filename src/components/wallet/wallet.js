@@ -42,7 +42,7 @@ let wallets = {};
 
 const createNewWallet = () => {
   const pk = zCrypto.schnorr.generatePrivateKey();
-  const address = zCrypto.getAddressFromPrivateKey(pk);
+  const address = zCrypto.getAddressFromPrivateKey(pk).toLowerCase().replace('0x', '');
   const newWallet = {
     privateKey: pk,
     amount: config.wallet.defaultAmt,
@@ -65,7 +65,7 @@ const validateAccounts = (accounts) => {
 
     const addressFromPK = zCrypto.getAddressFromPrivateKey(
       account.privateKey,
-    );
+    ).replace("0x", '').toLowerCase();
     if (addressFromPK !== key) {
       logVerbose(logLabel, 'Validation failure: Invalid Address and Private key-pair');
       throw new Error(`Invalid address for ${key}`);
