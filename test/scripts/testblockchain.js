@@ -46,12 +46,6 @@ async function testBlockchain() {
         // rejecting the transaction while consuming gas!
         value: '0x7bb3b0e8a59f3f61d9bff038f4aeb42cae2ecce8',
       },
-      // Necessary for local Kaya testing
-      {
-        vname: '_creation_block',
-        type: 'BNum',
-        value: '100',
-      },
     ];
 
     // instance of class Contract

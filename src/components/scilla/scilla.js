@@ -259,13 +259,13 @@ module.exports = {
         value: `0x${contractAddr}`,
       };
 
-      // const thisCreationBlock = {
-      //   vname: '_creation_block',
-      //   type: 'BNum',
-      //   value: `${currentBnum}`,
-      // };
+      const thisCreationBlock = {
+        vname: '_creation_block',
+        type: 'BNum',
+        value: `${currentBnum}`,
+      };
 
-      const deploymentPayload = [...acceptedPayload, thisAddr];
+      const deploymentPayload = [...acceptedPayload, thisAddr, thisCreationBlock];
       const initParams = JSON.stringify(deploymentPayload);
       await writeKayaFile(initPath, initParams);
 
