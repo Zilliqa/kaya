@@ -67,7 +67,6 @@ describe('Test Multicontract support', () => {
         readFileSync(`${__dirname}/scilla/chain-call-balance-c.scilla`, 'utf8'),
         [
           { vname: '_scilla_version', type: 'Uint32', value: '0' },
-          { vname: '_creation_block', type: 'BNum', value: '0' },
         ],
       )
       .deploy(deploymentParams);
@@ -78,7 +77,6 @@ describe('Test Multicontract support', () => {
         readFileSync(`${__dirname}/scilla/chain-call-balance-b.scilla`, 'utf8'),
         [
           { vname: '_scilla_version', type: 'Uint32', value: '0' },
-          { vname: '_creation_block', type: 'BNum', value: '0' },
         ],
       )
       .deploy(deploymentParams);
@@ -89,7 +87,6 @@ describe('Test Multicontract support', () => {
         readFileSync(`${__dirname}/scilla/chain-call-balance-a.scilla`, 'utf8'),
         [
           { vname: '_scilla_version', type: 'Uint32', value: '0' },
-          { vname: '_creation_block', type: 'BNum', value: '0' },
         ],
       )
       .deploy(deploymentParams);
