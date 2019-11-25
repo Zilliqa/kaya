@@ -303,7 +303,7 @@ module.exports = {
 
     let retMsg;
     if (!config.scilla.remote) {
-      const checkerCmdOpts = ['-libdir', config.constants.smart_contract.SCILLA_LIB, codePath];
+      const checkerCmdOpts = [...standardOpt, codePath];
       await runLocalCheckerAsync(checkerCmdOpts);
       // local scilla interpreter
       retMsg = await runLocalInterpreterAsync(cmdOpt, outputPath);
