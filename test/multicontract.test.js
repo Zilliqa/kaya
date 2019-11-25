@@ -115,17 +115,8 @@ describe('Test Multicontract support', () => {
       ])
     );
     expect(walletBalance.result.nonce).toBe(4);
-    expect(contractAState).toEqual([
-      { vname: '_balance', type: 'Uint128', value: '0' },
-      { vname: 'last_amount', type: 'Uint128', value: '5' },
-    ]);
-    expect(contractBState).toEqual([
-      { vname: '_balance', type: 'Uint128', value: '0' },
-      { vname: 'last_amount', type: 'Uint128', value: '5' },
-    ]);
-    expect(contractCState).toEqual([
-      { vname: '_balance', type: 'Uint128', value: '5' },
-      { vname: 'last_amount', type: 'Uint128', value: '5' },
-    ]);
+    expect(contractAState).toEqual({_balance: '0', last_amount: '5'});
+    expect(contractBState).toEqual({_balance: '0', last_amount: '5'})
+    expect(contractCState).toEqual({_balance: '5', last_amount: '5'})
   });
 });
