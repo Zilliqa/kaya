@@ -259,13 +259,13 @@ module.exports = {
         value: `0x${contractAddr}`,
       };
 
-      // const thisCreationBlock = {
-      //   vname: '_creation_block',
-      //   type: 'BNum',
-      //   value: `${currentBnum}`,
-      // };
+      const thisCreationBlock = {
+        vname: '_creation_block',
+        type: 'BNum',
+        value: `${currentBnum}`,
+      };
 
-      const deploymentPayload = [...acceptedPayload, thisAddr];
+      const deploymentPayload = [...acceptedPayload, thisAddr, thisCreationBlock];
       const initParams = JSON.stringify(deploymentPayload);
       await writeKayaFile(initPath, initParams);
 
@@ -303,7 +303,7 @@ module.exports = {
 
     let retMsg;
     if (!config.scilla.remote) {
-      const checkerCmdOpts = ['-libdir', config.constants.smart_contract.SCILLA_LIB, codePath];
+      const checkerCmdOpts = [...standardOpt, codePath];
       await runLocalCheckerAsync(checkerCmdOpts);
       // local scilla interpreter
       retMsg = await runLocalInterpreterAsync(cmdOpt, outputPath);
