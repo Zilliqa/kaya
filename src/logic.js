@@ -432,12 +432,18 @@ module.exports = {
       throw new RPCError('Address does not exist', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
 
-    const responseData = fs.readFileSync(filePath, 'utf-8');
+    let responseData = fs.readFileSync(filePath, 'utf-8');
     if (fileType === 'code') {
       return { code: responseData };
     }
-    // handles init and state json after parsing
-    return JSON.parse(responseData);
+    responseData = JSON.parse(responseData);
+
+    if (fileType === 'state') {
+      result = {};
+      responseData.forEach(field => result[field.vname] = field.value);
+      return result;
+    }
+    return responseData;
   },
 
   /**
