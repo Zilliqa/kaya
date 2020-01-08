@@ -84,7 +84,7 @@ describe('Test Multicontract support', () => {
 
     const [deployATx, contractA] = await zilliqa.contracts
       .new(
-        readFileSync(`${__dirname}/scilla/chain-call-balance-a.scilla`, 'utf8'),
+        readFileSync(`${__dirname}/scilla/chain-call-balance-a-multiple.scilla`, 'utf8'),
         [
           { vname: '_scilla_version', type: 'Uint32', value: '0' },
         ],
@@ -100,12 +100,12 @@ describe('Test Multicontract support', () => {
       ],
       {
         ...defaultParams,
-        amount: new BN(5),
+        amount: new BN(8),
       },
     );
     expect(transitionCall.isConfirmed()).toBe(true);
     expect(transactionEventNames(transitionCall))
-      .toEqual(['A', 'B', 'C']);
+      .toEqual(['A', 'B', 'C', 'C']);
     const [walletBalance, contractAState, contractBState, contractCState] = await (
       Promise.all([
         zilliqa.blockchain.getBalance(testWallet.address),
@@ -115,8 +115,8 @@ describe('Test Multicontract support', () => {
       ])
     );
     expect(walletBalance.result.nonce).toBe(4);
-    expect(contractAState).toEqual({_balance: '0', last_amount: '5'});
-    expect(contractBState).toEqual({_balance: '0', last_amount: '5'})
-    expect(contractCState).toEqual({_balance: '5', last_amount: '5'})
+    expect(contractAState).toEqual({_balance: '0', last_amount: '8'});
+    expect(contractBState).toEqual({_balance: '0', last_amount: '4'});
+    expect(contractCState).toEqual({_balance: '8', last_amount: '4'});
   });
 });
