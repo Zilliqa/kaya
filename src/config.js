@@ -55,6 +55,9 @@ module.exports = {
       SCILLA_CHECKER: `${__dirname}/components/scilla/scilla-checker`,
       SCILLA_LIB: `${__dirname}/components/scilla/stdlib`,
     },
+    transactions: {
+      MAX_CONTRACT_EDGES: 10,
+    },
   },
 
   /*

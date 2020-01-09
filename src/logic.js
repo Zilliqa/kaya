@@ -221,16 +221,16 @@ module.exports = {
 
         let bnGasRemaining = bnGasLimit;
         const events = [];
-        const callstack = [];
-        let callsLeft = 6;
+        let callsLeft = config.constants.transactions.MAX_CONTRACT_EDGES + 1;
         const executeTransition = async (
           currentPayload, currentDeployedContractAddress, currentSenderAddress,
         ) => {
-          if (callsLeft < 1) throw new Error('Callstack too high');
+          if (callsLeft < 1) {
+            throw new Error('Maximum contract edges reached, cannot call another contract');
+          }
           if (bnGasRemaining.lt(new BN(0))) throw new Error('Not Enough Gas');
 
           const currentAddressUnprefixed = currentPayload.toAddr.replace('0x', '');
-          callstack.push(currentAddressUnprefixed);
 
           const responseData = await scillaCtrl.executeScillaRun(
             currentPayload,
@@ -254,12 +254,6 @@ module.exports = {
             const nextAddress = message._recipient;
             const nextAddressUnprefixed = nextAddress.replace('0x', '');
 
-            if (callstack.includes(nextAddressUnprefixed)) {
-              // TODO: how zilliqa treats recursion?
-              //  should we continue processing other messages if we detect recursion?
-              continue;
-            }
-
             const initPath = `${dataPath}${nextAddressUnprefixed}_init.json`;
             const codePath = `${dataPath}${nextAddressUnprefixed}_code.scilla`;
             if (!fs.existsSync(initPath) || !fs.existsSync(codePath)) {
@@ -276,7 +270,6 @@ module.exports = {
               null,
               currentAddressUnprefixed.toLowerCase(),
             );
-            callstack.pop();
           }
         };
 
