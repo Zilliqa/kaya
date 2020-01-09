@@ -26,7 +26,9 @@ const zAccount = require('@zilliqa-js/account');
 const scillaCtrl = require('./components/scilla/scilla');
 const walletCtrl = require('./components/wallet/wallet');
 const blockchain = require('./components/blockchain');
-const { InterpreterError, BalanceError, RPCError } = require('./components/CustomErrors');
+const {
+  InterpreterError, BalanceError, RPCError, NoAcceptedFoundError,
+} = require('./components/CustomErrors');
 const { logVerbose, consolePrint } = require('./utilities');
 const config = require('./config');
 
@@ -181,6 +183,10 @@ module.exports = {
 
     let receiptInfo = {};
 
+    // Backup account balances for discarding changes if the transaction fails.
+    const accountBalances = Object.entries(walletCtrl.getAccounts())
+      .map(([address, account]) => [address, account.amount]);
+
     try {
       if (payload.nonce !== userNonce + 1) {
         throw new BalanceError('Nonce incorrect');
@@ -230,7 +236,8 @@ module.exports = {
           }
           if (bnGasRemaining.lt(new BN(0))) throw new Error('Not Enough Gas');
 
-          const currentAddressUnprefixed = currentPayload.toAddr.replace('0x', '');
+          const amount = new BN(currentPayload.amount || '0');
+          const currentAddressUnprefixed = currentPayload.toAddr.replace('0x', '').toLowerCase();
 
           const responseData = await scillaCtrl.executeScillaRun(
             currentPayload,
@@ -240,6 +247,21 @@ module.exports = {
             currentBNum,
           );
 
+          if (currentDeployedContractAddress) {
+            if (walletCtrl.sufficientFunds(currentSenderAddress, amount)) {
+              logVerbose(logLabel, 'Sufficient funds to pay the gas price, but not enough for transfer the amount, creating contract and ignoring amount transfer');
+              walletCtrl.transferFunds(
+                currentSenderAddress,
+                currentDeployedContractAddress,
+                amount,
+              );
+            }
+          } else {
+            if (!responseData.accepted) {
+              throw new NoAcceptedFoundError("The json output of the contract doesn't contain _accepted");
+            }
+            walletCtrl.transferFunds(currentSenderAddress, currentAddressUnprefixed, amount);
+          }
           if (responseData.events) {
             events.push(...responseData.events);
           }
@@ -247,23 +269,25 @@ module.exports = {
           bnGasRemaining = new BN(responseData.gasRemaining);
 
           for (const message of responseData.messages) {
-            if (message._tag === '') {
-              continue;
-            }
-
             const nextAddress = message._recipient;
             const nextAddressUnprefixed = nextAddress.replace('0x', '');
 
             const initPath = `${dataPath}${nextAddressUnprefixed}_init.json`;
             const codePath = `${dataPath}${nextAddressUnprefixed}_code.scilla`;
-            if (!fs.existsSync(initPath) || !fs.existsSync(codePath)) {
+            const transferAmount = message._amount || '0';
+            if (message._tag === '' || !fs.existsSync(initPath) || !fs.existsSync(codePath)) {
+              walletCtrl.transferFunds(
+                currentAddressUnprefixed,
+                nextAddressUnprefixed,
+                new BN(transferAmount),
+              );
               continue;
             }
 
             await executeTransition(
               {
                 toAddr: nextAddressUnprefixed,
-                amount: message._amount || '0',
+                amount: transferAmount,
                 gasLimit: bnGasRemaining.toString(10),
                 data: JSON.stringify(message),
               },
@@ -320,6 +344,17 @@ module.exports = {
       confirmTransaction(payload, txnId, receiptInfo);
       logVerbose(logLabel, 'Transaction confirmed by the blockchain');
     } catch (err) {
+      // Discard balance changes if transaction fails
+      const accounts = walletCtrl.getAccounts();
+      const newAccounts = {};
+      for (const [address, amount] of accountBalances) {
+        newAccounts[address] = {
+          ...accounts[address],
+          amount,
+        };
+      }
+      walletCtrl.loadAccounts(newAccounts);
+
       logVerbose(logLabel, 'Transaction is NOT accepted by the blockchain');
 
       // Incorrect Balance (Amt, Nonce) does NOT increase the nonce value

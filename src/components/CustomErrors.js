@@ -43,10 +43,18 @@ class InsufficientGasError extends Error {
   }
 }
 
+class NoAcceptedFoundError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'NoAcceptedFoundError';
+  }
+}
+
 module.exports = {
   InterpreterError,
   BalanceError,
   MultiContractError,
   InsufficientGasError,
   RPCError,
+  NoAcceptedFoundError,
 };

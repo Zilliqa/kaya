@@ -222,6 +222,51 @@ module.exports = {
   },
 
   /**
+   * Add funds to an account address
+   * @param { string } senderAddress - Address of sender
+   * @param { string } recipientAddress - Address of recipient
+   * @param { BN } amount - amount of zils to transfer
+   * Does not return any value
+   */
+  transferFunds: (senderAddress, recipientAddress, amount) => {
+    logVerbose(logLabel, `Transfering ${amount} from ${senderAddress} to ${recipientAddress}`);
+    if (!BN.isBN(amount)) {
+      throw new Error('Type error');
+    }
+    if (!zUtils.validation.isAddress(senderAddress)) {
+      throw new RPCError('Sender address size not appropriate', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
+    }
+    if (!zUtils.validation.isAddress(recipientAddress)) {
+      throw new RPCError('Recipient address size not appropriate', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
+    }
+
+    const senderAddressUnprefixed = senderAddress.replace('0x', '');
+    const sender = wallets[senderAddressUnprefixed];
+    if (!sender || !module.exports.sufficientFunds(senderAddressUnprefixed, amount)) {
+      throw new Error('Insufficient Funds');
+    }
+
+    let recipient = wallets[recipientAddress.replace('0x', '')];
+    if (!recipient) {
+      // initialize new wallet account
+      logVerbose(logLabel, `Creating new wallet account for ${recipientAddress}`);
+      recipient = {
+        amount: new BN(0),
+        nonce: 0,
+      };
+      wallets[recipientAddress] = recipient;
+    }
+
+    sender.amount = sender.amount.sub(amount);
+    recipient.amount = recipient.amount.add(amount);
+
+    logVerbose(logLabel,
+      `Transfering funds complete.
+        Recipient's new balance: ${recipient.amount.toString()}.
+        Sender's new balance: ${sender.amount.toString()}`);
+  },
+
+  /**
    * Increases nonce for a given address
    * @param { String } address
    */

@@ -338,6 +338,7 @@ module.exports = {
         address: payload.toAddr,
       }));
     }
+    responseData.accepted = retMsg._accepted;
     responseData.messages = retMsg.message
       ? [retMsg.message] // backward compatibility with scilla 0.4.0
       : retMsg.messages || [];
