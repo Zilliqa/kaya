@@ -2,12 +2,14 @@ scilla_version 0
 
 library Test
 
-let two_msgs =
+let three_msgs =
   fun (msg1 : Message) =>
   fun (msg2 : Message) =>
+  fun (msg3 : Message) =>
     let nil_msg = Nil {Message} in
-    let one_msg = Cons {Message} msg2 nil_msg in
-    Cons {Message} msg1 one_msg
+    let one_msg = Cons {Message} msg3 nil_msg in
+    let two_msgs = Cons {Message} msg2 one_msg in
+    Cons {Message} msg1 two_msgs
 
 contract Test
 ()
@@ -19,16 +21,17 @@ transition acceptAAndTransferToBAndCallC (addrB : ByStr20, addrC : ByStr20)
   accept;
 
   last_amount := _amount;
-  half_amount =
-    let two = Uint128 2 in
-      builtin div _amount two;
+  one_third_amount =
+    let three = Uint128 3 in
+      builtin div _amount three;
 
   e = {_eventname: "A"};
   event e;
 
-  msg1 = { _tag : "acceptBAndTransferToC"; _amount : half_amount; _recipient : addrB; addrC : addrC };
-  msg2 = { _tag : "simplyAccept"; _amount : half_amount; _recipient : addrC };
-  msgs = two_msgs msg1 msg2;
+  msg1 = { _tag : "acceptBAndTransferToC"; _amount : one_third_amount; _recipient : addrB; addrC : addrC };
+  msg2 = { _tag : "simplyAccept"; _amount : one_third_amount; _recipient : addrC };
+  msg3 = { _tag : "noAcceptC"; _amount : one_third_amount; _recipient : addrC };
+  msgs = three_msgs msg1 msg2 msg3;
   send msgs
 end
 

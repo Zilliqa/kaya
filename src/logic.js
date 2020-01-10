@@ -314,8 +314,7 @@ module.exports = {
         const gasConsumedInZil = bnGasPrice.mul(bnGasConsumed);
         logVerbose(logLabel, `Gas Consumed in Zils ${gasConsumedInZil.toString()}`);
         logVerbose(logLabel, `Gas Consumed: ${bnGasConsumed.toString()}`);
-        const totalSum = new BN(payload.amount).add(gasConsumedInZil);
-        walletCtrl.deductFunds(senderAddress.replace('0x', ''), totalSum);
+        walletCtrl.deductFunds(senderAddress.replace('0x', ''), gasConsumedInZil);
 
         // Only update if it is a deployment call
         if (isDeployment) {
@@ -349,14 +348,9 @@ module.exports = {
     } catch (err) {
       // Discard balance changes if transaction fails
       const accounts = walletCtrl.getAccounts();
-      const newAccounts = {};
       for (const [address, amount] of accountBalances) {
-        newAccounts[address] = {
-          ...accounts[address],
-          amount,
-        };
+        accounts[address].amount = amount;
       }
-      walletCtrl.loadAccounts(newAccounts);
 
       logVerbose(logLabel, 'Transaction is NOT accepted by the blockchain');
 
