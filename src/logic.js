@@ -26,9 +26,7 @@ const zAccount = require('@zilliqa-js/account');
 const scillaCtrl = require('./components/scilla/scilla');
 const walletCtrl = require('./components/wallet/wallet');
 const blockchain = require('./components/blockchain');
-const {
-  InterpreterError, BalanceError, RPCError, NoAcceptedFoundError,
-} = require('./components/CustomErrors');
+const { InterpreterError, BalanceError, RPCError } = require('./components/CustomErrors');
 const { logVerbose, consolePrint } = require('./utilities');
 const config = require('./config');
 
@@ -256,10 +254,7 @@ module.exports = {
                 amount,
               );
             }
-          } else {
-            if (!responseData.accepted) {
-              throw new NoAcceptedFoundError("The json output of the contract doesn't contain _accepted");
-            }
+          } else if (responseData.accepted) {
             walletCtrl.transferFunds(currentSenderAddress, currentAddressUnprefixed, amount);
           }
           if (responseData.events) {
@@ -269,6 +264,14 @@ module.exports = {
           bnGasRemaining = new BN(responseData.gasRemaining);
 
           for (const message of responseData.messages) {
+            if (message._tag === undefined
+              || message._amount === undefined
+              || message._recipient === undefined
+              || message.params === undefined
+            ) {
+              throw new Error('The message in the json output of the contract is corrupted');
+            }
+
             const nextAddress = message._recipient;
             const nextAddressUnprefixed = nextAddress.replace('0x', '');
 

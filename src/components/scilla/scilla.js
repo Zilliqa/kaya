@@ -21,7 +21,7 @@ const { promisify } = require('util');
 const rp = require('request-promise');
 const { execFile } = require('child_process');
 const { codeCleanup, logVerbose } = require('../../utilities');
-const { InterpreterError } = require('../CustomErrors');
+const { InterpreterError, NoAcceptedFoundError } = require('../CustomErrors');
 const config = require('../../config');
 
 const logLabel = 'SCILLA';
@@ -331,6 +331,9 @@ module.exports = {
     if (isCodeDeployment) logVerbose(logLabel, `Contract Address Deployed: ${contractAddr}`);
 
     const responseData = {};
+    if (retMsg._accepted === undefined) {
+      throw new NoAcceptedFoundError("The json output of the contract doesn't contain _accepted");
+    }
     responseData.gasRemaining = retMsg.gas_remaining;
     if (retMsg.events) {
       responseData.events = retMsg.events.map(e => ({
@@ -338,7 +341,7 @@ module.exports = {
         address: payload.toAddr,
       }));
     }
-    responseData.accepted = retMsg._accepted;
+    responseData.accepted = retMsg._accepted === 'true';
     responseData.messages = retMsg.message
       ? [retMsg.message] // backward compatibility with scilla 0.4.0
       : retMsg.messages || [];
