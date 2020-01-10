@@ -84,7 +84,7 @@ describe('Test Multicontract support', () => {
 
     const [deployATx, contractA] = await zilliqa.contracts
       .new(
-        readFileSync(`${__dirname}/scilla/chain-call-balance-a-multiple.scilla`, 'utf8'),
+        readFileSync(`${__dirname}/scilla/chain-call-balance-a.scilla`, 'utf8'),
         [
           { vname: '_scilla_version', type: 'Uint32', value: '0' },
         ],
