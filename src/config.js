@@ -46,9 +46,9 @@ module.exports = {
   // Relevant constants config copied from core zilliqa repo (constants.xml)
   constants: {
     gas: {
-      CONTRACT_CREATE_GAS: 500,
-      CONTRACT_INVOKE_GAS: 100,
-      NORMAL_TRAN_GAS: 10,
+      CONTRACT_CREATE_GAS: 50,
+      CONTRACT_INVOKE_GAS: 10,
+      NORMAL_TRAN_GAS: 1,
     },
     smart_contract: {
       SCILLA_RUNNER: `${__dirname}/components/scilla/scilla-runner`,
