@@ -1,5 +1,5 @@
 # Kaya - Zilliqa's RPC client for testing and development
-[![Gitter chat](http://img.shields.io/badge/chat-on%20gitter-077a8f.svg)](https://gitter.im/Zilliqa/CommunityDev)
+[![Discord chat](https://img.shields.io/discord/370992535725932544.svg)](https://discord.gg/mWp9HdR)
 [![Build Status](https://travis-ci.com/Zilliqa/kaya.svg?branch=master)](https://travis-ci.com/Zilliqa/kaya)
 
 
