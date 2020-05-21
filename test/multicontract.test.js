@@ -1,13 +1,16 @@
 const { readFileSync } = require('fs');
 const { BN, bytes, Long } = require('@zilliqa-js/util');
 const { Zilliqa } = require('@zilliqa-js/zilliqa');
+const { toChecksumAddress, getAddressFromPrivateKey, getPubKeyFromPrivateKey } = require('@zilliqa-js/crypto');
 const KayaProvider = require('../src/provider');
 const { loadAccounts } = require('../src/components/wallet/wallet');
 
+const privateKey =  'ebe9139f853d3ba3f509741d3068ccae5215793ed82b0dcf982dd38462a7ab7e'
+
 const testWallet = {
-  address: '7bb3b0e8a59f3f61d9bff038f4aeb42cae2ecce8',
-  privateKey: 'db11cfa086b92497c8ed5a4cc6edb3a5bfe3a640c43ffb9fc6aa0873c56f2ee3',
-  publicKey: '03d8e6450e260f80983bcd4fadb6cbc132ae7feb552dda45f94b48c80b86c6c3be',
+  address: getAddressFromPrivateKey(privateKey),
+  privateKey,
+  publicKey: getPubKeyFromPrivateKey(privateKey),
   amount: '1000000000000000',
   nonce: 0,
 };
@@ -15,7 +18,7 @@ const testWallet = {
 const getProvider = () => {
   // sets up transaction history for accounts
   loadAccounts({
-    [testWallet.address]: {
+    [testWallet.address.toLowerCase().replace('0x', '')]: {
       privateKey: testWallet.privateKey,
       amount: testWallet.amount,
       nonce: testWallet.nonce,
@@ -64,7 +67,6 @@ describe('Test Multicontract support', () => {
         readFileSync(`${__dirname}/scilla/chain-call-balance-c.scilla`, 'utf8'),
         [
           { vname: '_scilla_version', type: 'Uint32', value: '0' },
-          { vname: '_creation_block', type: 'BNum', value: '0' },
         ],
       )
       .deploy(deploymentParams);
@@ -75,7 +77,6 @@ describe('Test Multicontract support', () => {
         readFileSync(`${__dirname}/scilla/chain-call-balance-b.scilla`, 'utf8'),
         [
           { vname: '_scilla_version', type: 'Uint32', value: '0' },
-          { vname: '_creation_block', type: 'BNum', value: '0' },
         ],
       )
       .deploy(deploymentParams);
@@ -86,7 +87,6 @@ describe('Test Multicontract support', () => {
         readFileSync(`${__dirname}/scilla/chain-call-balance-a.scilla`, 'utf8'),
         [
           { vname: '_scilla_version', type: 'Uint32', value: '0' },
-          { vname: '_creation_block', type: 'BNum', value: '0' },
         ],
       )
       .deploy(deploymentParams);
@@ -95,8 +95,8 @@ describe('Test Multicontract support', () => {
     const transitionCall = await contractA.call(
       'acceptAAndTransferToBAndCallC',
       [
-        { vname: 'addrB', type: 'ByStr20', value: `0x${contractB.address}` },
-        { vname: 'addrC', type: 'ByStr20', value: `0x${contractC.address}` },
+        { vname: 'addrB', type: 'ByStr20', value: contractB.address },
+        { vname: 'addrC', type: 'ByStr20', value: contractC.address },
       ],
       {
         ...defaultParams,
@@ -115,17 +115,8 @@ describe('Test Multicontract support', () => {
       ])
     );
     expect(walletBalance.result.nonce).toBe(4);
-    expect(contractAState).toEqual([
-      { vname: '_balance', type: 'Uint128', value: '0' },
-      { vname: 'last_amount', type: 'Uint128', value: '5' },
-    ]);
-    expect(contractBState).toEqual([
-      { vname: '_balance', type: 'Uint128', value: '0' },
-      { vname: 'last_amount', type: 'Uint128', value: '5' },
-    ]);
-    expect(contractCState).toEqual([
-      { vname: '_balance', type: 'Uint128', value: '5' },
-      { vname: 'last_amount', type: 'Uint128', value: '5' },
-    ]);
+    expect(contractAState).toEqual({_balance: '0', last_amount: '5'});
+    expect(contractBState).toEqual({_balance: '0', last_amount: '5'})
+    expect(contractCState).toEqual({_balance: '5', last_amount: '5'})
   });
 });

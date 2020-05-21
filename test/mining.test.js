@@ -1,13 +1,16 @@
 const { readFileSync } = require('fs');
 const { BN, bytes, Long } = require('@zilliqa-js/util');
 const { Zilliqa } = require('@zilliqa-js/zilliqa');
+const { getAddressFromPrivateKey, getPubKeyFromPrivateKey } = require('@zilliqa-js/crypto');
 const KayaProvider = require('../src/provider');
 const { loadAccounts } = require('../src/components/wallet/wallet');
 
+const privateKey = '67bc010005e3e5b0d71e06e1240f645ffd39f2d0da78cf33e7860dee56c6f38e'
+
 const testWallet = {
-  address: '7bb3b0e8a59f3f61d9bff038f4aeb42cae2ecce8',
-  privateKey: 'db11cfa086b92497c8ed5a4cc6edb3a5bfe3a640c43ffb9fc6aa0873c56f2ee3',
-  publicKey: '03d8e6450e260f80983bcd4fadb6cbc132ae7feb552dda45f94b48c80b86c6c3be',
+  address: getAddressFromPrivateKey(privateKey),
+  privateKey,
+  publicKey: getPubKeyFromPrivateKey(privateKey),
   amount: '1000000000000000',
   nonce: 0,
 };
@@ -15,7 +18,7 @@ const testWallet = {
 const getProvider = () => {
   // sets up transaction history for accounts
   loadAccounts({
-    [testWallet.address]: {
+    [testWallet.address.replace('0x', '').toLowerCase()]: {
       privateKey: testWallet.privateKey,
       amount: testWallet.amount,
       nonce: testWallet.nonce,
@@ -76,7 +79,6 @@ describe('Test Mining support', () => {
         readFileSync(`${__dirname}/scilla/mining.scilla`, 'utf8'),
         [
           { vname: '_scilla_version', type: 'Uint32', value: '0' },
-          { vname: '_creation_block', type: 'BNum', value: '0' },
         ],
       )
       .deploy(deploymentParams);

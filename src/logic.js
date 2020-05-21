@@ -171,7 +171,7 @@ module.exports = {
     const bnGasPrice = new BN(payload.gasPrice);
     const bnInvokeGas = new BN(config.constants.gas.CONTRACT_INVOKE_GAS);
     const deductableZils = bnInvokeGas.mul(bnGasPrice);
-    const senderAddress = zCrypto.getAddressFromPublicKey(payload.pubKey);
+    const senderAddress = zCrypto.getAddressFromPublicKey(payload.pubKey).replace('0x', '').toLowerCase();
     const txnId = computeTransactionHash(payload);
 
     logVerbose(logLabel, `Sender: ${senderAddress}`);
@@ -265,8 +265,7 @@ module.exports = {
           }
         };
 
-        const isDeployment = payload.code && isDeployContract(payload.toAddr);
-        console.log(isDeployment);
+        const isDeployment = payload.code && payload.toAddr === '0x' + '0'.repeat(40);
         const deployedContractAddress = isDeployment ? computeContractAddr(senderAddress) : null;
         // Always increase nonce whenever the interpreter is run
         // Interpreter can throw an InterpreterError
@@ -433,12 +432,18 @@ module.exports = {
       throw new RPCError('Address does not exist', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
 
-    const responseData = fs.readFileSync(filePath, 'utf-8');
+    let responseData = fs.readFileSync(filePath, 'utf-8');
     if (fileType === 'code') {
       return { code: responseData };
     }
-    // handles init and state json after parsing
-    return JSON.parse(responseData);
+    responseData = JSON.parse(responseData);
+
+    if (fileType === 'state') {
+      result = {};
+      responseData.forEach(field => result[field.vname] = field.value);
+      return result;
+    }
+    return responseData;
   },
 
   /**

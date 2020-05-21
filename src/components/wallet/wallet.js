@@ -42,7 +42,7 @@ let wallets = {};
 
 const createNewWallet = () => {
   const pk = zCrypto.schnorr.generatePrivateKey();
-  const address = zCrypto.getAddressFromPrivateKey(pk);
+  const address = zCrypto.getAddressFromPrivateKey(pk).toLowerCase().replace('0x', '');
   const newWallet = {
     privateKey: pk,
     amount: config.wallet.defaultAmt,
@@ -65,7 +65,7 @@ const validateAccounts = (accounts) => {
 
     const addressFromPK = zCrypto.getAddressFromPrivateKey(
       account.privateKey,
-    );
+    ).replace("0x", '').toLowerCase();
     if (addressFromPK !== key) {
       logVerbose(logLabel, 'Validation failure: Invalid Address and Private key-pair');
       throw new Error(`Invalid address for ${key}`);
@@ -200,6 +200,7 @@ module.exports = {
     if (!zUtils.validation.isAddress(address)) {
       throw new RPCError('Address size not appropriate', errorCodes.RPC_INVALID_ADDRESS_OR_KEY, null);
     }
+    address = address.replace('0x', '');
     if (!wallets[address]) {
       // initialize new wallet account
       logVerbose(logLabel, `Creating new wallet account for ${address}`);
