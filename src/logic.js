@@ -181,6 +181,10 @@ module.exports = {
 
     let receiptInfo = {};
 
+    // Backup account balances for discarding changes if the transaction fails.
+    const accountBalances = Object.entries(walletCtrl.getAccounts())
+      .map(([address, account]) => [address, account.amount]);
+
     try {
       if (payload.nonce !== userNonce + 1) {
         throw new BalanceError('Nonce incorrect');
@@ -221,12 +225,17 @@ module.exports = {
 
         let bnGasRemaining = bnGasLimit;
         const events = [];
-        let callsLeft = 6;
+        let callsLeft = config.constants.transactions.MAX_CONTRACT_EDGES + 1;
         const executeTransition = async (
           currentPayload, currentDeployedContractAddress, currentSenderAddress,
         ) => {
-          if (callsLeft < 1) throw new Error('Callstack too high');
+          if (callsLeft < 1) {
+            throw new Error('Maximum contract edges reached, cannot call another contract');
+          }
           if (bnGasRemaining.lt(new BN(0))) throw new Error('Not Enough Gas');
+
+          const amount = new BN(currentPayload.amount || '0');
+          const currentAddressUnprefixed = currentPayload.toAddr.replace('0x', '').toLowerCase();
 
           const responseData = await scillaCtrl.executeScillaRun(
             currentPayload,
@@ -236,28 +245,54 @@ module.exports = {
             currentBNum,
           );
 
+          if (currentDeployedContractAddress) {
+            if (walletCtrl.sufficientFunds(currentSenderAddress, amount)) {
+              logVerbose(logLabel, 'Sufficient funds to pay the gas price, but not enough for transfer the amount, creating contract and ignoring amount transfer');
+              walletCtrl.transferFunds(
+                currentSenderAddress,
+                currentDeployedContractAddress,
+                amount,
+              );
+            }
+          } else if (responseData.accepted) {
+            walletCtrl.transferFunds(currentSenderAddress, currentAddressUnprefixed, amount);
+          }
           if (responseData.events) {
             events.push(...responseData.events);
           }
           callsLeft -= 1;
           bnGasRemaining = new BN(responseData.gasRemaining);
 
-          const currentAddressUnprefixed = currentPayload.toAddr.replace('0x', '');
-          const nextAddress = responseData.nextAddress;
-          const nextAddressUnprefixed = nextAddress.replace('0x', '');
-          if (nextAddress !== '0'.repeat(40) && nextAddressUnprefixed !== currentAddressUnprefixed) {
+          for (const message of responseData.messages) {
+            if (message._tag === undefined
+              || message._amount === undefined
+              || message._recipient === undefined
+              || message.params === undefined
+            ) {
+              throw new Error('The message in the json output of the contract is corrupted');
+            }
+
+            const nextAddress = message._recipient;
+            const nextAddressUnprefixed = nextAddress.replace('0x', '');
+
             const initPath = `${dataPath}${nextAddressUnprefixed}_init.json`;
             const codePath = `${dataPath}${nextAddressUnprefixed}_code.scilla`;
-
-            if (!fs.existsSync(initPath) || !fs.existsSync(codePath)) return;
-            if (responseData.message._tag === '') return;
+            const transferAmount = message._amount || '0';
+            if (message._tag === '' || !fs.existsSync(initPath) || !fs.existsSync(codePath)) {
+              walletCtrl.transferFunds(
+                currentAddressUnprefixed,
+                nextAddressUnprefixed,
+                new BN(transferAmount),
+              );
+              continue;
+            }
 
             await executeTransition(
               {
                 toAddr: nextAddressUnprefixed,
-                amount: responseData.message._amount || '0',
+                amount: transferAmount,
                 gasLimit: bnGasRemaining.toString(10),
-                data: JSON.stringify(responseData.message),
+                data: JSON.stringify(message),
               },
               null,
               currentAddressUnprefixed.toLowerCase(),
@@ -279,8 +314,7 @@ module.exports = {
         const gasConsumedInZil = bnGasPrice.mul(bnGasConsumed);
         logVerbose(logLabel, `Gas Consumed in Zils ${gasConsumedInZil.toString()}`);
         logVerbose(logLabel, `Gas Consumed: ${bnGasConsumed.toString()}`);
-        const totalSum = new BN(payload.amount).add(gasConsumedInZil);
-        walletCtrl.deductFunds(senderAddress.replace('0x', ''), totalSum);
+        walletCtrl.deductFunds(senderAddress.replace('0x', ''), gasConsumedInZil);
 
         // Only update if it is a deployment call
         if (isDeployment) {
@@ -312,6 +346,12 @@ module.exports = {
       confirmTransaction(payload, txnId, receiptInfo);
       logVerbose(logLabel, 'Transaction confirmed by the blockchain');
     } catch (err) {
+      // Discard balance changes if transaction fails
+      const accounts = walletCtrl.getAccounts();
+      for (const [address, amount] of accountBalances) {
+        accounts[address].amount = amount;
+      }
+
       logVerbose(logLabel, 'Transaction is NOT accepted by the blockchain');
 
       // Incorrect Balance (Amt, Nonce) does NOT increase the nonce value

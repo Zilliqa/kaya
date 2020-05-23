@@ -3,7 +3,7 @@ const { BN, bytes, Long } = require('@zilliqa-js/util');
 const { Zilliqa } = require('@zilliqa-js/zilliqa');
 const { toChecksumAddress, getAddressFromPrivateKey, getPubKeyFromPrivateKey } = require('@zilliqa-js/crypto');
 const KayaProvider = require('../src/provider');
-const { loadAccounts } = require('../src/components/wallet/wallet');
+const walletCtrl = require('../src/components/wallet/wallet');
 
 const privateKey =  'ebe9139f853d3ba3f509741d3068ccae5215793ed82b0dcf982dd38462a7ab7e'
 
@@ -17,7 +17,7 @@ const testWallet = {
 
 const getProvider = () => {
   // sets up transaction history for accounts
-  loadAccounts({
+  walletCtrl.loadAccounts({
     [testWallet.address.toLowerCase().replace('0x', '')]: {
       privateKey: testWallet.privateKey,
       amount: testWallet.amount,
@@ -70,6 +70,7 @@ describe('Test Multicontract support', () => {
         ],
       )
       .deploy(deploymentParams);
+    const contractCAddress = contractC.address.replace('0x', '');
     expect(deployCTx.isConfirmed()).toBe(true);
 
     const [deployBTx, contractB] = await zilliqa.contracts
@@ -80,6 +81,7 @@ describe('Test Multicontract support', () => {
         ],
       )
       .deploy(deploymentParams);
+    const contractBAddress = contractB.address.replace('0x', '');
     expect(deployBTx.isConfirmed()).toBe(true);
 
     const [deployATx, contractA] = await zilliqa.contracts
@@ -90,6 +92,7 @@ describe('Test Multicontract support', () => {
         ],
       )
       .deploy(deploymentParams);
+    const contractAAddress = contractA.address.replace('0x', '');
     expect(deployATx.isConfirmed()).toBe(true);
 
     const transitionCall = await contractA.call(
@@ -100,12 +103,12 @@ describe('Test Multicontract support', () => {
       ],
       {
         ...defaultParams,
-        amount: new BN(5),
+        amount: new BN(9),
       },
     );
     expect(transitionCall.isConfirmed()).toBe(true);
     expect(transactionEventNames(transitionCall))
-      .toEqual(['A', 'B', 'C']);
+      .toEqual(['A', 'B', 'C', 'C', 'C']);
     const [walletBalance, contractAState, contractBState, contractCState] = await (
       Promise.all([
         zilliqa.blockchain.getBalance(testWallet.address),
@@ -115,8 +118,49 @@ describe('Test Multicontract support', () => {
       ])
     );
     expect(walletBalance.result.nonce).toBe(4);
-    expect(contractAState).toEqual({_balance: '0', last_amount: '5'});
-    expect(contractBState).toEqual({_balance: '0', last_amount: '5'})
-    expect(contractCState).toEqual({_balance: '5', last_amount: '5'})
+    expect(contractAState).toEqual({_balance: '0', last_amount: '9'});
+    expect(contractBState).toEqual({_balance: '0', last_amount: '3'});
+    expect(contractCState).toEqual({_balance: '6', last_amount: '3'});
+    expect(walletCtrl.getBalance(contractAAddress).balance).toEqual('3');
+    expect(walletCtrl.getBalance(contractBAddress).balance).toEqual('0');
+    expect(walletCtrl.getBalance(contractCAddress).balance).toEqual('6');
+  });
+
+  test('Endless recursion should error and discard balance changes', async () => {
+    const zilliqa = getZilliqa();
+    const [deployCTx, contractC] = await zilliqa.contracts
+      .new(
+        readFileSync(`${__dirname}/scilla/chain-call-balance-c.scilla`, 'utf8'),
+        [
+          { vname: '_scilla_version', type: 'Uint32', value: '0' },
+        ],
+      )
+      .deploy(deploymentParams);
+    expect(deployCTx.isConfirmed()).toBe(true);
+    const contractCAddress = contractC.address.replace('0x', '');
+
+    const simplyAcceptTransition = await contractC.call(
+      'simplyAccept',
+      [],
+      {
+        ...defaultParams,
+        amount: new BN(10),
+      },
+    );
+    expect(simplyAcceptTransition.isConfirmed()).toBe(true);
+    expect(await contractC.getState()).toEqual({_balance: '10', last_amount: '10'});
+    expect(walletCtrl.getBalance(contractCAddress).balance).toEqual('10');
+
+    const endlessRecursionTransition = await contractC.call(
+      'endlessRecursion',
+      [],
+      {
+        ...defaultParams,
+        amount: new BN(20),
+      },
+    );
+    await new Promise(resolve => setTimeout(resolve.bind(null), 1000));
+    expect(endlessRecursionTransition.isRejected()).toBe(true);
+    expect(walletCtrl.getBalance(contractCAddress).balance).toEqual('10');
   });
 });

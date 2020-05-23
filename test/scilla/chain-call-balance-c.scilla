@@ -28,3 +28,13 @@ transition simplyAccept ()
   e = {_eventname: "C"};
   event e
 end
+
+transition endlessRecursion ()
+  accept;
+
+  last_amount := _amount;
+
+  msg1 = { _tag : "endlessRecursion"; _recipient : _this_address; _amount : Uint128 0 };
+  msgs = one_msg msg1;
+  send msgs
+end
