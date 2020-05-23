@@ -221,12 +221,16 @@ module.exports = {
 
         let bnGasRemaining = bnGasLimit;
         const events = [];
-        let callsLeft = 6;
+        let callsLeft = config.constants.transactions.MAX_CONTRACT_EDGES + 1;
         const executeTransition = async (
           currentPayload, currentDeployedContractAddress, currentSenderAddress,
         ) => {
-          if (callsLeft < 1) throw new Error('Callstack too high');
+          if (callsLeft < 1) {
+            throw new Error('Maximum contract edges reached, cannot call another contract');
+          }
           if (bnGasRemaining.lt(new BN(0))) throw new Error('Not Enough Gas');
+
+          const currentAddressUnprefixed = currentPayload.toAddr.replace('0x', '');
 
           const responseData = await scillaCtrl.executeScillaRun(
             currentPayload,
@@ -242,22 +246,26 @@ module.exports = {
           callsLeft -= 1;
           bnGasRemaining = new BN(responseData.gasRemaining);
 
-          const currentAddressUnprefixed = currentPayload.toAddr.replace('0x', '');
-          const nextAddress = responseData.nextAddress;
-          const nextAddressUnprefixed = nextAddress.replace('0x', '');
-          if (nextAddress !== '0'.repeat(40) && nextAddressUnprefixed !== currentAddressUnprefixed) {
+          for (const message of responseData.messages) {
+            if (message._tag === '') {
+              continue;
+            }
+
+            const nextAddress = message._recipient;
+            const nextAddressUnprefixed = nextAddress.replace('0x', '');
+
             const initPath = `${dataPath}${nextAddressUnprefixed}_init.json`;
             const codePath = `${dataPath}${nextAddressUnprefixed}_code.scilla`;
-
-            if (!fs.existsSync(initPath) || !fs.existsSync(codePath)) return;
-            if (responseData.message._tag === '') return;
+            if (!fs.existsSync(initPath) || !fs.existsSync(codePath)) {
+              continue;
+            }
 
             await executeTransition(
               {
                 toAddr: nextAddressUnprefixed,
-                amount: responseData.message._amount || '0',
+                amount: message._amount || '0',
                 gasLimit: bnGasRemaining.toString(10),
-                data: JSON.stringify(responseData.message),
+                data: JSON.stringify(message),
               },
               null,
               currentAddressUnprefixed.toLowerCase(),

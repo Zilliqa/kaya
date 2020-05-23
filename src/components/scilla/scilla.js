@@ -338,17 +338,9 @@ module.exports = {
         address: payload.toAddr,
       }));
     }
-    const message = retMsg.message;
-    if (message != null) {
-      responseData.message = message;
-
-      // Obtains the next address based on the message
-      logVerbose(logLabel, `Next address: ${message._recipient}`);
-      responseData.nextAddress = message._recipient;
-    } else {
-      // Contract deployment do not have the next address
-      responseData.nextAddress = '0'.repeat(40);
-    }
+    responseData.messages = retMsg.message
+      ? [retMsg.message] // backward compatibility with scilla 0.4.0
+      : retMsg.messages || [];
     return responseData;
   },
 };
