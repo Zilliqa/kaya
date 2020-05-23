@@ -27,7 +27,7 @@ const scillaCtrl = require('./components/scilla/scilla');
 const walletCtrl = require('./components/wallet/wallet');
 const blockchain = require('./components/blockchain');
 const { InterpreterError, BalanceError, RPCError } = require('./components/CustomErrors');
-const { logVerbose, consolePrint } = require('./utilities');
+const { logVerbose, consolePrint, isDeployContract } = require('./utilities');
 const config = require('./config');
 
 const logLabel = ('LOGIC');
@@ -71,9 +71,9 @@ const confirmTransaction = (payload, transactionID, receiptInfo) => {
     gasPrice: payload.gasPrice,
     nonce: payload.nonce,
     receipt: receiptInfo,
-    senderPubKey: payload.pubKey,
-    signature: payload.signature,
-    toAddr: payload.toAddr,
+    senderPubKey: "0x".concat(payload.pubKey),
+    signature: "0x".concat(payload.signature),
+    toAddr: payload.toAddr.replace('0x', ''),
     version: payload.version,
   };
   transactions[transactionID] = txnDetails;

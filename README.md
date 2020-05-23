@@ -3,6 +3,12 @@
 [![Build Status](https://travis-ci.com/Zilliqa/kaya.svg?branch=master)](https://travis-ci.com/Zilliqa/kaya)
 
 
+## Deprecation Notice
+
+This repository is deprecated. Please use [isolated server](https://github.com/Zilliqa/Zilliqa/blob/master/ISOLATED_SERVER_setup.md) for your local testing.
+
+## Introduction
+
 Kaya is Zilliqa's RPC server for testing and development. It is personal blockchain which makes developing application easier and faster. Kaya emulates the Zilliqa's blockchain behavior, and follows the expected server behavior as seen in the [`zilliqa-js`](https://github.com/Zilliqa/Zilliqa-JavaScript-Library).
 
 The goal of the project is to support all endpoints in Zilliqa Javascript API, making it easy for app developers to build Dapps on our platform.

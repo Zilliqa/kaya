@@ -177,4 +177,9 @@ module.exports = {
       module.exports.logVerbose(logLabel, `${__dirname}/${dataPath} created`);
     }
   },
+
+
+  isDeployContract: (toAddress) => {
+    return toAddress.replace('0x', '') === '0'.repeat(40)
+  }
 };
